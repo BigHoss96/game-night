@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1b110b">
+<meta name="robots" content="noindex">
+<title>Game Night — Testing</title>
+<link rel="icon" href="icons/site-192.png">
+<link rel="apple-touch-icon" href="icons/site-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%}
+html{background:#1b110b}
+body{font-family:"Bricolage Grotesque",system-ui,sans-serif;color:#f6efe2;
+  background:radial-gradient(140% 70% at 50% 0%,#3b2618,#1b110b 70%) fixed;
+  padding:calc(env(safe-area-inset-top) + 28px) 16px calc(env(safe-area-inset-bottom) + 32px)}
+.wrap{max-width:860px;margin:0 auto}
+.back{display:inline-block;color:#c7ad8c;text-decoration:none;font-size:15px;font-weight:700;margin-bottom:18px}
+header{text-align:center;margin-bottom:22px}
+h1{font-size:clamp(40px,10vw,64px);font-weight:800;letter-spacing:-.04em;line-height:.95}
+h1 span{color:#ffc94d}
+.tag{color:#c7ad8c;font-size:17px;margin-top:10px}
+.note{margin:0 auto 22px;max-width:620px;padding:14px 16px;border-radius:14px;background:rgba(255,201,77,.08);
+  border:1px dashed rgba(255,201,77,.45);color:#e8d6b8;font-size:14px;line-height:1.45}
+.note b{color:#ffe6a6}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.game{position:relative;display:flex;gap:14px;align-items:center;padding:14px;border-radius:20px;text-decoration:none;color:inherit;
+  background:radial-gradient(ellipse at 50% 30%,#2e2a3e,#17151f);box-shadow:inset 0 0 0 2px #4a4560,0 10px 24px rgba(0,0,0,.4);
+  transition:transform .15s}
+.game:active{transform:scale(.98)}
+@media(hover:hover){.game:hover{transform:translateY(-3px)}}
+.game img{width:84px;height:84px;border-radius:20px;flex:none;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+.game h2{font-size:24px;font-weight:800;letter-spacing:-.02em}
+.game p{font-size:14px;color:rgba(255,255,255,.8);line-height:1.3;margin-top:3px}
+.game .meta{font-size:12px;font-weight:700;color:#ffe6a6;margin-top:6px;letter-spacing:.02em}
+.badge{position:absolute;top:10px;right:12px;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  color:#1a1200;background:#efb034;border-radius:999px;padding:3px 8px}
+footer{margin-top:28px;text-align:center;color:#8f7a62;font-size:12px;line-height:1.5}
+footer button{font:inherit;font-size:14px;font-weight:700;color:#ffe6a6;background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:9px 16px;margin-bottom:14px;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">‹ All games</a>
+  <header>
+    <h1>Testing <span>area</span></h1>
+    <p class="tag">Games still being built. Expect rough edges.</p>
+  </header>
+
+  <div class="note"><b>Help shake out the bugs.</b> These work, but rules or screens may change between visits.
+    If something looks wrong, open the game's menu (⋯) and tap <b>Report a bug</b>.</div>
+
+  <div class="grid">
+    <a class="game" href="doomlings/index.html"><span class="badge">Testing</span><img src="icons/doomlings-192.png" alt="">
+      <div><h2>Doomlings</h2><p>Evolve traits before three catastrophes end the world. Base game, every card scripted.</p><div class="meta">2–6 players · pass-and-play</div></div></a>
+  </div>
+
+  <footer><button onclick="GNReport.open()">⚑ Report a bug</button><br>Fan-made versions for friends and family. Not affiliated with the publishers of the original games.</footer>
+</div>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});</script>
+</body>
+</html>
