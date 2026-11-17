@@ -618,14 +618,16 @@ function renderStatus(){
     if(b.enabled&&!b.enabled())el.disabled=true;
     el.onclick=()=>{if(ui.mode==='pass'||ui.mode==='ask'){S.ui={msg:''};box.innerHTML='';}b.fn();};box.appendChild(el);});
 }
-function isLand(){return innerWidth>innerHeight&&innerWidth>=560;}
+// VW/VH: the screen the table is laid out on (smaller than the window on desktop, where it's scaled up)
+const VW=()=>window.GNLayout?GNLayout.vw():innerWidth,VH=()=>window.GNLayout?GNLayout.vh():innerHeight;
+function isLand(){return VW()>VH()&&VW()>=560;}
 function sizeHand(){
   const land=isLand();document.body.classList.toggle('land',land);document.body.dataset.skin=settings.skin;document.body.dataset.table=settings.table;
   if($('modal').classList.contains('top'))placeSheet();
   const n=Math.max(14,S?S.hands[0].length:14);let w;
   let pw;
-  if(land){w=Math.floor((innerWidth-28)/n);w=Math.min(w,64,Math.floor(innerHeight*0.15));pw=Math.max(22,Math.min(30,Math.floor(innerHeight*0.075)));}
-  else{w=Math.min(60,Math.floor((Math.min(innerWidth,620)-22)/7));pw=Math.max(26,Math.min(34,Math.floor((Math.min(innerWidth,620)-30)/12)));}
+  if(land){w=Math.floor((VW()-28)/n);w=Math.min(w,64,Math.floor(VH()*0.15));pw=Math.max(22,Math.min(30,Math.floor(VH()*0.075)));}
+  else{w=Math.min(60,Math.floor((Math.min(VW(),620)-22)/7));pw=Math.max(26,Math.min(34,Math.floor((Math.min(VW(),620)-30)/12)));}
   document.documentElement.style.setProperty('--hw',w+'px');document.documentElement.style.setProperty('--pw',pw+'px');
 }
 addEventListener('resize',()=>{sizeHand();if(S)render();});

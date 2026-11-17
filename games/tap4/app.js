@@ -306,12 +306,28 @@ const SLOTS = {
   5: [[18.5, 50], [18.5, 14], [50, 12], [81.5, 14], [81.5, 50]],
 };
 const CENTER_Y = { 1: 56, 2: 58, 3: 62, 4: 60, 5: 62 };
+// Desktop tables are wide and short, so seats spread along the top and sides instead.
+const DESK_SLOTS = {
+  1: [[50, 20]],
+  2: [[30, 22], [70, 22]],
+  3: [[13, 52], [50, 20], [87, 52]],
+  4: [[13, 56], [32, 20], [68, 20], [87, 56]],
+  5: [[11, 64], [19, 24], [50, 19], [81, 24], [89, 64]],
+  6: [[10, 70], [13, 28], [37, 19], [63, 19], [87, 28], [90, 70]],
+  7: [[9, 74], [10, 34], [29, 18], [50, 18], [71, 18], [90, 34], [91, 74]],
+};
+const slotsFor = n => ((window.GNLayout && GNLayout.desktop) ? DESK_SLOTS : SLOTS)[n] || [];
+// Switching between desktop and phone layout (e.g. resizing the window) moves the seats
+window.addEventListener('gn-layout', () => {
+  const pods = [...document.querySelectorAll('.ring .pod')], s = slotsFor(pods.length);
+  pods.forEach((p, i) => { if (s[i]) { p.style.left = s[i][0] + '%'; p.style.top = s[i][1] + '%'; } });
+});
 function seatEl(p) { return document.querySelector(`[data-seat="${p.id}"]`); }
 
 function buildTable() {
   const n = G.players.length, b = viewerId;
   const others = []; for (let k = 1; k < n; k++) others.push(G.players[(b + k) % n]);
-  const slots = SLOTS[others.length] || [];
+  const slots = slotsFor(others.length);
   const me = G.players[b];
   $('#felt').innerHTML = `
     <div class="ring">
@@ -431,7 +447,9 @@ async function fly(fromEl, toEl, html, badge) {
   const f = el(`<div class="floater">${html}${badge ? `<span class="depth" style="font-size:11px;line-height:16px;padding:0 5px;right:-6px;top:-6px">${badge}</span>` : ''}</div>`);
   f.style.left = (a.left + a.width / 2 - 30) + 'px'; f.style.top = (a.top + a.height / 2 - 42) + 'px';
   document.body.appendChild(f);
-  const dx = (b.left + b.width / 2) - (a.left + a.width / 2), dy = (b.top + b.height / 2) - (a.top + a.height / 2);
+  // On desktop the floater is scaled up by GNLayout.k (desktop.css), which also scales its travel
+  const k = (window.GNLayout && GNLayout.k) || 1;
+  const dx = ((b.left + b.width / 2) - (a.left + a.width / 2)) / k, dy = ((b.top + b.height / 2) - (a.top + a.height / 2)) / k;
   await f.animate([{ transform: 'translate(0,0) scale(.6)', opacity: .6 }, { transform: 'translate(0,0) scale(1)', opacity: 1, offset: .25 }, { transform: `translate(${dx}px,${dy}px) scale(1)` }],
     { duration: T(480), easing: 'cubic-bezier(.3,.7,.4,1)', fill: 'forwards' }).finished.catch(() => {});
   f.remove();

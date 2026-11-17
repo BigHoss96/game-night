@@ -21,15 +21,22 @@ const SAVE_KEYS = {
 const reportTags = (game, prefix) =>
   `<script>window.GN=${JSON.stringify({ game, version, keys: SAVE_KEYS[game] || [], endpoint: reportCfg.endpoint || '' })};</script>\n<script src="${prefix}report.js"></script>\n`;
 
+// fit: the virtual screen a game lays its table out on when played on a desktop; it's scaled up
+// (at most `max`×) to fill the window. Games without fit just use their desktop.css at normal size.
+const TABLE_FIT = { w: 960, h: 600, max: 1.75 };
 const GAMES = [
-  { id: 'flip7', name: 'Flip 7', color: '#15122a', bg: '#1b110b', build: () => read('games/flip7/src.html').replace('/*ENGINE*/', read('games/flip7/engine.js')) },
-  { id: 'tap4', name: 'Tap 4', color: '#1b110b', bg: '#1b110b', build: () => read('games/tap4/src.html').replace('/*ENGINE*/', read('games/tap4/engine.js')).replace('/*APP*/', read('games/tap4/app.js')) },
-  { id: 'mahj', name: 'Mahj', color: '#0f3f22', bg: '#0d3a26', build: () => read('games/mahj/index.html') },
+  { id: 'flip7', name: 'Flip 7', fit: TABLE_FIT, color: '#15122a', bg: '#1b110b', build: () => read('games/flip7/src.html').replace('/*ENGINE*/', read('games/flip7/engine.js')) },
+  { id: 'tap4', name: 'Tap 4', fit: { w: 960, h: 700, max: 1.6 } /* taller: its tray has two card rows */, color: '#1b110b', bg: '#1b110b', build: () => read('games/tap4/src.html').replace('/*ENGINE*/', read('games/tap4/engine.js')).replace('/*APP*/', read('games/tap4/app.js')) },
+  { id: 'mahj', name: 'Mahj', fit: { w: 1100, h: 680, max: 1.6 }, color: '#0f3f22', bg: '#0d3a26', build: () => read('games/mahj/index.html') },
   { id: 'tally', name: 'Tally', color: '#f4efe6', bg: '#f4efe6', build: () => read('games/tally/index.html') },
   // testing: true → listed only on testing.html (not the home page), kept out of search engines
   { id: 'doomlings', name: 'Doomlings', testing: true, color: '#131219', bg: '#131219', build: () => read('games/doomlings/index.html') },
 ];
 const NOINDEX = '<meta name="robots" content="noindex">\n';
+// Desktop/mobile switch (shared/layout.js) + each game's games/<id>/desktop.css, inlined so there's no flash
+const LAYOUT_JS = read('shared/layout.js');
+const layoutTags = g => `<script>window.GN_FIT=${JSON.stringify(g.fit || null)};\n${LAYOUT_JS}</script>\n`;
+const desktopCss = g => { const f = `games/${g.id}/desktop.css`; return fs.existsSync(path.join(root, f)) ? `<style>\n${read(f)}</style>\n` : ''; };
 
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(path.join(out, 'icons'), { recursive: true });
@@ -47,8 +54,9 @@ for (const g of GAMES) {
   const dir = path.join(out, g.id);
   fs.mkdirSync(dir, { recursive: true });
   let html = g.build();
-  const head = (g.testing ? NOINDEX : '') + reportTags(g.id, '../') + `<link rel="manifest" href="manifest.webmanifest">\n<link rel="icon" href="../icons/${g.id}-192.png">\n<link rel="apple-touch-icon" href="../icons/${g.id}-180.png">\n`;
+  const head = (g.testing ? NOINDEX : '') + layoutTags(g) + reportTags(g.id, '../') + `<link rel="manifest" href="manifest.webmanifest">\n<link rel="icon" href="../icons/${g.id}-192.png">\n<link rel="apple-touch-icon" href="../icons/${g.id}-180.png">\n`;
   html = html.replace(/<\/title>/i, m => m + '\n' + head);
+  html = html.replace(/<\/head>/i, m => desktopCss(g) + m);   // after the game's own styles so desktop rules win
   const sw = `<script>if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('../sw.js',{scope:'../'}).catch(()=>{});</script>\n`;
   const i = html.lastIndexOf('</body>');
   html = html.slice(0, i) + sw + html.slice(i);

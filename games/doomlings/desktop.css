@@ -1,0 +1,6 @@
+/* Desktop layout (html.gn-desktop is set by shared/layout.js). Lives outside index.html so it
+   survives re-copying the Doomlings phone build. The phone UI runs in a centered column: the
+   transform makes <body> the frame for all the full-screen (position:fixed) screens and sheets. */
+html.gn-desktop{background:#0a090e}
+html.gn-desktop body{width:min(560px,100vw);margin:0 auto;transform:translateZ(0);
+  box-shadow:0 0 0 1px rgba(255,255,255,.07),0 30px 90px rgba(0,0,0,.7)}
