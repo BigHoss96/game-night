@@ -435,6 +435,51 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 .back b{position:relative;z-index:2;font-size:17cqw;font-weight:800;color:#fff;
   text-transform:uppercase;letter-spacing:.02em;text-align:center;line-height:1;padding:3px}
 
+/* ---------- your hand, shown inside any prompt ---------- */
+.ph{margin-top:16px;padding-top:12px;border-top:1px solid var(--edge)}
+.ph-head{color:var(--dim);margin-bottom:7px}
+.ph-row{display:flex;gap:6px;padding-bottom:4px}
+.ph-card{position:relative;flex:0 0 auto;width:60px;border-radius:6px;overflow:hidden;
+  border:1px solid var(--edge);background:var(--panel-2);padding:0}
+.ph-card img{width:100%;display:block}
+.ph-fb{aspect-ratio:5/7;display:grid;place-items:center;font-size:8px;color:var(--dust);
+  text-align:center;padding:3px;line-height:1.15}
+
+/* read a card without choosing it */
+.pick-i{position:absolute;top:5px;left:5px;z-index:3;width:24px;height:24px;border-radius:50%;
+  background:rgba(0,0,0,.74);color:var(--bone);display:grid;place-items:center;
+  font:italic 700 13px/1 var(--serif);border:1px solid rgba(255,255,255,.25)}
+.peek{position:fixed;inset:0;z-index:58;background:rgba(6,6,9,.92);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:10px;padding:24px 22px;overflow-y:auto}
+.peek[hidden]{display:none}
+.peek-card{width:min(300px,78vw)}
+.peek-card img{width:100%;display:block;border-radius:12px;box-shadow:0 18px 44px rgba(0,0,0,.6)}
+.peek-name{font-size:20px;font-weight:800;letter-spacing:-.02em;text-align:center;margin-top:10px}
+.peek-eff{color:var(--dust);font-size:14px;line-height:1.5;text-align:center;max-width:36ch;margin:6px auto 0}
+.peek-hint{color:var(--dim)}
+
+/* face-down "random" picks */
+.blind-back{aspect-ratio:5/7;display:block}
+.blind-back .back{border-radius:0}
+
+/* read-then-confirm chooser (Prepper) */
+.ch-list{display:grid;gap:9px;margin-top:14px}
+.ch-row{display:flex;gap:11px;align-items:flex-start;padding:11px;border-radius:11px;text-align:left;
+  background:var(--panel-2);border:1px solid var(--edge)}
+.ch-row.sel{border-color:var(--green);box-shadow:0 0 0 2px color-mix(in srgb,var(--green) 45%,transparent)}
+.ch-art{position:relative;width:64px;flex:0 0 auto;border-radius:7px;overflow:hidden}
+.ch-art img{width:100%;display:block}
+.ch-name{font-weight:800;font-size:15px}
+.ch-eff{color:var(--dust);font-size:12.5px;line-height:1.45;margin-top:4px}
+.piles{margin-top:18px;padding-top:12px;border-top:1px solid var(--edge);display:grid;gap:12px}
+.piles-p b{font-size:13px}
+.piles-p .mono{color:var(--dim);margin-left:6px}
+
+/* discard pile tile */
+.deck-top{width:24px;height:34px;border-radius:4px;overflow:hidden;flex:0 0 auto;background:var(--panel-2);
+  border:1px dashed var(--edge)}
+.deck-top img{width:100%;height:100%;object-fit:cover;display:block}
+
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
@@ -570,6 +615,11 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
   <button class="rv-go" id="rvGo">Continue</button>
 </div>
 
+<div class="peek" id="peek" hidden>
+  <div class="peek-card" id="peekBody"></div>
+  <p class="peek-hint mono">Tap anywhere to close</p>
+</div>
+
 <div class="sheet-bg" id="sheetBg" hidden>
   <div class="sheet" id="sheet">
     <div class="grip"></div>
@@ -632,11 +682,11 @@ function* discardChosen(ctx, player, n, label) {
   return out;
 }
 
-/** Discard n at random from a player's hand. */
-function discardRandom(g, player, n) {
+/** Discard n "at random": the picker taps face-down cards from the owner's hand. */
+function* discardBlind(ctx, picker, owner, n, label) {
   const out = [];
-  for (const c of randomCardsFromHand(g, player, n)) {
-    const d = discardFromHand(g, player, c.uid);
+  for (const c of yield* blindPick(ctx.g, picker, owner, n, label)) {
+    const d = discardFromHand(ctx.g, owner, c.uid);
     if (d) out.push(d);
   }
   return out;
@@ -677,7 +727,7 @@ const AGES = {
 
   "comet showers": {
     *each(ctx) {
-      const gone = discardRandom(ctx.g, ctx.me, 1);
+      const gone = yield* discardBlind(ctx, ctx.me, ctx.me, 1, "Comet Showers — discard 1 card at random");
       if (gone.length) {
         yield ctx.ask.confirm({
           playerId: ctx.me.id, acknowledge: true,
@@ -914,7 +964,7 @@ const CATASTROPHES = {
   "glacial meltdown": {
     gp: -1,
     *each(ctx) {
-      const gone = discardRandom(ctx.g, ctx.me, 2);
+      const gone = yield* discardBlind(ctx, ctx.me, ctx.me, 2, "Glacial Meltdown — discard 2 cards at random");
       if (gone.length) {
         yield ctx.ask.confirm({
           playerId: ctx.me.id, acknowledge: true,
@@ -996,7 +1046,12 @@ const CATASTROPHES = {
     gp: -1,
     *onReveal(ctx) {
       const g = ctx.g;
-      const moving = g.players.map((p) => randomCardsFromHand(g, p, 2));
+      // Face-down picks, so whoever holds the phone can pick for everyone.
+      const moving = [];
+      for (const p of g.players) {
+        moving.push(yield* blindPick(g, ctx.me, p, 2,
+          `The Big One — pick 2 of ${p.name}'s cards to pass left`));
+      }
       g.players.forEach((p, i) => {
         for (const c of moving[i]) {
           const k = p.hand.findIndex((x) => x.uid === c.uid);
@@ -1333,6 +1388,26 @@ function randomCardsFromHand(g, player, n) {
     picks.push(pool.splice(Math.floor(g.rng() * pool.length), 1)[0]);
   }
   return picks;
+}
+
+/**
+ * "At random" from a hand, done the way the table does it: the hand is shuffled
+ * face down and a player taps the cards. The engine keeps the shuffled order, so
+ * the UI only ever sees backs and positions — it cannot peek.
+ * Answer: an array of positions (0-based). Missing picks are filled in order.
+ */
+function* blindPick(g, picker, owner, n, prompt) {
+  const want = Math.min(n, owner.hand.length);
+  if (want <= 0) return [];
+  const order = shuffle(owner.hand.map((c) => c.uid), g.rng);
+  const res = yield {
+    kind: "blind", playerId: picker.id, ownerId: owner.id, ownerName: owner.name,
+    total: order.length, count: want, prompt,
+  };
+  const idx = [...new Set((res || []).filter((i) => Number.isInteger(i) && i >= 0 && i < order.length))]
+    .slice(0, want);
+  for (let i = 0; idx.length < want && i < order.length; i++) if (!idx.includes(i)) idx.push(i);
+  return idx.map((i) => owner.hand.find((c) => c.uid === order[i])).filter(Boolean);
 }
 
 /** Gene Pool moves are clamped by being IGNORED out of range, not capped. */
@@ -1757,10 +1832,14 @@ function beginEndTurn(g, registry) {
   return runEffect(g, (function* () {
     const actor = seatOf(g);
     yield* offerReactions(g, "afterStabilize", { type: "afterStabilize", actor }, registry);
-    endTurn(g, registry);
+    // The next player's start-of-turn effects run INSIDE this effect. Starting a
+    // second runner here would be dropped when this one finishes — which is how
+    // the second player used to miss "each player" age prompts.
+    endTurn(g, registry, false);
+    if (g.phase === "turn") yield* turnStartEffects(g, registry);
   })());
 }
-function endTurn(g, registry) {
+function endTurn(g, registry, startNow = true) {
   if (g.phase !== "turn") return false;
   g.playsLeft = 0;
   g.stabilizeWaived = false;
@@ -1771,40 +1850,40 @@ function endTurn(g, registry) {
     g.activeSeat = g.firstSeat;
   } else {
     g.activeSeat = next;
-    startTurn(g, registry);
+    if (startNow) startTurn(g, registry);
+    else g.playsLeft = 1;
   }
   return true;
 }
 
 /** Start-of-turn triggers (Echolocation). Returns a runner result. */
 function startTurn(g, registry) {
-  const p = seatOf(g);
-  const restrict = activeRestrict(topAge(g));
   g.playsLeft = 1;
+  return runEffect(g, turnStartEffects(g, registry));
+}
 
+/** What the active player owes at the start of their turn: the age, then
+ *  Persistent traits (Echolocation). */
+function* turnStartEffects(g, registry) {
+  const p = seatOf(g);
   const age = topAge(g);
   const ah = ageHandler(age);
   const ageOwed = ah && ah.each && !(g.ageApplied || []).includes(p.id);
-
   const holders = p.traitPile.filter((c) => {
     const h = registry[norm(c.name)];
     return h && h.onTurnStart;
   });
 
-  if (!ageOwed && !holders.length) return { done: true, ok: true };
-
-  return runEffect(g, (function* () {
-    // The age acts first — it may change the hand the player then plays from.
-    if (ageOwed) {
-      (g.ageApplied ||= []).push(p.id);
-      yield* ah.each(makeCtx(g, p, age, registry));
-    }
-    for (const c of holders) {
-      const h = registry[norm(c.name)];
-      if (!p.traitPile.some((x) => x.uid === c.uid)) continue;
-      yield* h.onTurnStart(makeCtx(g, p, c, registry));
-    }
-  })());
+  // The age acts first — it may change the hand the player then plays from.
+  if (ageOwed) {
+    (g.ageApplied ||= []).push(p.id);
+    yield* ah.each(makeCtx(g, p, age, registry));
+  }
+  for (const c of holders) {
+    const h = registry[norm(c.name)];
+    if (!p.traitPile.some((x) => x.uid === c.uid)) continue;
+    yield* h.onTurnStart(makeCtx(g, p, c, registry));
+  }
 }
 
 /** Empty hand: draw 5 and skip. Stuck: dump hand, draw 3. Neither stabilizes. */
@@ -1930,12 +2009,12 @@ function* resolveWorldsEnd(g, registry) {
 
   if (prepper && revealed.length > 1) {
     const choice = yield {
-      kind: "trait",
+      kind: "choose",
       playerId: prepper.id,
       prompt: "Prepper — choose which catastrophe everyone ends on",
-      options: revealed.map((c) => ({
-        playerId: prepper.id, uid: c.uid, name: c.name,
-      })),
+      sub: "Read each one, check the trait piles, then confirm.",
+      showPiles: true,
+      options: revealed.map((c) => ({ uid: c.uid, name: c.name })),
     };
     const picked = revealed.find((c) => c.uid === (choice && choice.uid));
     if (picked) {
@@ -2283,11 +2362,11 @@ const EFFECTS = {
   "bad": {
     *onPlay(ctx) {
       for (const opp of ctx.opponents()) {
-        for (const c of randomCardsFromHand(ctx.g, opp, 2)) {
-          discardFromHand(ctx.g, opp, c.uid);
-        }
+        const gone = yield* blindPick(ctx.g, ctx.me, opp, 2,
+          `Bad — pick 2 of ${opp.name}'s cards to discard`);
+        for (const c of gone) discardFromHand(ctx.g, opp, c.uid);
+        if (gone.length) ctx.say(`Bad: ${opp.name} discarded ${gone.map((c) => c.name).join(" and ")}.`);
       }
-      ctx.say("Bad: opponents discarded 2 at random.");
     },
   },
 
@@ -2359,7 +2438,8 @@ const EFFECTS = {
         options: withCards.map((p) => ({ id: p.id, name: p.name, handSize: p.hand.length })),
       });
       const opp = withCards.find((p) => p.id === (pick && pick.id)) || withCards[0];
-      const taken = randomCardsFromHand(ctx.g, opp, 2);
+      const taken = yield* blindPick(ctx.g, ctx.me, opp, 2,
+        `Nosy — pick 2 of ${opp.name}'s cards to steal`);
       for (const c of taken) {
         const i = opp.hand.findIndex((x) => x.uid === c.uid);
         if (i >= 0) ctx.me.hand.push(opp.hand.splice(i, 1)[0]);
@@ -2374,13 +2454,22 @@ const EFFECTS = {
   "clever": {
     *onPlay(ctx) {
       const revealed = [];
+      // Each opponent chooses which card they reveal.
       for (const opp of ctx.opponents()) {
         if (!opp.hand.length) continue;
-        const [c] = randomCardsFromHand(ctx.g, opp, 1);
-        if (c) revealed.push({ player: opp, card: c });
+        const pick = yield ctx.ask.cards({
+          playerId: opp.id,
+          prompt: `Clever — ${ctx.me.name} is looking. Reveal 1 card from your hand to everyone`,
+          from: "hand", count: 1, max: 1,
+          options: opp.hand.map((c) => ({ uid: c.uid, name: c.name })),
+        });
+        const uid = (pick || []).map((x) => (typeof x === "string" ? x : x.uid))[0];
+        const c = opp.hand.find((x) => x.uid === uid) || opp.hand[0];
+        revealed.push({ player: opp, card: c });
       }
       if (!revealed.length) return;
       const choice = yield ctx.ask.trait({
+        playerId: ctx.me.id,
         prompt: "Clever — steal one revealed card",
         options: revealed.map(({ player, card }) => ({
           playerId: player.id, uid: card.uid, name: card.name,
@@ -2998,7 +3087,7 @@ function* playFromDiscard(ctx, { ignoreAction, topOnly }) {
     const choice = yield ctx.ask.cards({
       prompt: "Play which card from the discard pile?",
       from: "discard", count: 1,
-      options: ctx.g.discard.slice(0, 20).map((c) => ({ uid: c.uid, name: c.name })),
+      options: ctx.g.discard.map((c) => ({ uid: c.uid, name: c.name })),
     });
     const uid = (choice || []).map((x) => (typeof x === "string" ? x : x.uid))[0];
     card = ctx.g.discard.find((c) => c.uid === uid) || card;
@@ -3089,6 +3178,31 @@ function artInto(node, card, fbClass) {
   } else {
     node.appendChild(el("div", fbClass, card.name));
   }
+}
+
+/** Full-size card on top of whatever is open — read a card without choosing it. */
+function peek(card) {
+  const body = $("#peekBody");
+  body.innerHTML = "";
+  if (card.image_url) {
+    const img = el("img");
+    img.src = card.image_url; img.alt = "";
+    img.addEventListener("error", () => img.remove());
+    body.appendChild(img);
+  }
+  body.appendChild(el("div", "peek-name", card.name));
+  if (card.effect) body.appendChild(el("div", "peek-eff", card.effect));
+  $("#peek").hidden = false;
+}
+
+/** Small "i" on a pick tile: opens the card, never selects it. */
+function infoDot(node, card) {
+  if (!card || (!card.image_url && !card.effect)) return;
+  const i = el("span", "pick-i", "i");
+  i.setAttribute("role", "button");
+  i.setAttribute("aria-label", `Read ${card.name}`);
+  i.addEventListener("click", (e) => { e.stopPropagation(); e.preventDefault(); peek(card); });
+  node.appendChild(i);
 }
 
 /* ------------------------------------------------------------------ *
@@ -3247,6 +3361,8 @@ function gateFor(playerId, why, card) {
   return new Promise((res) => { gateResolve = () => { S.viewer = playerId; res(); }; });
 }
 
+$("#peek").addEventListener("click", () => { $("#peek").hidden = true; });
+
 $("#passGo").addEventListener("click", () => {
   $("#pass").hidden = true;
   S.gateOpen = false;
@@ -3368,6 +3484,8 @@ function renderPrompt(req, viewerId) {
       case "cards": return promptCards(req);
       case "trait": return promptTrait(req);
       case "reaction": return promptReaction(req);
+      case "blind": return promptBlind(req);
+      case "choose": return promptChoose(req);
       default: return finish(null);
     }
   });
@@ -3376,6 +3494,42 @@ function renderPrompt(req, viewerId) {
 function header(body, title, sub) {
   body.appendChild(el("div", "sheet-title", title));
   if (sub) body.appendChild(el("div", "sheet-sub", sub));
+}
+
+/** Who a request is for — the person holding the phone when it shows. */
+const askedId = (req) => (req.playerId != null ? req.playerId : S.g.activeSeat);
+
+/**
+ * The asked player's hand, under the question. Every decision ("discard 1 to
+ * draw 2?") depends on what you're holding, so you should never have to answer
+ * blind. Tap a card to read it.
+ */
+function handStrip(body, req) {
+  const p = S.g.players.find((x) => x.id === askedId(req));
+  if (!p) return;
+  const wrap = el("div", "ph");
+  wrap.appendChild(el("div", "ph-head mono", `${p.name}'s hand \u00b7 ${p.hand.length}`));
+  if (!p.hand.length) {
+    wrap.appendChild(el("div", "empty", "Empty."));
+  } else {
+    const row = el("div", "ph-row scroll-x");
+    for (const c of p.hand) {
+      const b = el("button", "ph-card");
+      artInto(b, c, "ph-fb");
+      b.addEventListener("click", () => peek(c));
+      row.appendChild(b);
+    }
+    wrap.appendChild(row);
+  }
+  body.appendChild(wrap);
+}
+
+/** A cards prompt whose options ARE the whole hand doesn't need the strip. */
+function optionsAreWholeHand(req) {
+  const p = S.g.players.find((x) => x.id === askedId(req));
+  const opts = req.options || [];
+  return req.from === "hand" && p && opts.length === p.hand.length &&
+    opts.every((o) => p.hand.some((c) => c.uid === o.uid));
 }
 
 function promptColour(req) {
@@ -3392,6 +3546,7 @@ function promptColour(req) {
       grid.appendChild(b);
     }
     body.appendChild(grid);
+    handStrip(body, req);
   }, req.optional ? (foot) => {
     const skip = el("button", "b-flat", "Skip");
     skip.addEventListener("click", () => finish(null));
@@ -3411,6 +3566,7 @@ function promptPlayer(req) {
       list.appendChild(b);
     }
     body.appendChild(list);
+    handStrip(body, req);
   });
 }
 
@@ -3423,6 +3579,7 @@ function promptConfirm(req) {
       if (req.peek.effect) box.appendChild(el("div", null, req.peek.effect));
       body.appendChild(box);
     }
+    handStrip(body, req);
   }, (foot) => {
     if (!req.acknowledge) {
       const no = el("button", "b-flat", "No");
@@ -3448,11 +3605,13 @@ function promptOneOptional(req) {
       const card = byUid.get(o.uid) || { name: o.name, image_url: "" };
       const b = el("button", "pick");
       artInto(b, card, "pick-fb");
+      infoDot(b, card);
       b.appendChild(el("div", "pick-cap", o.name));
       b.addEventListener("click", () => finish([{ uid: o.uid }]));
       grid.appendChild(b);
     }
     body.appendChild(grid);
+    if (!optionsAreWholeHand(req)) handStrip(body, req);
   }, (foot) => {
     const skip = el("button", "b-flat", "Not now");
     skip.addEventListener("click", () => finish([]));
@@ -3482,6 +3641,7 @@ function promptCards(req) {
       const b = el("button", "pick");
       b.dataset.uid = o.uid;
       artInto(b, card, "pick-fb");
+      infoDot(b, card);
       b.appendChild(el("div", "pick-cap", o.name));
       b.addEventListener("click", () => {
         if (chosen.has(o.uid)) chosen.delete(o.uid);
@@ -3498,6 +3658,7 @@ function promptCards(req) {
       grid.appendChild(b);
     }
     body.appendChild(grid);
+    if (!optionsAreWholeHand(req)) handStrip(body, req);
   }, (foot) => {
     if (req.optional) {
       const skip = el("button", "b-flat", "None");
@@ -3542,12 +3703,13 @@ function promptTrait(req) {
       const owner = S.g.players.find((p) => p.id === o.playerId);
       const b = el("button", "pick" + (o.disabled ? " locked" : ""));
       artInto(b, card, "pick-fb");
+      infoDot(b, card);
       const cap = el("div", "pick-cap", o.name);
       if (owner) cap.appendChild(el("span", "pick-own", owner.name));
       b.appendChild(cap);
       if (o.disabled) {
         b.appendChild(el("span", "pick-lock", "\u2605"));
-        b.disabled = true;
+        b.setAttribute("aria-disabled", "true");
         b.title = o.reason || "";
         lockedReason = lockedReason || o.reason;
       } else {
@@ -3557,6 +3719,7 @@ function promptTrait(req) {
     }
     body.appendChild(grid);
     if (lockedReason) body.appendChild(el("div", "pick-why", lockedReason));
+    handStrip(body, req);
   }, req.optional ? (foot) => {
     const skip = el("button", "b-flat", "Skip");
     skip.addEventListener("click", () => finish(null));
@@ -3584,16 +3747,124 @@ function promptReaction(req) {
       const card = cards.get(o.uid) || { name: o.name, image_url: "" };
       const b = el("button", "pick");
       artInto(b, card, "pick-fb");
+      infoDot(b, card);
       b.appendChild(el("div", "pick-cap", o.name));
       b.addEventListener("click", () => finish(o));
       grid.appendChild(b);
     }
     body.appendChild(grid);
+    handStrip(body, req);
   }, (foot) => {
     const pass = el("button", "b-flat", "Pass");
     pass.addEventListener("click", () => finish(null));
     foot.appendChild(pass);
   });
+}
+
+/** "At random": the owner's hand face down, shuffled by the engine. Tap to pick. */
+function promptBlind(req) {
+  const chosen = new Set();
+  openSheet((body) => {
+    header(body, req.prompt || "Pick at random",
+      `${req.ownerName}'s hand, face down and shuffled. Tap ${req.count === 1 ? "a card" : req.count + " cards"}.`);
+    const grid = el("div", "pick-grid");
+    for (let i = 0; i < req.total; i++) {
+      const b = el("button", "pick");
+      b.dataset.uid = String(i);
+      const back = el("span", "blind-back");
+      back.appendChild(backNode("trait"));
+      b.appendChild(back);
+      b.addEventListener("click", () => {
+        const k = String(i);
+        if (chosen.has(k)) chosen.delete(k);
+        else {
+          if (chosen.size >= req.count) {
+            if (req.count === 1) chosen.clear(); else return;
+          }
+          chosen.add(k);
+        }
+        syncPicks(grid, chosen);
+        go();
+      });
+      grid.appendChild(b);
+    }
+    body.appendChild(grid);
+  }, (foot) => {
+    const b = el("button", "b-go", "Confirm");
+    b.id = "promptGo";
+    b.addEventListener("click", () => finish([...chosen].map(Number)));
+    foot.appendChild(b);
+  });
+  function go() { const b = $("#promptGo"); if (b) b.disabled = chosen.size !== req.count; }
+  go();
+}
+
+/**
+ * Read-then-confirm. Each option is a row with its art and full text, a tap
+ * only selects, and Confirm commits — so the choice can be made deliberately.
+ * With showPiles, every trait pile is laid out underneath to decide against.
+ */
+function promptChoose(req) {
+  const cards = new Map();
+  for (const c of lookupCards((req.options || []).map((o) => o.uid))) cards.set(c.uid, c);
+  let picked = null;
+  openSheet((body) => {
+    header(body, req.prompt || "Choose", req.sub);
+    const list = el("div", "ch-list");
+    for (const o of req.options || []) {
+      const card = cards.get(o.uid) || { name: o.name, image_url: "", effect: o.effect };
+      const row = el("button", "ch-row");
+      row.dataset.uid = o.uid;
+      const art = el("div", "ch-art");
+      artInto(art, card, "pick-fb");
+      infoDot(art, card);
+      row.appendChild(art);
+      const txt = el("div");
+      txt.appendChild(el("div", "ch-name", card.name));
+      if (card.effect) txt.appendChild(el("div", "ch-eff", card.effect));
+      row.appendChild(txt);
+      row.addEventListener("click", () => {
+        picked = o;
+        for (const r of list.querySelectorAll(".ch-row")) r.classList.toggle("sel", r.dataset.uid === o.uid);
+        const b = $("#promptGo"); if (b) b.disabled = false;
+      });
+      list.appendChild(row);
+    }
+    body.appendChild(list);
+    if (req.showPiles) pilesOverview(body);
+  }, (foot) => {
+    const b = el("button", "b-go", "Confirm");
+    b.id = "promptGo";
+    b.disabled = true;
+    b.addEventListener("click", () => { if (picked) finish(picked); });
+    foot.appendChild(b);
+  });
+}
+
+/** Every player's trait pile, compact, tap a card to read it. */
+function pilesOverview(body) {
+  const wrap = el("div", "piles");
+  wrap.appendChild(el("div", "ph-head mono", "Trait piles"));
+  for (const p of S.g.players) {
+    const box = el("div", "piles-p");
+    const head = el("div");
+    head.appendChild(el("b", null, p.name));
+    head.appendChild(el("span", "mono", `${p.traitPile.length} traits \u00b7 ${faceScore(p)} pts \u00b7 GP ${p.genePool}`));
+    box.appendChild(head);
+    const row = el("div", "ph-row scroll-x");
+    row.style.marginTop = "6px";
+    if (!p.traitPile.length) row.appendChild(el("div", "empty", "No traits."));
+    for (const c of p.traitPile) {
+      const b = el("button", "ph-card");
+      b.style.setProperty("--c", hueOf(c));
+      artInto(b, c, "ph-fb");
+      b.addEventListener("click", () => peek(c));
+      row.appendChild(b);
+    }
+    box.appendChild(row);
+    wrap.appendChild(box);
+  }
+  body.appendChild(wrap);
 }
 
 /** Find real card objects anywhere in play, so prompts can show art. */
@@ -3709,7 +3980,9 @@ function openCardSolo(card, { canPlay = false, canDiscard = false, why = null, n
       const b = el("button", "b-flat", "Discard");
       b.addEventListener("click", () => {
         closeSheet();
+        if (!canManualDiscard(S.g, seatOf(S.g))) return;
         discardFromHand(S.g, seatOf(S.g), card.uid);
+        S.g.log.unshift({ text: `${seatOf(S.g).name} discarded ${card.name}.` });
         draw();
       });
       foot.appendChild(b);
@@ -3734,9 +4007,31 @@ async function doPlay(card) {
   await pump();
 }
 
+/**
+ * Drawing by hand is only for stabilizing: after you've played (or used your
+ * play), and only up to your Gene Pool (+1 under Coastal Formations). Card
+ * effects draw on their own, so there's no other legal manual draw.
+ */
+function canManualDraw(g, p) {
+  if (g.phase !== "turn" || g.pending || g.playsLeft > 0 || g.stabilizeWaived) return false;
+  if (!g.traitDeck.length && !g.discard.length) return false;
+  const r = activeRestrict(topAge(g));
+  return p.hand.length < targetHand(g, p) + (r.stabilizePlus || 0);
+}
+/** Discarding by hand is only for stabilizing down to your Gene Pool. */
+function canManualDiscard(g, p) {
+  if (g.phase !== "turn" || g.pending || g.playsLeft > 0 || g.stabilizeWaived) return false;
+  return p.hand.length > targetHand(g, p);
+}
+/** "Can't play" is for when nothing in hand is legal (or the hand is empty). */
+function canDeclareStuck(g, p) {
+  if (g.phase !== "turn" || g.pending || g.playsLeft <= 0 || g.stabilizeWaived) return false;
+  return !playableCards(g, p, EFFECTS).length;
+}
+
 async function doDraw() {
   const g = S.g;
-  if (g.phase !== "turn" || g.pending) return;
+  if (!canManualDraw(g, seatOf(g))) return;
   drawCard(g, seatOf(g));
   draw();
 }
@@ -3808,6 +4103,7 @@ async function doEndTurn() {
 }
 
 async function doCantPlay() {
+  if (!canDeclareStuck(S.g, seatOf(S.g))) return;
   cantPlay(S.g);
   draw();
 }
@@ -4095,9 +4391,22 @@ function renderDecks(g) {
   tl.appendChild(el("div", "deck-name", "Traits"));
   tl.appendChild(el("div", "deck-n mono", `${g.traitDeck.length} left`));
   trait.appendChild(tl);
-  trait.disabled = g.phase !== "turn" || !g.traitDeck.length;
+  trait.disabled = !canManualDraw(g, seatOf(g));
   trait.addEventListener("click", doDraw);
   host.appendChild(trait);
+
+  // Discard pile: always browsable, newest first.
+  const disc = el("button", "deck");
+  const dm = el("div", "deck-top");
+  if (g.discard[0]) artInto(dm, g.discard[0], "chip-fb");
+  disc.appendChild(dm);
+  const dl = el("div", "deck-label");
+  dl.appendChild(el("div", "deck-name", "Discard"));
+  dl.appendChild(el("div", "deck-n mono", `${g.discard.length} card${g.discard.length === 1 ? "" : "s"}`));
+  disc.appendChild(dl);
+  disc.disabled = !g.discard.length;
+  disc.addEventListener("click", () => openDiscard(g));
+  host.appendChild(disc);
 
   const age = el("button", "deck");
   const am = el("div", "deck-mini");
@@ -4110,6 +4419,21 @@ function renderDecks(g) {
   age.disabled = g.phase !== "age" || !g.ageDeck.length;
   age.addEventListener("click", doFlip);
   host.appendChild(age);
+}
+
+function openDiscard(g) {
+  openSheet((body) => {
+    header(body, `Discard pile \u00b7 ${g.discard.length}`, "Newest first. Tap a card to read it and swipe through.");
+    const grid = el("div", "pick-grid");
+    for (const c of g.discard) {
+      const b = el("button", "pick");
+      artInto(b, c, "pick-fb");
+      b.appendChild(el("div", "pick-cap", c.name));
+      b.addEventListener("click", () => openCard(c, { siblings: g.discard }));
+      grid.appendChild(b);
+    }
+    body.appendChild(grid);
+  });
 }
 
 /** Gene Pool is adjusted by hand: ages and catastrophes instruct it directly
@@ -4225,11 +4549,11 @@ function renderHand(g, me) {
       // Recomputed per card as you swipe, so Play stays correct for each one.
       at: (cc) => ({
         canPlay: legal.has(cc.uid) && g.playsLeft > 0,
-        canDiscard: true,
+        canDiscard: canManualDiscard(g, me),
         why: !legal.has(cc.uid) ? requirementReason(g, me, cc) : null,
       }),
       canPlay: ok,
-      canDiscard: true,
+      canDiscard: canManualDiscard(g, me),
       why: !legal.has(c.uid) ? requirementReason(g, me, c) : null,
     }));
     host.appendChild(b);
@@ -4243,8 +4567,8 @@ function requirementReason(g, me, card) {
 function renderCta(g, me) {
   const cta = $("#cta");
   cta.className = "cta";
-  $("#btnCant").disabled = g.phase !== "turn" || g.playsLeft === 0;
-  $("#btnDraw").disabled = g.phase !== "turn" || !g.traitDeck.length;
+  $("#btnCant").disabled = !canDeclareStuck(g, me);
+  $("#btnDraw").disabled = !canManualDraw(g, me);
 
   if (g.phase === "age") {
     cta.classList.add("flip");

@@ -21,3 +21,96 @@ assert(scripts.length >= 2, 'expected the card-data and game script blocks');
 scripts.forEach((src, i) => new vm.Script(src, { filename: `doomlings/index.html#script${i}` }));
 
 console.log(`Doomlings: ${cards.length} cards, ${scripts.length} script blocks compile`);
+
+// ---------------------------------------------------------------------------
+// Rules engine: run the engine part of the bundle in a sandbox and play games
+// with a random bot answering every prompt the way a player could.
+// ---------------------------------------------------------------------------
+const engineSrc = html.slice(html.indexOf('/* ---- engine/ages.js ---- */'), html.indexOf('/* ---- mobile/ui.js ---- */'));
+assert(engineSrc.length > 1000, 'engine section markers not found');
+
+const driver = `
+var __run = function (cards, seed, players, setup) {
+  resetUids();
+  const g = dealGame(cards, { names: Array.from({ length: players }, (_, i) => 'P' + i), seed });
+  if (setup) setup(g);
+  const rnd = makeRng(seed * 7 + 1);
+  const pick = (a) => a[Math.floor(rnd() * a.length)];
+  const asked = [];
+  const auto = (req) => {
+    asked.push(req);
+    switch (req.kind) {
+      case 'colour': return pick(req.options && req.options.length ? req.options : COLOURS);
+      case 'player': return pick(req.options);
+      case 'confirm': return rnd() < 0.5;
+      case 'cards': {
+        const n = req.optional ? Math.floor(rnd() * ((req.max || 1) + 1)) : Math.min(req.count || 1, req.options.length);
+        return req.options.slice().sort(() => rnd() - 0.5).slice(0, n);
+      }
+      case 'trait': { const ok = req.options.filter((o) => !o.disabled); return ok.length ? pick(ok) : null; }
+      case 'reaction': return rnd() < 0.3 ? pick(req.options) : null;
+      case 'blind': return Array.from({ length: req.total }, (_, i) => i).sort(() => rnd() - 0.5).slice(0, req.count);
+      case 'choose': return pick(req.options);
+      default: throw new Error('unknown request kind ' + req.kind);
+    }
+  };
+  const drive = (gen) => { let r = gen.next(); let k = 0; while (!r.done) { if (k++ > 500) throw new Error('runaway effect'); r = gen.next(auto(r.value)); } return r.value; };
+  const pump = () => { let k = 0; while (g.pending) { if (k++ > 500) throw new Error('runaway pending'); answer(g, auto(g.pending.request)); } };
+  let steps = 0, fails = 0;
+  while (g.phase !== 'over') {
+    if (steps++ > 4000) throw new Error('game did not finish');
+    if (g.phase === 'age') {
+      flipAge(g, EFFECTS); pump(); drive(resolveAgeReveal(g, EFFECTS));
+      if (g.phase === 'worldsEnd') { drive(resolveWorldsEnd(g, EFFECTS)); drive(scoreGame(g, EFFECTS)); }
+      continue;
+    }
+    const p = seatOf(g);
+    if (g.playsLeft > 0 && !g.stabilizeWaived) {
+      const legal = playableCards(g, p, EFFECTS);
+      if (legal.length && fails < 3) { const r = playTrait(g, pick(legal).uid, EFFECTS); pump(); if (g.playsLeft > 0) fails++; }
+      else { cantPlay(g); fails = 0; }
+      continue;
+    }
+    fails = 0;
+    const t = targetHand(g, p);
+    while (p.hand.length < t && drawCard(g, p));
+    while (p.hand.length > t && !activeRestrict(topAge(g)).stabilizeOptional) discardFromHand(g, p, p.hand[0].uid);
+    const r = beginEndTurn(g, EFFECTS); pump();
+    if (r.ok === false && !r.request) throw new Error('could not end turn');
+  }
+  const all = [...g.traitDeck, ...g.discard, ...g.players.flatMap((x) => [...x.hand, ...x.traitPile])];
+  return { g, asked, traitCount: all.filter(isTrait).length };
+};
+`;
+const ctx = vm.createContext({ console });
+vm.runInContext(engineSrc + driver, ctx, { filename: 'doomlings-engine' });
+const run = vm.runInContext('__run', ctx);
+
+let games = 0;
+for (let seed = 1; seed <= 300; seed++) {
+  const players = 2 + (seed % 5);
+  const { g, traitCount } = run(cards, seed, players);
+  assert.strictEqual(g.phase, 'over', `seed ${seed}: game did not reach scoring`);
+  assert.strictEqual(g.scores.length, players, `seed ${seed}: missing scores`);
+  assert.strictEqual(traitCount, 113, `seed ${seed}: traits were lost or duplicated`);
+  games++;
+}
+
+// Regression: an "each player" age that asks a question must ask EVERY player,
+// not just whoever started the round.
+// Put the age right after The Birth of Life (only 9 ages are dealt, so it may
+// not be in this game's deck at all).
+const forceAge = (name) => (g) => {
+  const i = g.ageDeck.findIndex((c) => c.name.toLowerCase() === name);
+  const card = i >= 0 ? g.ageDeck.splice(i, 1)[0]
+    : { ...cards.find((c) => c.name.toLowerCase() === name), uid: 'forced' };
+  g.ageDeck.splice(1, 0, card);
+};
+for (const age of ['high tides', 'age of exploration', 'northern winds']) {
+  for (let seed = 1; seed <= 20; seed++) {
+    const { asked } = run(cards, seed, 3, forceAge(age));
+    const who = new Set(asked.filter((r) => (r.prompt || '').toLowerCase().startsWith(age)).map((r) => r.playerId));
+    assert.strictEqual(who.size, 3, `${age} (seed ${seed}) asked ${who.size} of 3 players`);
+  }
+}
+console.log(`Doomlings: ${games} fuzzed games played to scoring; each-player ages ask everyone`);
