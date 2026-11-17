@@ -321,6 +321,7 @@ function renderSetup() {
     <button class="big" id="startBtn">${save && !save.over ? 'New game' : 'Deal me in'}</button>
     <button class="ghost" id="rulesBtn">How to play</button>
     ${(location.protocol.startsWith('http') && !window.Capacitor) ? '<a class="ghost" href="../index.html" style="display:block;text-align:center;text-decoration:none">← All games</a>' : ''}
+    ${window.GNReport ? '<button class="ghost" onclick="GNReport.open()">⚑ Report a bug</button>' : ''}
   `;
   const root = $('#setup');
   root.querySelectorAll('[data-name]').forEach(inp => inp.oninput = () => { prefs.seats[+inp.dataset.name].name = inp.value; savePrefs(); });
@@ -755,6 +756,7 @@ function showMenu() {
       <div class="opt"><label>Show bust odds</label><button class="toggle ${prefs.odds ? 'on' : ''}" id="oddsM"></button></div>
     </div>
     <button class="ghost" id="rulesM" style="margin-bottom:8px">How to play</button>
+    ${window.GNReport ? '<button class="ghost" id="bugM" style="margin-bottom:8px">⚑ Report a bug</button>' : ''}
     <button class="ghost" id="quitM" style="margin-bottom:8px">Back to main menu</button>
     <button class="big" id="closeM">Back to game</button>`);
   const card = $('#sheetCard');
@@ -762,6 +764,7 @@ function showMenu() {
   $('#oddsM').onclick = () => { prefs.odds = !prefs.odds; savePrefs(); showMenu(); };
   $('#rulesM').onclick = showRules;
   $('#quitM').onclick = () => quitToSetup();
+  if ($('#bugM')) $('#bugM').onclick = () => { closeSheet(); GNReport.open(); };
   $('#closeM').onclick = closeSheet;
 }
 $('#menuBtn').onclick = () => {

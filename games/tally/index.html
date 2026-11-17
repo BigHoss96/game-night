@@ -142,6 +142,7 @@ td .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:v
     <div class="brand">Tally<small>SCOREKEEPER</small></div>
     <div class="spacer"></div>
     <a class="btn small ghost" id="homeLink" href="../index.html" style="text-decoration:none;display:none">← Games</a>
+    <button class="btn small ghost" id="bugBtn" style="display:none" onclick="GNReport.open()" aria-label="Report a bug">⚑ Bug</button>
     <button class="btn small" id="histBtn">History</button>
   </div>
   <main id="app"></main>
@@ -675,6 +676,7 @@ function showRules(r, name, offerApply){
 }
 
 if(location.protocol.startsWith('http') && !window.Capacitor)document.getElementById('homeLink').style.display='';
+if(window.GNReport)document.getElementById('bugBtn').style.display='';
 boot();
 </script>
 </body>

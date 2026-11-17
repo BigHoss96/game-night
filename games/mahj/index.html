@@ -837,7 +837,7 @@ ${Object.entries(CARDS).map(([id,c])=>`<button class="cardpick ${settings.card==
 <label class="row"><input type="checkbox" ${settings.helper?'checked':''} onchange="settings.helper=this.checked;save('mahj-settings',settings);if(S)renderTarget()"> Helper: star the best-fitting hands on the card and tell me when to switch</label>
 <label class="row"><input type="checkbox" ${settings.fast?'checked':''} onchange="settings.fast=this.checked;save('mahj-settings',settings)"> Fast bots</label>
 <button class="wide" onclick="goFull()">Full screen</button>
-<button class="wide" onclick="showRules()">How to play</button>${(location.protocol.startsWith('http') && !window.Capacitor)?'<a class="wide" href="../index.html" style="display:flex;align-items:center;justify-content:center;text-decoration:none">← All games</a>':''}
+<button class="wide" onclick="showRules()">How to play</button>${(location.protocol.startsWith('http') && !window.Capacitor)?'<a class="wide" href="../index.html" style="display:flex;align-items:center;justify-content:center;text-decoration:none">← All games</a>':''}${window.GNReport?'<button class="wide" onclick="closeModal&&closeModal();GNReport.open()">⚑ Report a bug</button>':''}
 <button class="wide" onclick="closeModal();playHand()">Redeal this hand</button>
 <button class="wide danger" onclick="scores=[0,0,0,0];save('mahj-scores',scores);dealer=0;save('mahj-dealer',0);closeModal();playHand()">New game (reset scores)</button>`);}
 

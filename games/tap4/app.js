@@ -75,7 +75,8 @@ function renderSetup() {
     </div>
     <button class="big" id="startBtn" style="background:linear-gradient(180deg,#5aa0ff,#2f6cf0);box-shadow:0 10px 30px rgba(47,108,240,.35)">${save && !save.over ? 'New game' : 'Deal me in'}</button>
     <button class="ghost" id="rulesBtn">How to play</button>
-    ${(location.protocol.startsWith('http') && !window.Capacitor) ? '<a class="ghost" href="../index.html" style="display:block;text-align:center;text-decoration:none">← All games</a>' : ''}`;
+    ${(location.protocol.startsWith('http') && !window.Capacitor) ? '<a class="ghost" href="../index.html" style="display:block;text-align:center;text-decoration:none">← All games</a>' : ''}
+    ${window.GNReport ? '<button class="ghost" onclick="GNReport.open()">⚑ Report a bug</button>' : ''}`;
   const root = $('#setup');
   root.querySelectorAll('[data-name]').forEach(inp => inp.oninput = () => { prefs.seats[+inp.dataset.name].name = inp.value; savePrefs(); });
   root.querySelectorAll('[data-seg]').forEach(sg => sg.querySelectorAll('button').forEach(b => b.onclick = () => {
@@ -586,11 +587,13 @@ function showMenu() {
   openSheet(`<h2>Menu</h2><p class="lead">Your game saves at the start of every turn.</p>
     <div class="panel" style="margin-bottom:12px"><div class="opt"><label>Speed</label>${seg('speed', [['slow', 'Slow'], ['normal', 'Normal'], ['fast', 'Fast']], prefs.speed)}</div></div>
     <button class="ghost" id="rulesM" style="margin-bottom:8px">How to play</button>
+    ${window.GNReport ? '<button class="ghost" id="bugM" style="margin-bottom:8px">⚑ Report a bug</button>' : ''}
     <button class="ghost" id="quitM" style="margin-bottom:8px">Back to main menu</button>
     <button class="big" id="closeM" style="background:linear-gradient(180deg,#5aa0ff,#2f6cf0)">Back to game</button>`);
   $('#sheetCard').querySelectorAll('[data-seg] button').forEach(b => b.onclick = () => { prefs.speed = b.dataset.v; savePrefs(); showMenu(); });
   $('#rulesM').onclick = showRules;
   $('#quitM').onclick = () => quitToSetup();
+  if ($('#bugM')) $('#bugM').onclick = () => { closeSheet(); GNReport.open(); };
   $('#closeM').onclick = closeSheet;
 }
 $('#menuBtn').onclick = () => { if (!$('#sheet').classList.contains('hidden') && !sheetDismiss) return; showMenu(); };

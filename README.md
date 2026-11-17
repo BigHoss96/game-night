@@ -11,6 +11,8 @@ Free card and tile games that run entirely in the browser. No accounts, no serve
 | `site/` | Home page and offline support (`sw.js`) |
 | `icons/` | App icons for each game |
 | `scripts/build-site.js` | Assembles everything into `_site/` |
+| `worker/` | Bug-report relay (Cloudflare Worker) + tests + setup steps |
+| `report.config.json` | Address of the bug-report relay |
 
 ## How publishing works
 Every push to `main` runs the tests, builds `_site/`, and publishes it with GitHub Pages
@@ -18,6 +20,13 @@ Every push to `main` runs the tests, builds `_site/`, and publishes it with GitH
 ("Add to Home Screen"), works offline, and saves games in that browser only.
 
 One-time setup: repo **Settings → Pages → Source: GitHub Actions**.
+
+## Bug reports
+Every app has a **⚑ Report a bug** button. Reports become GitHub Issues labeled
+`bug-report` and `game:<id>`, with the device, recent on-screen events, errors, and
+(if the player allows) their saved game attached so the bug can be replayed.
+The relay lives in `worker/`; setup steps are in `worker/SETUP.md`. The buttons
+stay hidden until `report.config.json` has the relay's address.
 
 ## Local preview
 ```
