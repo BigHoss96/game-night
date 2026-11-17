@@ -1,0 +1,13 @@
+/* Desktop layout (html.gn-desktop is set by shared/layout.js).
+   The landscape table is laid out on a virtual screen (GN_FIT in build-site.js) and scaled up by
+   --gn-k to fill the window; sizeHand() measures that virtual screen via GNLayout.vw()/vh(). */
+html.gn-desktop,html.gn-desktop body{overflow:hidden}
+html.gn-desktop #app{position:fixed;top:0;left:0;width:calc(100vw / var(--gn-k));height:calc(100dvh / var(--gn-k));
+  max-width:none;margin:0;transform:scale(var(--gn-k));transform-origin:0 0;padding-left:14px;padding-right:14px}
+html.gn-desktop #modalbody{scale:var(--gn-k)}
+html.gn-desktop .modal:not(.top) #modalbody{max-height:calc(88vh / var(--gn-k))}
+html.gn-desktop .modal.top #modalbody{transform-origin:50% 0;max-height:calc(100% / var(--gn-k))}
+html.gn-desktop #toast{scale:var(--gn-k)}
+html.gn-desktop #hand .tile:hover{transform:translateY(-4px)}
+html.gn-desktop #hand .tile.sel:hover{transform:translateY(-9px)}
+html.gn-desktop header button:hover,html.gn-desktop #btns button:not(:disabled):hover{filter:brightness(1.08)}

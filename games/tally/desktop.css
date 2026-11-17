@@ -1,0 +1,9 @@
+/* Desktop layout (html.gn-desktop is set by shared/layout.js): a wider page with more
+   score cards per row, and bottom sheets shown as centered dialogs. */
+html.gn-desktop body{padding-left:28px;padding-right:28px;font-size:17px}
+html.gn-desktop .wrap{max-width:1040px}
+html.gn-desktop .board{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+html.gn-desktop .scrim{align-items:center}
+html.gn-desktop .sheet{max-width:640px;max-height:86vh;border-radius:22px;padding-bottom:22px;box-shadow:0 30px 80px rgba(0,0,0,.35)}
+html.gn-desktop .grab{display:none}
+html.gn-desktop .btn:not(:disabled):hover,html.gn-desktop .chip:hover{filter:brightness(.97)}

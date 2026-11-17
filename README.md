@@ -36,8 +36,16 @@ python3 -m http.server -d _site 8000
 ```
 
 ## Adding a game
-Put it in `games/<id>/`, add an entry to `GAMES` in `scripts/build-site.js`, add
+Put it in `games/<id>/` (optionally with a `desktop.css`), add an entry to `GAMES` in `scripts/build-site.js`, add
 `icons/<id>-{180,192,512}.png`, and add a card to `site/index.html`.
+
+## Desktop vs. phone layout
+`shared/layout.js` is inlined into every game at build time. On a computer (mouse or trackpad, and
+a window at least 900×560) it adds `gn-desktop` to `<html>`; phones and tablets get `gn-mobile`.
+Each game's desktop styles live in `games/<id>/desktop.css`. Flip 7, Tap 4 and Mahj lay their table
+out on a virtual landscape screen (`fit` in `GAMES`) and scale it up to fill the window.
+To test either layout on any device, add `?layout=desktop` or `?layout=mobile` to the URL; the choice is
+remembered until you use `?layout=auto`.
 
 ## Testing area
 Games still in development go on `testing.html` (linked from the home page footer)

@@ -1,0 +1,23 @@
+/* Desktop layout (html.gn-desktop is set by shared/layout.js).
+   The table is laid out on a virtual landscape screen (GN_FIT in build-site.js) and scaled up
+   by --gn-k to fill the window, so cards, pods and buttons grow with the screen. */
+html.gn-desktop,html.gn-desktop body{overflow:hidden}
+html.gn-desktop #table{position:fixed;top:0;left:0;width:calc(100vw / var(--gn-k));height:calc(100dvh / var(--gn-k));
+  transform:scale(var(--gn-k));transform-origin:0 0;padding-left:14px;padding-right:14px}
+html.gn-desktop #setup{position:fixed;top:0;left:50%;width:min(560px,calc(100vw / var(--gn-k)));height:calc(100dvh / var(--gn-k));
+  transform:translateX(-50%) scale(var(--gn-k));transform-origin:50% 0}
+/* roomier seats on the wide felt */
+html.gn-desktop .pod{width:150px;padding:8px 10px}
+html.gn-desktop .pod .nm{font-size:14px}
+html.gn-desktop .tray{left:0;right:0;margin:0 auto;width:min(720px,calc(100% - 20px))}
+html.gn-desktop #controls{width:min(720px,100%);margin:0 auto}
+/* bottom sheets become centered dialogs */
+html.gn-desktop .sheet{align-items:center}
+html.gn-desktop .sheet-card{border-radius:24px;border:1px solid var(--line);scale:var(--gn-k);max-height:calc(88dvh / var(--gn-k));padding-bottom:20px}
+html.gn-desktop #toasts{scale:var(--gn-k);transform-origin:50% 0}
+/* flying cards match the scaled table (the fly code divides its travel by --gn-k) */
+html.gn-desktop .floater{scale:var(--gn-k)}
+html.gn-desktop .cbtn:hover,html.gn-desktop .pick:hover{filter:brightness(1.08)}
+html.gn-desktop .pod{width:156px}
+html.gn-desktop .handoff>*{scale:var(--gn-k)}
+html.gn-desktop .hgrp.pick-ok:hover{transform:translateY(-4px)}
