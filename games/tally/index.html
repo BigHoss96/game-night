@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tally — Game Scorekeeper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4efe6; --surface:#fffaf2; --ink:#1f1b16; --muted:#7a6f61; --line:#e3d8c7;
+  --accent:#c2410c; --accent-ink:#fff; --good:#15803d; --bad:#b91c1c;
+  --display:'Fraunces', Georgia, serif; --body:'Inter', system-ui, sans-serif; --mono:'JetBrains Mono', ui-monospace, monospace;
+  --radius:16px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);transition:background .3s,color .3s}
+body{min-height:100vh;padding:calc(env(safe-area-inset-top) + 12px) 14px calc(env(safe-area-inset-bottom) + 110px)}
+.wrap{max-width:720px;margin:0 auto}
+h1,h2,h3{font-family:var(--display);margin:0;letter-spacing:-.01em}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+input,select{font:inherit;color:var(--ink)}
+.muted{color:var(--muted)}
+.row{display:flex;align-items:center;gap:8px}
+.spacer{flex:1}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.btn{padding:10px 14px;border-radius:12px;background:var(--surface);border:1px solid var(--line);font-weight:600;font-size:15px}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.small{padding:6px 10px;font-size:13px;border-radius:10px}
+.field{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font-size:16px;outline:none}
+.field:focus{border-color:var(--accent)}
+label.lbl{display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 6px}
+
+/* header */
+.top{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.brand{font-family:var(--display);font-weight:800;font-size:26px}
+.brand small{display:block;font-family:var(--body);font-weight:500;font-size:12px;color:var(--muted);letter-spacing:.04em}
+.sync{font-size:11px;color:var(--muted)}
+
+/* setup */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:9px 13px;border-radius:999px;border:1px solid var(--line);background:var(--bg);font-weight:600;font-size:15px;display:inline-flex;align-items:center;gap:6px}
+.chip.on{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.chip .x{opacity:.5;font-weight:400;padding-left:2px}
+.order{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+.order li{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;background:var(--bg);border:1px solid var(--line);font-weight:600}
+.order .n{font-family:var(--mono);color:var(--muted);width:20px}
+.stack>*+*{margin-top:14px}
+.gamepick{display:grid;grid-template-columns:1fr auto;gap:8px}
+.presetrow{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.presetrow::-webkit-scrollbar{display:none}
+.toggle{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:3px}
+.toggle button{flex:1;padding:8px;border-radius:9px;font-weight:600;font-size:14px;color:var(--muted)}
+.toggle button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+
+/* game */
+.gamehead{border-radius:var(--radius);padding:18px;background:var(--accent);color:var(--accent-ink);position:relative;overflow:hidden}
+.gamehead::after{content:"";position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.08)}
+.gamehead h2{font-size:28px;font-weight:800}
+.gamehead .meta{opacity:.85;font-size:13px;margin-top:4px}
+.gamehead .acts{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;position:relative;z-index:1}
+.gamehead .acts button{background:rgba(255,255,255,.18);color:inherit;padding:7px 11px;border-radius:10px;font-size:13px;font-weight:600}
+.board{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:14px}
+.pcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;position:relative}
+.pcard.lead{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
+.pcard .nm{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:30px}
+.pcard .tot{font-family:var(--mono);font-weight:700;font-size:34px;line-height:1.1;margin-top:4px}
+.pcard .last{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.pcard .rank{position:absolute;top:10px;right:10px;font-family:var(--mono);font-size:12px;font-weight:700;background:var(--bg);border-radius:8px;padding:2px 7px;color:var(--muted)}
+.pcard.lead .rank{background:var(--accent);color:var(--accent-ink)}
+.bar{height:4px;border-radius:4px;background:var(--line);margin-top:8px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:4px;transition:width .4s}
+.tablewrap{margin-top:14px;overflow-x:auto;border-radius:var(--radius);border:1px solid var(--line);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-family:var(--mono);font-size:14px}
+th,td{padding:10px 12px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+th{font-family:var(--body);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);position:sticky;top:0;background:var(--surface)}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--surface);color:var(--muted)}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:var(--bg)}
+td .run{display:block;font-size:11px;color:var(--muted)}
+td.neg{color:var(--bad)}
+tfoot td{font-weight:700;font-size:16px;border-bottom:0;background:var(--bg)}
+tfoot td:first-child{background:var(--bg);color:var(--ink);font-family:var(--body)}
+.empty{text-align:center;padding:28px 16px;color:var(--muted)}
+.banner{margin-top:14px;padding:12px 14px;border-radius:12px;background:var(--surface);border:2px dashed var(--accent);font-weight:600;display:flex;align-items:center;gap:10px}
+.fab{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 18px);z-index:20;padding:16px 28px;border-radius:999px;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:17px;box-shadow:0 8px 24px rgba(0,0,0,.25);display:flex;align-items:center;gap:8px}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;display:none;align-items:flex-end;justify-content:center}
+.scrim.open{display:flex}
+.sheet{background:var(--surface);color:var(--ink);width:100%;max-width:720px;max-height:90vh;overflow:auto;border-radius:22px 22px 0 0;padding:18px 16px calc(env(safe-area-inset-bottom) + 18px);animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+.sheet h3{font-size:22px}
+.grab{width:40px;height:5px;border-radius:5px;background:var(--line);margin:0 auto 12px}
+.entry{display:grid;grid-template-columns:1fr 46px 110px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.entry .nm{font-weight:700}
+.entry .nm small{display:block;font-weight:500;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.sign{height:46px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font-family:var(--mono);font-size:22px;font-weight:700}
+.sign.neg{background:var(--bad);color:#fff;border-color:transparent}
+.entry input{height:46px;text-align:right;font-family:var(--mono);font-size:20px;font-weight:700;padding:0 12px}
+.quick{display:flex;gap:6px;flex-wrap:wrap;grid-column:1/-1}
+.quick button{font-family:var(--mono);font-size:12px;padding:5px 9px;border-radius:8px;background:var(--bg);border:1px solid var(--line)}
+.rules{line-height:1.55;font-size:15px}
+.rules ul{padding-left:20px;margin:8px 0}
+.rules h4{margin:14px 0 4px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.hist{display:flex;flex-direction:column;gap:8px}
+.hist .h{padding:10px 12px;border-radius:12px;background:var(--bg);border:1px solid var(--line);font-size:14px}
+.hist .h b{font-family:var(--display)}
+.starts{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:2px 8px;margin-top:6px}
+.pcard.starter{outline:2px dashed var(--accent);outline-offset:2px}
+.order .stbtn{font-size:12px;font-weight:700;padding:5px 9px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted)}
+.order .stbtn.on{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+td .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-right:6px;vertical-align:1px}
+.plist{display:flex;flex-direction:column;gap:6px}
+.plist button{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;background:var(--bg);border:1px solid var(--line);font-weight:600;font-size:16px;text-align:left}
+.plist button.on{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+/* celebration */
+.party{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);padding:20px}
+.party.open{display:flex}
+.party canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+.pbox{position:relative;z-index:1;background:var(--surface);color:var(--ink);border-radius:26px;padding:26px 22px 20px;max-width:420px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4);animation:pop .55s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{0%{transform:scale(.4) rotate(-6deg);opacity:0}100%{transform:none;opacity:1}}
+.trophy{font-size:68px;line-height:1;animation:bob 1.4s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-8px) rotate(6deg)}}
+.pbox .wname{font-family:var(--display);font-weight:800;font-size:38px;margin:8px 0 2px;color:var(--accent);line-height:1.1}
+.pbox .quip{color:var(--muted);font-size:15px;margin-bottom:14px}
+.pbox .hist{text-align:left}
+.pbox .acts{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.pbox .acts .btn{flex:1}
+.toast{position:fixed;top:calc(env(safe-area-inset-top) + 12px);left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px;z-index:60;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand">Tally<small>SCOREKEEPER</small></div>
+    <div class="spacer"></div>
+    <a class="btn small ghost" id="homeLink" href="../index.html" style="text-decoration:none;display:none">← Games</a>
+    <button class="btn small" id="histBtn">History</button>
+  </div>
+  <main id="app"></main>
+</div>
+<button class="fab" id="fab" style="display:none">＋ Add round</button>
+<div class="scrim" id="scrim"><div class="sheet" id="sheet"></div></div>
+<div class="party" id="party"><canvas id="confetti"></canvas><div class="pbox" id="pbox"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ---------- Themes ----------
+const THEMES = {
+  classic:   {label:'Classic',   bg:'#f4efe6', surface:'#fffaf2', ink:'#1f1b16', muted:'#7a6f61', line:'#e3d8c7', accent:'#c2410c', accentInk:'#ffffff', font:'Fraunces'},
+  felt:      {label:'Card table',bg:'#0f2e22', surface:'#163d2e', ink:'#f1ead8', muted:'#9fb8a8', line:'#255443', accent:'#d4a72c', accentInk:'#1b1406', font:'Fraunces'},
+  uno:       {label:'Uno',       bg:'#fff6f0', surface:'#ffffff', ink:'#1a1a1a', muted:'#6b6b6b', line:'#f0d8cf', accent:'#e11d2a', accentInk:'#ffffff', font:'Inter'},
+  catan:     {label:'Catan',     bg:'#f6e7c8', surface:'#fdf3dc', ink:'#3a2410', muted:'#8a6a45', line:'#e6cfa1', accent:'#b5531b', accentInk:'#fff', font:'Fraunces'},
+  yahtzee:   {label:'Dice',      bg:'#eef3fb', surface:'#ffffff', ink:'#10213f', muted:'#5d6f8f', line:'#d6e0f0', accent:'#1d4ed8', accentInk:'#fff', font:'Inter'},
+  scrabble:  {label:'Tiles',     bg:'#f3ead6', surface:'#fbf5e6', ink:'#2b2116', muted:'#7b6a51', line:'#e2d4b4', accent:'#0f766e', accentInk:'#fff', font:'Fraunces'},
+  night:     {label:'Night',     bg:'#13111c', surface:'#1d1a2b', ink:'#ece8ff', muted:'#9a93b8', line:'#2e2945', accent:'#8b5cf6', accentInk:'#fff', font:'Inter'},
+  skyjo:     {label:'Pastel',    bg:'#eef7f6', surface:'#ffffff', ink:'#18303a', muted:'#5f7d86', line:'#d3e7e5', accent:'#0891b2', accentInk:'#fff', font:'Inter'},
+};
+// Known games: theme + whether low score wins + typical target
+const PRESETS = [
+  {name:'Hearts',      theme:'felt',     lowWins:true,  target:100},
+  {name:'Spades',      theme:'felt',     lowWins:false, target:500},
+  {name:'Euchre',      theme:'felt',     lowWins:false, target:10},
+  {name:'Rummy',       theme:'felt',     lowWins:false, target:500},
+  {name:'Gin Rummy',   theme:'felt',     lowWins:false, target:100},
+  {name:'Cribbage',    theme:'felt',     lowWins:false, target:121},
+  {name:'Uno',         theme:'uno',      lowWins:false, target:500},
+  {name:'Phase 10',    theme:'uno',      lowWins:true,  target:null},
+  {name:'Skyjo',       theme:'skyjo',    lowWins:true,  target:100},
+  {name:'Five Crowns', theme:'night',    lowWins:true,  target:null},
+  {name:'Golf',        theme:'felt',     lowWins:true,  target:null},
+  {name:'Yahtzee',     theme:'yahtzee',  lowWins:false, target:null},
+  {name:'Farkle',      theme:'yahtzee',  lowWins:false, target:10000},
+  {name:'Catan',       theme:'catan',    lowWins:false, target:10},
+  {name:'Scrabble',    theme:'scrabble', lowWins:false, target:null},
+  {name:'Mahjong',     theme:'scrabble', lowWins:false, target:null},
+  {name:'Doomlings',   theme:'night',    lowWins:false, target:null},
+];
+const findPreset = n => PRESETS.find(p => p.name.toLowerCase() === (n||'').trim().toLowerCase());
+
+// ---------- State ----------
+let S = { roster: [], game: null, history: [], draft: { name:'', picked:[], lowWins:false, target:'', starter:null, dir:1 } };
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => (n > 0 ? '+' : '') + n;
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),1800); }
+
+// ---------- Storage: account db, with local fallback ----------
+const LS_KEY = 'tally-v1';
+function localLoad(){ try{ const v = localStorage.getItem(LS_KEY); return v ? JSON.parse(v) : null; }catch(e){ return null; } }
+function localSave(obj){ try{ localStorage.setItem(LS_KEY, JSON.stringify(obj)); }catch(e){} }
+function snapshotData(snap){ if(!snap) return null; if(typeof snap.data === 'function'){ return snap.exists === false ? null : snap.data(); } return snap; }
+function persistable(){ return { roster:S.roster, game:S.game, history:S.history.slice(0,25) }; }
+function save(){ localSave(persistable()); }
+
+function boot(){
+  const local = localLoad();
+  if(local) Object.assign(S, { roster: local.roster||[], game: local.game||null, history: local.history||[] });
+  render();
+}
+
+// ---------- Theme ----------
+function applyTheme(t){
+  t = t || THEMES.classic;
+  const r = document.documentElement.style;
+  r.setProperty('--bg', t.bg); r.setProperty('--surface', t.surface); r.setProperty('--ink', t.ink);
+  r.setProperty('--muted', t.muted); r.setProperty('--line', t.line); r.setProperty('--accent', t.accent);
+  r.setProperty('--accent-ink', t.accentInk);
+  r.setProperty('--display', `'${t.font==='Inter'?'Inter':'Fraunces'}', Georgia, serif`);
+  document.querySelector('meta[name=viewport]');
+}
+function currentTheme(){
+  if(S.game){ return typeof S.game.theme === 'object' ? S.game.theme : THEMES[S.game.theme] || THEMES.classic; }
+  const p = findPreset(S.draft.name);
+  return p ? THEMES[p.theme] : (S.draft.theme && typeof S.draft.theme === 'object' ? S.draft.theme : THEMES.classic);
+}
+
+// ---------- Scoring math ----------
+function totals(g){ return g.players.map((_,i) => g.rounds.reduce((a,r) => a + (r.scores[i]||0), 0)); }
+function ranks(g){
+  const t = totals(g);
+  const order = t.map((v,i)=>({v,i})).sort((a,b)=> g.lowWins ? a.v-b.v : b.v-a.v);
+  const r = Array(t.length); let prev=null, rank=0;
+  order.forEach((o,k)=>{ if(o.v!==prev){ rank=k+1; prev=o.v; } r[o.i]=rank; });
+  return r;
+}
+
+// ---------- Who starts ----------
+// Rotation is anchored: player at anchor.idx starts round anchor.round (0-based), then moves dir (+1 clockwise / -1 counter) each round.
+function ensureRotation(g){
+  if(!g.anchor) g.anchor = { idx:0, round:0 };
+  if(g.dir !== 1 && g.dir !== -1) g.dir = 1;
+}
+function starterIdx(g, r){
+  ensureRotation(g);
+  const n = g.players.length; if(!n) return 0;
+  return (((g.anchor.idx + g.dir * (r - g.anchor.round)) % n) + n) % n;
+}
+const curRound = g => g.rounds.length;
+
+// ---------- Render ----------
+function render(){
+  applyTheme(currentTheme());
+  if(S.game) renderGame(); else renderSetup();
+}
+
+function renderSetup(){
+  $('#fab').style.display = 'none';
+  const d = S.draft;
+  const preset = findPreset(d.name);
+  $('#app').innerHTML = `
+  <div class="stack">
+    <div class="card stack">
+      <div>
+        <label class="lbl">Game <span style="text-transform:none;letter-spacing:0;font-weight:500">(optional)</span></label>
+        <input class="field" id="gname" list="glist" placeholder="e.g. Hearts, Uno, Catan…" value="${esc(d.name)}" autocomplete="off">
+        <datalist id="glist">${PRESETS.map(p=>`<option value="${esc(p.name)}">`).join('')}</datalist>
+        <div class="presetrow" style="margin-top:8px">
+          ${PRESETS.slice(0,10).map(p=>`<button class="chip ${preset&&preset.name===p.name?'on':''}" data-preset="${esc(p.name)}">${esc(p.name)}</button>`).join('')}
+        </div>
+      </div>
+      <div class="row" style="gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:180px">
+          <label class="lbl">Winner has</label>
+          <div class="toggle">
+            <button data-low="0" class="${d.lowWins?'':'on'}">Highest score</button>
+            <button data-low="1" class="${d.lowWins?'on':''}">Lowest score</button>
+          </div>
+        </div>
+        <div style="width:130px">
+          <label class="lbl">Play to</label>
+          <input class="field" id="target" inputmode="numeric" placeholder="—" value="${esc(d.target)}">
+        </div>
+      </div>
+    </div>
+
+    <div class="card stack">
+      <div>
+        <label class="lbl">Players — tap to add to this game</label>
+        <div class="chips" id="roster">
+          ${S.roster.length ? S.roster.map(n=>`<span class="chip ${d.picked.includes(n)?'on':''}" data-pick="${esc(n)}">${esc(n)}<span class="x" data-del="${esc(n)}" title="Remove from saved">×</span></span>`).join('') : '<span class="muted" style="font-size:14px">No saved players yet — add some below.</span>'}
+        </div>
+      </div>
+      <form class="row" id="addForm">
+        <input class="field" id="newName" placeholder="New player name" autocomplete="off" maxlength="24">
+        <button class="btn primary" type="submit">Add</button>
+      </form>
+      ${d.picked.length ? `
+      <div>
+        <label class="lbl">Seat order (around the table) · who starts</label>
+        <ol class="order">${d.picked.map((n,i)=>`<li><span class="n">${i+1}</span><span class="spacer">${esc(n)}</span>
+          <button class="stbtn ${starterName()===n?'on':''}" data-st="${esc(n)}">${starterName()===n?'🎲 Starts':'Start'}</button>
+          <button class="btn small ghost" data-up="${i}" ${i?'':'disabled'}>↑</button>
+          <button class="btn small ghost" data-down="${i}" ${i<d.picked.length-1?'':'disabled'}>↓</button></li>`).join('')}</ol>
+        ${d.picked.length>1?`<div style="margin-top:10px"><label class="lbl">Then passes</label>
+          <div class="toggle"><button data-dir="1" class="${d.dir===-1?'':'on'}">↻ Clockwise (down the list)</button><button data-dir="-1" class="${d.dir===-1?'on':''}">↺ Counter</button></div></div>`:''}
+      </div>` : ''}
+    </div>
+
+    <button class="btn primary" id="start" style="width:100%;padding:16px;font-size:17px" ${d.picked.length?'':'disabled'}>
+      Start ${d.name.trim() ? esc(d.name.trim()) : 'game'}${d.picked.length?` · ${d.picked.length} player${d.picked.length>1?'s':''}`:''}
+    </button>
+  </div>`;
+
+  const g = $('#gname');
+  g.oninput = () => {
+    d.name = g.value; d.rules = null; d.theme = null;
+    const p = findPreset(d.name);
+    if(p){ d.lowWins = p.lowWins; d.target = p.target ?? ''; }
+    applyTheme(currentTheme());
+    $('#start').innerHTML = `Start ${d.name.trim()?esc(d.name.trim()):'game'}${d.picked.length?` · ${d.picked.length} player${d.picked.length>1?'s':''}`:''}`;
+  };
+  g.onchange = () => renderSetup();
+  document.querySelectorAll('[data-preset]').forEach(b => b.onclick = () => {
+    const p = findPreset(b.dataset.preset);
+    d.name = p.name; d.lowWins = p.lowWins; d.target = p.target ?? ''; d.rules = null; d.theme = null;
+    renderSetup();
+  });
+  document.querySelectorAll('[data-low]').forEach(b => b.onclick = () => { d.lowWins = b.dataset.low==='1'; renderSetup(); });
+  $('#target').oninput = e => { d.target = e.target.value.replace(/[^\d]/g,''); };
+  document.querySelectorAll('[data-pick]').forEach(c => c.onclick = e => {
+    if(e.target.dataset.del){
+      const n = e.target.dataset.del;
+      S.roster = S.roster.filter(x=>x!==n); d.picked = d.picked.filter(x=>x!==n); save(); renderSetup(); return;
+    }
+    const n = c.dataset.pick;
+    d.picked = d.picked.includes(n) ? d.picked.filter(x=>x!==n) : [...d.picked, n];
+    renderSetup();
+  });
+  $('#addForm').onsubmit = e => {
+    e.preventDefault();
+    const n = $('#newName').value.trim();
+    if(!n) return;
+    if(!S.roster.some(x=>x.toLowerCase()===n.toLowerCase())) S.roster.push(n);
+    const real = S.roster.find(x=>x.toLowerCase()===n.toLowerCase());
+    if(!d.picked.includes(real)) d.picked.push(real);
+    save(); renderSetup();
+    setTimeout(()=>$('#newName')?.focus(), 0);
+  };
+  document.querySelectorAll('[data-up]').forEach(b => b.onclick = () => { const i=+b.dataset.up; [d.picked[i-1],d.picked[i]]=[d.picked[i],d.picked[i-1]]; renderSetup(); });
+  document.querySelectorAll('[data-down]').forEach(b => b.onclick = () => { const i=+b.dataset.down; [d.picked[i+1],d.picked[i]]=[d.picked[i],d.picked[i+1]]; renderSetup(); });
+  document.querySelectorAll('[data-st]').forEach(b => b.onclick = () => { d.starter = b.dataset.st; renderSetup(); });
+  document.querySelectorAll('[data-dir]').forEach(b => b.onclick = () => { d.dir = +b.dataset.dir; renderSetup(); });
+  $('#start').onclick = startGame;
+}
+function starterName(){ const d = S.draft; return d.picked.includes(d.starter) ? d.starter : d.picked[0]; }
+
+function startGame(){
+  const d = S.draft;
+  const p = findPreset(d.name);
+  S.game = {
+    name: d.name.trim() || 'Game night',
+    players: [...d.picked],
+    rounds: [],
+    lowWins: !!d.lowWins,
+    target: d.target ? +d.target : null,
+    theme: d.theme && typeof d.theme === 'object' ? d.theme : (p ? p.theme : 'classic'),
+    rules: d.rules || null,
+    startedAt: Date.now(),
+    dismissedTarget: false,
+    dir: d.dir === -1 ? -1 : 1,
+    anchor: { idx: Math.max(0, d.picked.indexOf(starterName())), round: 0 },
+  };
+  save(); render();
+}
+
+function renderGame(){
+  const g = S.game;
+  const t = totals(g), rk = ranks(g);
+  const best = g.rounds.length ? (g.lowWins ? Math.min(...t) : Math.max(...t)) : null;
+  const maxAbs = Math.max(1, ...t.map(Math.abs), g.target||0);
+  const hit = g.target ? g.players.map((n,i)=>({n,v:t[i]})).filter(x=>x.v >= g.target) : [];
+  const leader = g.rounds.length ? g.players.filter((_,i)=>rk[i]===1) : [];
+  const si = starterIdx(g, curRound(g));
+  $('#fab').style.display = '';
+  $('#app').innerHTML = `
+    <div class="gamehead">
+      <h2>${esc(g.name)}</h2>
+      <div class="meta">Round ${g.rounds.length + 1} · <b>🎲 ${esc(g.players[si])} starts</b> ${g.dir===-1?'↺':'↻'}</div>
+      <div class="meta">${g.lowWins?'Low':'High'} score wins${g.target?` · to ${g.target}`:''}${leader.length?` · ${esc(leader.join(' & '))} ${leader.length>1?'tied':'leads'}`:''}</div>
+      <div class="acts">
+        <button id="starterBtn">🎲 Change starter</button>
+        ${g.rules?'<button id="rulesBtn">📖 Rules</button>':''}
+        <button id="undoBtn" ${g.rounds.length?'':'disabled style="opacity:.5"'}>↶ Undo round</button>
+        <button id="addP">＋ Player</button>
+        <button id="settings">⚙︎ Settings</button>
+        <button id="endBtn">🏁 End game</button>
+      </div>
+    </div>
+
+    ${hit.length && !g.dismissedTarget ? `<div class="banner">🎯 <span class="spacer">${esc(hit.map(h=>h.n).join(', '))} reached ${g.target}. ${g.lowWins?'Game over — lowest total wins.':'Looks like a winner!'}</span><button class="btn small" id="endNow">End</button><button class="btn small ghost" id="dismiss">Keep going</button></div>` : ''}
+
+    <div class="board">
+      ${g.players.map((n,i)=>{
+        const last = g.rounds.length ? g.rounds[g.rounds.length-1].scores[i]||0 : null;
+        return `<div class="pcard ${g.rounds.length && rk[i]===1?'lead':''} ${i===si?'starter':''}">
+          <div class="nm">${esc(n)}</div>
+          ${i===si?'<span class="starts">🎲 Starts</span>':''}
+          ${g.rounds.length?`<span class="rank">#${rk[i]}</span>`:''}
+          <div class="tot">${t[i]}</div>
+          <div class="last">${last===null?'—':'last '+fmt(last)}${best!==null && t[i]!==best ? ` · ${Math.abs(t[i]-best)} back` : ''}</div>
+          <div class="bar"><i style="width:${Math.max(0,Math.min(100, (Math.abs(t[i])/maxAbs)*100))}%"></i></div>
+        </div>`;}).join('')}
+    </div>
+
+    <div class="tablewrap">
+      ${g.rounds.length ? `<table>
+        <thead><tr><th>Rd</th>${g.players.map(n=>`<th>${esc(n)}</th>`).join('')}</tr></thead>
+        <tbody>${g.rounds.map((r,ri)=>{
+          return `<tr data-edit="${ri}"><td>${ri+1}</td>${g.players.map((_,i)=>{
+            const v = r.scores[i]||0;
+            const run = g.rounds.slice(0,ri+1).reduce((a,x)=>a+(x.scores[i]||0),0);
+            const st = (r.starter ?? -1) === i ? '<span class="dot" title="Started this round"></span>' : '';
+            return `<td class="${v<0?'neg':''}">${st}${fmt(v)}<span class="run">${run}</span></td>`;}).join('')}</tr>`;
+        }).join('')}</tbody>
+        <tfoot><tr><td>Total</td>${t.map(v=>`<td>${v}</td>`).join('')}</tr></tfoot>
+      </table>` : `<div class="empty">No rounds yet. Tap <b>Add round</b> when the first hand is done.</div>`}
+    </div>
+    ${g.rounds.length?'<div class="muted" style="font-size:12px;text-align:center;margin-top:8px">Tap a round to edit it. Small number = running total. Dot = who started.</div>':''}
+  `;
+  $('#starterBtn').onclick = starterSheet;
+  $('#rulesBtn') && ($('#rulesBtn').onclick = () => showRules(g.rules, g.name));
+  $('#undoBtn').onclick = () => { if(!g.rounds.length) return; g.rounds.pop(); save(); renderGame(); toast('Last round removed'); };
+  $('#addP').onclick = addPlayerSheet;
+  $('#settings').onclick = settingsSheet;
+  $('#endBtn').onclick = endGameSheet;
+  $('#endNow') && ($('#endNow').onclick = endGameSheet);
+  $('#dismiss') && ($('#dismiss').onclick = () => { g.dismissedTarget = true; save(); renderGame(); });
+  document.querySelectorAll('[data-edit]').forEach(r => r.onclick = () => roundSheet(+r.dataset.edit));
+}
+
+// ---------- Sheets ----------
+function openSheet(html){ $('#sheet').innerHTML = '<div class="grab"></div>' + html; $('#scrim').classList.add('open'); }
+function closeSheet(){ $('#scrim').classList.remove('open'); }
+$('#scrim').onclick = e => { if(e.target.id==='scrim') closeSheet(); };
+
+function roundSheet(editIdx){
+  const g = S.game;
+  const editing = editIdx !== undefined;
+  const existing = editing ? g.rounds[editIdx].scores : null;
+  const t = totals(g);
+  const vals = g.players.map((_,i)=> existing ? (existing[i]||0) : null);
+  openSheet(`
+    <div class="row"><h3>${editing?`Edit round ${editIdx+1}`:`Round ${g.rounds.length+1}`}</h3>
+      ${!editing?`<span class="starts" style="margin:0 0 0 10px">🎲 ${esc(g.players[starterIdx(g,curRound(g))])}</span>`:''}<span class="spacer"></span>
+      ${editing?'<button class="btn small" id="delRound" style="color:var(--bad)">Delete</button>':''}</div>
+    <div class="muted" style="font-size:13px;margin:4px 0 6px">Tap ± to flip a score negative. Blank = 0.</div>
+    <form id="rf">
+      ${g.players.map((n,i)=>{
+        const v = vals[i];
+        return `<div class="entry">
+          <div class="nm">${esc(n)}<small>total ${t[i] - (existing?(existing[i]||0):0)}</small></div>
+          <button type="button" class="sign ${v<0?'neg':''}" data-sign="${i}">${v<0?'−':'+'}</button>
+          <input class="field" data-in="${i}" inputmode="numeric" pattern="[0-9]*" placeholder="0" value="${v===null||v===0?'':Math.abs(v)}" autocomplete="off">
+          <div class="quick">${[1,5,10,25,50].map(q=>`<button type="button" data-q="${i}:${q}">+${q}</button>`).join('')}<button type="button" data-q="${i}:0">clear</button></div>
+        </div>`;}).join('')}
+      <div class="row" style="margin-top:14px">
+        <button type="button" class="btn" id="cancel">Cancel</button><span class="spacer"></span>
+        <button type="submit" class="btn primary" style="padding:12px 22px">${editing?'Save changes':'Save round'}</button>
+      </div>
+    </form>`);
+  const neg = g.players.map((_,i)=> vals[i] !== null && vals[i] < 0);
+  document.querySelectorAll('[data-sign]').forEach(b => b.onclick = () => {
+    const i = +b.dataset.sign; neg[i] = !neg[i];
+    b.classList.toggle('neg', neg[i]); b.textContent = neg[i] ? '−' : '+';
+  });
+  document.querySelectorAll('[data-q]').forEach(b => b.onclick = () => {
+    const [i,q] = b.dataset.q.split(':').map(Number);
+    const inp = document.querySelector(`[data-in="${i}"]`);
+    inp.value = q===0 ? '' : String((parseInt(inp.value)||0) + q);
+  });
+  document.querySelectorAll('[data-in]').forEach(inp => inp.oninput = () => {
+    // allow typing a leading minus on keyboards that have one
+    if(inp.value.trim().startsWith('-')){
+      const i = +inp.dataset.in; neg[i] = true;
+      const b = document.querySelector(`[data-sign="${i}"]`); b.classList.add('neg'); b.textContent='−';
+    }
+    inp.value = inp.value.replace(/[^\d]/g,'');
+  });
+  $('#cancel').onclick = closeSheet;
+  $('#delRound') && ($('#delRound').onclick = () => { g.rounds.splice(editIdx,1); save(); closeSheet(); renderGame(); toast('Round deleted'); });
+  $('#rf').onsubmit = e => {
+    e.preventDefault();
+    const scores = g.players.map((_,i)=>{
+      const v = parseInt(document.querySelector(`[data-in="${i}"]`).value) || 0;
+      return neg[i] ? -v : v;
+    });
+    if(editing) g.rounds[editIdx].scores = scores; else g.rounds.push({ scores, at: Date.now(), starter: starterIdx(g, curRound(g)) });
+    save(); closeSheet(); renderGame();
+    // Auto-celebrate the first time someone reaches the target
+    const t2 = totals(g);
+    if(g.target && !g.dismissedTarget && t2.some(v => v >= g.target)){ setTimeout(()=>celebrate(true), 350); return; }
+    if(!editing) toast(`Round ${g.rounds.length} saved · ${g.players[starterIdx(g,curRound(g))]} starts next`);
+  };
+  if(!editing) setTimeout(()=>document.querySelector('[data-in="0"]')?.focus(), 250);
+}
+$('#fab').onclick = () => roundSheet();
+
+function starterSheet(){
+  const g = S.game; ensureRotation(g);
+  const r = curRound(g), si = starterIdx(g, r);
+  openSheet(`<h3>Who starts round ${r+1}?</h3>
+    <div class="muted" style="font-size:13px;margin:4px 0 12px">Rotation continues from whoever you pick.</div>
+    <div class="plist">${g.players.map((n,i)=>`<button data-sp="${i}" class="${i===si?'on':''}"><span style="font-family:var(--mono);opacity:.6;width:18px">${i+1}</span>${esc(n)}${i===si?' <span class="spacer"></span>🎲':''}</button>`).join('')}</div>
+    <div style="margin-top:14px"><label class="lbl">Direction</label>
+      <div class="toggle"><button data-sd="1" class="${g.dir===-1?'':'on'}">↻ Clockwise</button><button data-sd="-1" class="${g.dir===-1?'on':''}">↺ Counter</button></div></div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" id="skipSt">Skip ahead one ⏭</button><span class="spacer"></span>
+      <button class="btn primary" id="stDone">Done</button></div>`);
+  const setStarter = idx => { g.anchor = { idx, round: r }; save(); };
+  document.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => { setStarter(+b.dataset.sp); closeSheet(); renderGame(); toast(`${g.players[+b.dataset.sp]} starts round ${r+1}`); });
+  document.querySelectorAll('[data-sd]').forEach(b => b.onclick = () => {
+    const cur = starterIdx(g, r); g.dir = +b.dataset.sd; g.anchor = { idx: cur, round: r }; save(); starterSheet();
+  });
+  $('#skipSt').onclick = () => { const n = g.players.length; setStarter((((si + g.dir) % n) + n) % n); starterSheet(); };
+  $('#stDone').onclick = () => { closeSheet(); renderGame(); };
+}
+
+function addPlayerSheet(){
+  const g = S.game;
+  const avail = S.roster.filter(n=>!g.players.includes(n));
+  openSheet(`<h3>Add a player</h3>
+    <div class="muted" style="font-size:13px;margin:4px 0 12px">They'll start at 0 for rounds already played.</div>
+    ${avail.length?`<div class="chips" style="margin-bottom:12px">${avail.map(n=>`<button class="chip" data-addp="${esc(n)}">${esc(n)}</button>`).join('')}</div>`:''}
+    <form class="row" id="apf"><input class="field" id="apn" placeholder="New name" maxlength="24"><button class="btn primary">Add</button></form>`);
+  const add = n => {
+    n = n.trim(); if(!n || g.players.includes(n)) return;
+    if(!S.roster.some(x=>x.toLowerCase()===n.toLowerCase())) S.roster.push(n);
+    const cur = starterIdx(g, curRound(g));
+    g.players.push(n); g.rounds.forEach(r=>r.scores.push(0));
+    g.anchor = { idx: cur, round: curRound(g) }; // keep the current starter after the seat count changes
+    save(); closeSheet(); renderGame(); toast(`${n} joined`);
+  };
+  document.querySelectorAll('[data-addp]').forEach(b=>b.onclick=()=>add(b.dataset.addp));
+  $('#apf').onsubmit = e => { e.preventDefault(); add($('#apn').value); };
+}
+
+function settingsSheet(){
+  const g = S.game;
+  const tKey = typeof g.theme === 'string' ? g.theme : 'custom';
+  openSheet(`<h3>Settings</h3>
+    <div class="stack" style="margin-top:12px">
+      <div><label class="lbl">Game name</label><input class="field" id="sn" value="${esc(g.name)}"></div>
+      <div><label class="lbl">Winner has</label><div class="toggle"><button data-sl="0" class="${g.lowWins?'':'on'}">Highest score</button><button data-sl="1" class="${g.lowWins?'on':''}">Lowest score</button></div></div>
+      <div><label class="lbl">Play to</label><input class="field" id="st" inputmode="numeric" placeholder="No target" value="${g.target??''}"></div>
+      <div><label class="lbl">Theme</label><div class="chips">
+        ${typeof g.theme==='object'?`<button class="chip ${tKey==='custom'?'on':''}" data-th="custom">${esc(g.name)} (custom)</button>`:''}
+        ${Object.entries(THEMES).map(([k,v])=>`<button class="chip ${k===tKey?'on':''}" data-th="${k}">${v.label}</button>`).join('')}</div></div>
+      <button class="btn primary" id="sdone" style="width:100%">Done</button>
+    </div>`);
+  const customTheme = typeof g.theme==='object' ? g.theme : null;
+  document.querySelectorAll('[data-sl]').forEach(b=>b.onclick=()=>{ g.lowWins = b.dataset.sl==='1'; document.querySelectorAll('[data-sl]').forEach(x=>x.classList.toggle('on',x===b)); });
+  document.querySelectorAll('[data-th]').forEach(b=>b.onclick=()=>{ g.theme = b.dataset.th==='custom' ? customTheme : b.dataset.th; applyTheme(currentTheme()); document.querySelectorAll('[data-th]').forEach(x=>x.classList.toggle('on',x===b)); });
+  $('#sdone').onclick = () => {
+    g.name = $('#sn').value.trim() || g.name;
+    const tv = $('#st').value.replace(/[^\d]/g,''); g.target = tv ? +tv : null; g.dismissedTarget = false;
+    save(); closeSheet(); renderGame();
+  };
+}
+
+function endGameSheet(){
+  const g = S.game; const t = totals(g); const rk = ranks(g);
+  const order = g.players.map((n,i)=>({n,v:t[i],r:rk[i]})).sort((a,b)=>a.r-b.r);
+  const winners = order.filter(o=>o.r===1).map(o=>o.n);
+  if(g.rounds.length){ celebrate(false); return; }
+  openSheet(`<h3>End game?</h3><div class="muted" style="margin:6px 0 14px">No rounds were scored, so nothing gets saved.</div>
+    <div class="row"><button class="btn" id="egc">Keep playing</button><span class="spacer"></span><button class="btn primary" id="egn">New game</button></div>`);
+  $('#egc').onclick = closeSheet;
+  $('#egn').onclick = () => { S.draft = { name:'', picked:[...g.players], lowWins:false, target:'', starter:null, dir:g.dir||1 }; S.game = null; save(); closeSheet(); render(); };
+}
+
+// ---------- Winner celebration ----------
+const QUIPS = [
+  'Absolutely unstoppable.', 'Bow before your champion.', 'Somebody call the trophy engraver.',
+  'Flawless. Mostly.', 'The table has spoken.', 'Victory lap: mandatory.', 'Gloating rights unlocked.',
+  'That’s going in the history books.', 'Rematch? They’ll need one.', 'Pure skill. Definitely not luck.',
+];
+const TIE_QUIPS = ['Shared glory!', 'Nobody blinked.', 'Tiebreaker rematch?', 'Perfectly balanced.'];
+let confettiRAF = null;
+function celebrate(fromTarget){
+  const g = S.game; const t = totals(g); const rk = ranks(g);
+  const order = g.players.map((n,i)=>({n,v:t[i],r:rk[i]})).sort((a,b)=>a.r-b.r);
+  const winners = order.filter(o=>o.r===1).map(o=>o.n);
+  const tie = winners.length > 1;
+  const quip = (tie ? TIE_QUIPS : QUIPS)[Math.floor(Math.random() * (tie ? TIE_QUIPS : QUIPS).length)];
+  const medals = ['🥇','🥈','🥉'];
+  closeSheet();
+  $('#pbox').innerHTML = `
+    <div class="trophy">${tie ? '🤝' : '🏆'}</div>
+    <div class="wname">${esc(winners.join(' & '))}</div>
+    <div style="font-weight:700;font-size:18px">${tie ? 'tie for the win!' : `wins ${esc(g.name)}!`}</div>
+    <div class="quip">${quip}${fromTarget ? ` <br><small>Someone hit ${g.target}.</small>` : ''}</div>
+    <div class="hist">${order.map(o=>`<div class="h row"><b style="width:30px">${medals[o.r-1]||'#'+o.r}</b><span class="spacer">${esc(o.n)}</span><span style="font-family:var(--mono);font-weight:700">${o.v}</span></div>`).join('')}</div>
+    <div class="muted" style="font-size:12px;margin-top:8px">${g.rounds.length} round${g.rounds.length>1?'s':''} · ${g.lowWins?'low':'high'} score wins</div>
+    <div class="acts">
+      <button class="btn" id="egc">Keep playing</button>
+      <button class="btn" id="egr">Rematch</button>
+      <button class="btn primary" id="egn">New game</button>
+    </div>`;
+  $('#party').classList.add('open');
+  startConfetti();
+  const finish = () => {
+    S.history.unshift({ name:g.name, date:Date.now(), rounds:g.rounds.length, lowWins:g.lowWins, results: order.map(o=>({n:o.n,v:o.v})) });
+    S.history = S.history.slice(0,25);
+  };
+  const close = () => { $('#party').classList.remove('open'); stopConfetti(); };
+  $('#egc').onclick = () => { g.dismissedTarget = true; save(); close(); renderGame(); };
+  $('#egr').onclick = () => {
+    finish();
+    const next = starterIdx(g, curRound(g));
+    g.rounds = []; g.startedAt = Date.now(); g.dismissedTarget = false; g.anchor = { idx: next, round: 0 };
+    save(); close(); renderGame(); toast(`Rematch! ${g.players[next]} starts`);
+  };
+  $('#egn').onclick = () => {
+    finish();
+    S.draft = { name:'', picked:[...g.players], lowWins:false, target:'', starter:null, dir:g.dir||1 };
+    S.game = null; save(); close(); render();
+  };
+}
+function startConfetti(){
+  const c = $('#confetti'), ctx = c.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = c.width = innerWidth * dpr, H = c.height = innerHeight * dpr;
+  const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#c2410c';
+  const colors = [accent, '#facc15', '#22c55e', '#3b82f6', '#ec4899', '#ffffff', '#f97316'];
+  const P = [];
+  const burst = (x, n) => { for(let i=0;i<n;i++){ const a = -Math.PI/2 + (Math.random()-.5)*1.6, s = (8 + Math.random()*12) * dpr;
+    P.push({ x, y:H, vx:Math.cos(a)*s, vy:Math.sin(a)*s, w:(6+Math.random()*6)*dpr, h:(10+Math.random()*8)*dpr, r:Math.random()*6, vr:(Math.random()-.5)*.4, c:colors[i%colors.length], life:0 }); } };
+  burst(W*.2, 90); burst(W*.8, 90);
+  setTimeout(()=>burst(W*.5, 120), 350);
+  setTimeout(()=>{ for(let i=0;i<80;i++) P.push({ x:Math.random()*W, y:-20*dpr, vx:(Math.random()-.5)*2*dpr, vy:(2+Math.random()*3)*dpr, w:(6+Math.random()*6)*dpr, h:(10+Math.random()*8)*dpr, r:Math.random()*6, vr:(Math.random()-.5)*.3, c:colors[i%colors.length], life:0 }); }, 900);
+  const start = performance.now();
+  const tick = now => {
+    ctx.clearRect(0,0,W,H);
+    for(const p of P){ p.vy += .28*dpr; p.vx *= .99; p.vy *= .99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.r); ctx.fillStyle = p.c; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h*Math.abs(Math.cos(p.r*2))); ctx.restore(); }
+    for(let i=P.length-1;i>=0;i--) if(P[i].y > H + 40*dpr && P[i].vy > 0) P.splice(i,1);
+    if(P.length || now - start < 1200) confettiRAF = requestAnimationFrame(tick); else ctx.clearRect(0,0,W,H);
+  };
+  cancelAnimationFrame(confettiRAF); confettiRAF = requestAnimationFrame(tick);
+}
+function stopConfetti(){ cancelAnimationFrame(confettiRAF); const c=$('#confetti'); c.getContext('2d').clearRect(0,0,c.width,c.height); }
+
+$('#histBtn').onclick = () => {
+  openSheet(`<h3>Past games</h3><div class="hist" style="margin-top:12px">
+    ${S.history.length ? S.history.map(h=>`<div class="h"><div class="row"><b>${esc(h.name)}</b><span class="spacer"></span><span class="muted" style="font-size:12px">${new Date(h.date).toLocaleDateString()} · ${h.rounds} rds</span></div>
+      <div style="margin-top:4px">${h.results.map((r,i)=>`${i===0?'🏆 ':''}${esc(r.n)} <span style="font-family:var(--mono)">${r.v}</span>`).join(' · ')}</div></div>`).join('') : '<div class="muted">Finished games will show up here.</div>'}
+  </div>`);
+};
+
+// ---------- Rules display ----------
+function showRules(r, name, offerApply){
+  const g = S.game;
+  const differs = offerApply && g && (g.lowWins !== r.lowWins || (g.target||null) !== (r.target||null));
+  openSheet(`<h3>${esc(name)}</h3>
+    <div class="rules">
+      ${r.oneLiner?`<div class="muted">${esc(r.oneLiner)}</div>`:''}
+      ${r.objective?`<h4>Objective</h4><div>${esc(r.objective)}</div>`:''}
+      ${r.scoring?.length?`<h4>Scoring</h4><ul>${r.scoring.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`:''}
+      ${r.endCondition?`<h4>Game end</h4><div>${esc(r.endCondition)}</div>`:''}
+      ${r.tips?.length?`<h4>Tips</h4><ul>${r.tips.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`:''}
+      <div class="muted" style="font-size:12px;margin-top:12px">House rules vary — check your rulebook if it matters.</div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      ${differs?`<button class="btn" id="applyR">Use ${r.lowWins?'low':'high'} wins${r.target?` · to ${r.target}`:''}</button>`:''}
+      <span class="spacer"></span><button class="btn primary" onclick="closeSheet()">Got it</button></div>`);
+  $('#applyR') && ($('#applyR').onclick = () => { g.lowWins = r.lowWins; g.target = r.target; g.dismissedTarget=false; save(); closeSheet(); renderGame(); });
+}
+
+if(location.protocol.startsWith('http') && !window.Capacitor)document.getElementById('homeLink').style.display='';
+boot();
+</script>
+</body>
+</html>

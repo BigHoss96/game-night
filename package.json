@@ -1,0 +1,9 @@
+{
+  "name": "game-night",
+  "private": true,
+  "description": "Free browser card and tile games: Flip 7, Tap 4, Mahj, plus the Tally scorekeeper",
+  "scripts": {
+    "test": "node games/flip7/test.js && node games/tap4/test.js",
+    "build": "node scripts/build-site.js"
+  }
+}
