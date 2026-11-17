@@ -15,6 +15,7 @@ const SAVE_KEYS = {
   tap4: ['tap4.save.v1', 'tap4.prefs.v1'],
   mahj: ['mahj-settings', 'mahj-scores', 'mahj-dealer'],
   tally: ['tally-v1'],
+  doomlings: [],   // no saved games yet
   site: [],
 };
 const reportTags = (game, prefix) =>
@@ -25,7 +26,10 @@ const GAMES = [
   { id: 'tap4', name: 'Tap 4', color: '#1b110b', bg: '#1b110b', build: () => read('games/tap4/src.html').replace('/*ENGINE*/', read('games/tap4/engine.js')).replace('/*APP*/', read('games/tap4/app.js')) },
   { id: 'mahj', name: 'Mahj', color: '#0f3f22', bg: '#0d3a26', build: () => read('games/mahj/index.html') },
   { id: 'tally', name: 'Tally', color: '#f4efe6', bg: '#f4efe6', build: () => read('games/tally/index.html') },
+  // testing: true → listed only on testing.html (not the home page), kept out of search engines
+  { id: 'doomlings', name: 'Doomlings', testing: true, color: '#131219', bg: '#131219', build: () => read('games/doomlings/index.html') },
 ];
+const NOINDEX = '<meta name="robots" content="noindex">\n';
 
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(path.join(out, 'icons'), { recursive: true });
@@ -43,7 +47,7 @@ for (const g of GAMES) {
   const dir = path.join(out, g.id);
   fs.mkdirSync(dir, { recursive: true });
   let html = g.build();
-  const head = reportTags(g.id, '../') + `<link rel="manifest" href="manifest.webmanifest">\n<link rel="icon" href="../icons/${g.id}-192.png">\n<link rel="apple-touch-icon" href="../icons/${g.id}-180.png">\n`;
+  const head = (g.testing ? NOINDEX : '') + reportTags(g.id, '../') + `<link rel="manifest" href="manifest.webmanifest">\n<link rel="icon" href="../icons/${g.id}-192.png">\n<link rel="apple-touch-icon" href="../icons/${g.id}-180.png">\n`;
   html = html.replace(/<\/title>/i, m => m + '\n' + head);
   const sw = `<script>if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('../sw.js',{scope:'../'}).catch(()=>{});</script>\n`;
   const i = html.lastIndexOf('</body>');
@@ -55,8 +59,10 @@ for (const g of GAMES) {
     icons: [192, 512].map(s => ({ src: `../icons/${g.id}-${s}.png`, sizes: `${s}x${s}`, type: 'image/png', purpose: 'any' })),
   }, null, 2));
 }
-// home page gets the report sheet too
-const home = path.join(out, 'index.html');
-fs.writeFileSync(home, fs.readFileSync(home, 'utf8').replace(/<\/title>/i, m => m + '\n' + reportTags('site', '')));
+// home page and testing area get the report sheet too
+for (const page of ['index.html', 'testing.html']) {
+  const f = path.join(out, page);
+  fs.writeFileSync(f, fs.readFileSync(f, 'utf8').replace(/<\/title>/i, m => m + '\n' + reportTags('site', '')));
+}
 fs.writeFileSync(path.join(out, '.nojekyll'), '');
-console.log('Built _site/ with', GAMES.map(g => g.id).join(', '));
+console.log('Built _site/ with', GAMES.map(g => g.id + (g.testing ? ' (testing)' : '')).join(', '));
