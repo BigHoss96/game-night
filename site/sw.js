@@ -1,6 +1,6 @@
 // Offline support: serve from cache instantly, refresh the cache in the background.
-const CACHE = 'gamenight-v2';
-const CORE = ['./', './index.html', './flip7/', './tap4/', './mahj/', './tally/', './report.js'];
+const CACHE = 'gamenight-v3';
+const CORE = ['./', './index.html', './flip7/', './tap4/', './mahj/', './tally/', './report.js', './known-issues.js', './update.js', './issues.html'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting()).catch(() => {}));
@@ -15,6 +15,7 @@ self.addEventListener('fetch', e => {
   const sameOrigin = url.origin === location.origin;
   const fonts = /fonts\.(googleapis|gstatic)\.com$/.test(url.hostname);
   if (!sameOrigin && !fonts) return;
+  if (sameOrigin && /\/version\.json$/.test(url.pathname)) return; // always ask the network: it's how old copies find out they're old
   e.respondWith(caches.open(CACHE).then(async cache => {
     const hit = await cache.match(req, { ignoreSearch: true });
     const net = fetch(req).then(res => { if (res && (res.ok || res.type === 'opaque')) cache.put(req, res.clone()); return res; }).catch(() => hit);

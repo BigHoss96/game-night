@@ -26,6 +26,20 @@ One-time setup: repo **Settings → Pages → Source: GitHub Actions**.
 Every app has a **⚑ Report a bug** button. Reports become GitHub Issues labeled
 `bug-report` and `game:<id>`, with the device, recent on-screen events, errors, and
 (if the player allows) their saved game attached so the bug can be replayed.
+Players can see what's already reported on **Known issues** (`site/issues.html`), and the
+report sheet lists this game's open reports (and flags a lookalike as they type) so duplicates
+don't get filed. Both read open `bug-report` issues straight from GitHub's public API
+(`site/known-issues.js`). Labels shown to players: `fix-planned`, `fix-in-review`, `needs-info`.
+
+## Update notice and "what's fixed"
+Every build writes `version.json` (build time + recent entries from `changelog.json`).
+`site/update.js` checks it when an app opens, when you return to it, and when you start a
+new game. If you're on an old cached copy it shows a splash listing what's been fixed and a
+**Refresh now** button; after updating it shows "Fixed since your last visit" once.
+**When you fix a player-visible bug, add an entry to `changelog.json`:**
+`{ "date": "<ISO UTC now>", "game": "tap4", "issue": 19, "text": "One short, player-friendly sentence." }`
+(`npm test` checks the file.)
+
 The relay lives in `worker/`; setup steps are in `worker/SETUP.md`. The buttons
 stay hidden until `report.config.json` has the relay's address.
 
