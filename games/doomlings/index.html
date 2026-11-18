@@ -1514,8 +1514,17 @@ function makeCtx(g, player, card, registry) {
     draw: (n = 1) => drawMany(g, player, n),
     say: (t, big) => say(g, t, big),
 
-    /** Grant an extra play this turn ("Play 1 more trait"). */
-    grantPlay: (n = 1) => { g.playsLeft += n; },
+    /** Grant an extra play this turn ("Play 1 more trait"). Lonely Age
+     *  ("Cannot play more than 1 trait on your turn") blocks it. Returns
+     *  whether the extra play was granted. */
+    grantPlay: (n = 1) => {
+      if (activeRestrict(topAge(g)).maxPlays) {
+        say(g, `Lonely Age: ${player.name} can't play another trait this turn.`);
+        return false;
+      }
+      g.playsLeft += n;
+      return true;
+    },
 
     /** Play a specific card from hand immediately, resolving its action unless
      *  told otherwise. Used by "You may play 1 of them now". */
@@ -1658,7 +1667,33 @@ function* playTraitInner(g, player, uid, registry, { ignoreAction = false, free 
 function playTrait(g, uid, registry) {
   const player = seatOf(g);
   if (g.phase !== "turn" || g.playsLeft <= 0 || g.pending) return { done: true, ok: false };
-  return runEffect(g, playTraitInner(g, player, uid, registry));
+  return runEffect(g, (function* () {
+    const v = g.venomous;
+    const card = yield* playTraitInner(g, player, uid, registry);
+    if (card && v && g.venomous === v) yield* settleVenomous(g, registry);
+    return card;
+  })());
+}
+
+/** Venomous: "Play 1 more trait. Then move Venomous to an opponent's trait
+ *  pile." Runs once that extra trait has been played. */
+function* settleVenomous(g, registry) {
+  const v = g.venomous;
+  g.venomous = null;
+  if (!v) return;
+  const owner = g.players.find((p) => p.id === v.playerId);
+  if (!owner || !owner.traitPile.some((c) => c.uid === v.uid)) return;  // already moved on
+  const opps = opponentsOf(g, owner);
+  if (!opps.length) return;
+  const target = yield {
+    kind: "player",
+    playerId: owner.id,
+    prompt: "Venomous — move it to whose pile?",
+    options: opps.map((p) => ({ id: p.id, name: p.name })),
+  };
+  const opp = opps.find((p) => p.id === (target && target.id)) || opps[0];
+  const moved = moveTrait(g, owner, opp, v.uid, registry);
+  if (moved) say(g, `Venomous moved to ${opp.name}'s pile.`);
 }
 
 /* ------------------------------------------------------------------ *
@@ -1846,6 +1881,7 @@ function endTurn(g, registry, startNow = true) {
   if (g.phase !== "turn") return false;
   g.playsLeft = 0;
   g.stabilizeWaived = false;
+  g.venomous = null;
 
   const next = (g.activeSeat + 1) % g.players.length;
   if (next === g.firstSeat) {
@@ -2577,7 +2613,7 @@ const EFFECTS = {
   },
 
   /* ---------------- Actions: extra plays ---------------- */
-  "propagation": { *onPlay(ctx) { ctx.grantPlay(1); ctx.say("Propagation: play 1 more."); } },
+  "propagation": { *onPlay(ctx) { if (ctx.grantPlay(1)) ctx.say("Propagation: play 1 more."); } },
 
   "the third eye": {
     *onPlay(ctx) {
@@ -2594,15 +2630,14 @@ const EFFECTS = {
   },
 
   // "Play 1 more trait. Then move Venomous to an opponent's trait pile."
+  // The move waits until that next trait has been played (see afterPlay in
+  // core.js). If the extra play can't happen (Lonely Age) or goes unused,
+  // Venomous stays where it is.
   "venomous": {
     *onPlay(ctx) {
-      ctx.grantPlay(1);
-      const target = yield ctx.ask.player({
-        prompt: "Venomous — move it to whose pile?",
-        options: ctx.opponents().map((p) => ({ id: p.id, name: p.name })),
-      });
-      const opp = ctx.opponents().find((p) => p.id === (target && target.id)) || ctx.opponents()[0];
-      if (opp) moveTrait(ctx.g, ctx.me, opp, ctx.card.uid, EFFECTS);
+      if (!ctx.grantPlay(1)) return;
+      ctx.g.venomous = { playerId: ctx.me.id, uid: ctx.card.uid };
+      ctx.say("Venomous: play 1 more trait, then Venomous moves to an opponent.");
     },
   },
 

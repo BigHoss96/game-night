@@ -152,3 +152,43 @@ const peaceCheck = vm.runInContext(`(function (cards, ageName) {
   assert.strictEqual(normal.reactions, 1, 'control: Automimicry should be offered against a live action');
 }
 console.log('Doomlings: Age of Peace ignores actions and offers no stop-the-action reactions');
+
+// ---------------------------------------------------------------------------
+// Regression (#7): Venomous is "Play 1 more trait. THEN move Venomous". It
+// moves only after that extra trait is played, and Lonely Age ("Cannot play
+// more than 1 trait on your turn") blocks the extra play, so it stays put.
+// ---------------------------------------------------------------------------
+const venomCheck = vm.runInContext(`(function (cards, ageName, playExtra) {
+  resetUids();
+  const g = dealGame(cards, { names: ['A', 'B'], seed: 7 });
+  const take = (name) => {
+    for (const pile of [g.traitDeck, g.discard, ...g.players.map((p) => p.hand)]) {
+      const i = pile.findIndex((c) => c.name === name);
+      if (i >= 0) return pile.splice(i, 1)[0];
+    }
+    throw new Error('card not found: ' + name);
+  };
+  g.eras[0].push({ ...cards.find((c) => c.name.toLowerCase() === ageName), uid: 'forced-age' });
+  g.phase = 'turn'; g.activeSeat = 0; g.playsLeft = 1;
+  const [a, b] = g.players;
+  a.hand = [take('VENOMOUS'), take('ADORABLE')];
+  b.hand = [];
+  const where = () => (a.traitPile.some((c) => c.name === 'VENOMOUS') ? 'A' : b.traitPile.some((c) => c.name === 'VENOMOUS') ? 'B' : '?');
+  const drive = (r) => { while (!r.done) r = answer(g, r.request.kind === 'player' ? r.request.options[0] : null); };
+  drive(playTrait(g, a.hand[0].uid, EFFECTS));
+  const afterVenomous = { where: where(), playsLeft: g.playsLeft };
+  if (playExtra && g.playsLeft > 0) drive(playTrait(g, a.hand.find((c) => c.name === 'ADORABLE').uid, EFFECTS));
+  return { afterVenomous, final: where(), adorablePlayed: a.traitPile.some((c) => c.name === 'ADORABLE') };
+})`, ctx);
+{
+  const normal = venomCheck(cards, 'flourish', true);
+  assert.strictEqual(normal.afterVenomous.where, 'A', 'Venomous moved before the extra trait was played');
+  assert.strictEqual(normal.afterVenomous.playsLeft, 1, 'Venomous should grant 1 more play');
+  assert(normal.adorablePlayed, 'extra trait was not played');
+  assert.strictEqual(normal.final, 'B', 'Venomous did not move after the extra trait');
+  const lonely = venomCheck(cards, 'lonely age', true);
+  assert.strictEqual(lonely.afterVenomous.playsLeft, 0, 'Lonely Age: Venomous granted an extra play');
+  assert(!lonely.adorablePlayed, 'Lonely Age: a second trait was played');
+  assert.strictEqual(lonely.final, 'A', 'Lonely Age: Venomous moved even though no extra trait could be played');
+}
+console.log('Doomlings: Venomous moves after the extra trait; Lonely Age blocks extra plays');
