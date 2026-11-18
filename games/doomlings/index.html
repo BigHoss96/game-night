@@ -1608,6 +1608,11 @@ function* playTraitInner(g, player, uid, registry, { ignoreAction = false, free 
   if (!free) g.playsLeft = Math.max(0, g.playsLeft - 1);
   say(g, `${player.name} played ${card.name}.`);
 
+  // Age of Peace suppresses every action for the round. Work that out first:
+  // an ignored action is not "an action about to resolve", so nobody should be
+  // offered Automimicry / Chromatophores to stop it.
+  const peace = Boolean(activeRestrict(topAge(g)).ignoreActions) && isAction(card);
+
   // Reaction window: anyone holding an interrupt may answer this play before
   // its action resolves. Parasitic can also steal the card out from under it,
   // which is why the window opens after the card has landed, not before.
@@ -1615,7 +1620,7 @@ function* playTraitInner(g, player, uid, registry, { ignoreAction = false, free 
     type: "traitPlayed",
     card,
     actor: player,
-    isAction: isAction(card) && Boolean(h.onPlay),
+    isAction: isAction(card) && Boolean(h.onPlay) && !ignoreAction && !peace,
     cancelled: false,
   };
   if (!suppressReactions) {
@@ -1641,8 +1646,6 @@ function* playTraitInner(g, player, uid, registry, { ignoreAction = false, free 
 
   // Parasitic may have moved the card to another pile; its action still does
   // not resolve, which the cancelled flag above already handled.
-  // Age of Peace suppresses every action for the round.
-  const peace = activeRestrict(topAge(g)).ignoreActions && isAction(card);
   if (peace) say(g, `${card.name}'s action is ignored this age.`);
 
   if (!ignoreAction && !peace && h.onPlay) {
@@ -4089,9 +4092,11 @@ async function doEndTurn() {
   const g = S.g;
   const p = seatOf(g);
   const target = targetHand(g, p);
+  // Under Prosperity stabilizing is the player's choice: never auto-draw.
+  const optional = activeRestrict(topAge(g)).stabilizeOptional;
   let spins = 0;
-  while (p.hand.length < target && spins++ < 20) if (!drawCard(g, p)) break;
-  if (p.hand.length > target && !activeRestrict(topAge(g)).stabilizeOptional) { draw(); return; }
+  while (!optional && p.hand.length < target && spins++ < 20) if (!drawCard(g, p)) break;
+  if (p.hand.length > target && !optional) { draw(); return; }
 
   beginEndTurn(g, EFFECTS);
   await pump();
@@ -4586,6 +4591,15 @@ function renderCta(g, me) {
       ? `Play a trait<span class="cta-sub">Tap a card in your hand</span>`
       : `Nothing playable<span class="cta-sub">Use Can't play below</span>`;
     cta.onclick = null;
+    return;
+  }
+  // Prosperity: "At the end of your turn, you may choose not to stabilize."
+  // Ending the turn keeps the hand as it is; Draw / Discard still stabilize.
+  if (short !== 0 && activeRestrict(topAge(g)).stabilizeOptional) {
+    cta.disabled = false;
+    const n = me.hand.length;
+    cta.innerHTML = `End turn without stabilizing<span class="cta-sub">Prosperity: keep ${n} card${n === 1 ? "" : "s"} \u00b7 or ${short > 0 ? "Draw" : "Discard"} to ${targetHand(g, me)} first</span>`;
+    cta.onclick = doEndTurn;
     return;
   }
   if (short < 0) {

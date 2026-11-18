@@ -114,3 +114,41 @@ for (const age of ['high tides', 'age of exploration', 'northern winds']) {
   }
 }
 console.log(`Doomlings: ${games} fuzzed games played to scoring; each-player ages ask everyone`);
+
+// ---------------------------------------------------------------------------
+// Regression (#5): under Age of Peace an action is ignored, so it must not run
+// and nobody should be offered Automimicry/Chromatophores to "stop" it.
+// ---------------------------------------------------------------------------
+const peaceCheck = vm.runInContext(`(function (cards, ageName) {
+  resetUids();
+  const g = dealGame(cards, { names: ['A', 'B'], seed: 5 });
+  const take = (name) => {
+    const all = [g.traitDeck, g.discard, ...g.players.map((p) => p.hand)];
+    for (const pile of all) {
+      const i = pile.findIndex((c) => c.name === name);
+      if (i >= 0) return pile.splice(i, 1)[0];
+    }
+    throw new Error('card not found: ' + name);
+  };
+  const age = g.ageDeck.find((c) => c.name.toLowerCase() === ageName) ||
+    { ...cards.find((c) => c.name.toLowerCase() === ageName), uid: 'forced-age' };
+  g.eras[0].push(age);
+  g.phase = 'turn'; g.activeSeat = 0; g.playsLeft = 1;
+  const [a, b] = g.players;
+  a.hand = [take('INTROSPECTIVE')];
+  b.hand = [take('AUTOMIMICRY')];
+  const before = a.hand.length;
+  const asked = [];
+  let r = playTrait(g, a.hand[0].uid, EFFECTS);
+  while (!r.done) { asked.push(r.request); r = answer(g, r.request.kind === 'reaction' ? null : undefined); }
+  return { reactions: asked.filter((q) => q.kind === 'reaction').length, drew: a.hand.length - (before - 1) };
+})`, ctx);
+{
+  const peace = peaceCheck(cards, 'age of peace');
+  assert.strictEqual(peace.drew, 0, 'Age of Peace: Introspective still drew cards');
+  assert.strictEqual(peace.reactions, 0, 'Age of Peace: opponent was offered to stop an ignored action');
+  const normal = peaceCheck(cards, 'flourish');
+  assert.strictEqual(normal.drew, 3, 'control: Introspective should draw 3 outside Age of Peace');
+  assert.strictEqual(normal.reactions, 1, 'control: Automimicry should be offered against a live action');
+}
+console.log('Doomlings: Age of Peace ignores actions and offers no stop-the-action reactions');
