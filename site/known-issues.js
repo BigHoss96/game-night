@@ -7,6 +7,7 @@
     ['fix-planned', 'Fix planned', '#1d4ed8'],
     ['fix-in-review', 'Fix waiting for review', '#7c3aed'],
     ['needs-info', 'Needs more details', '#b45309'],
+    ['enhancement', 'Idea', '#0f766e'],
   ];
   const STOP = new Set('the a an and or but to of in on at it is was i my me you your when if then that this with for not dont doesnt didnt cant its im be as so just have has had are were do did game card cards play played'.split(' '));
 
