@@ -14,9 +14,14 @@
   const origErr = console.error;
   console.error = function (...a) { try { keep(errors, a.map(x => (x && x.stack) || String(x)).join(' '), 10); } catch (_) {} return origErr.apply(this, a); };
   // On-screen captions and toasts make a readable trail of what just happened
+  const watched = new WeakSet();
   const watch = sel => {
     const el = document.querySelector(sel);
     if (!el) return false;
+    // Re-arming (on every click) must not stack a second observer on the same
+    // element, or each caption gets logged once per click so far.
+    if (watched.has(el)) return true;
+    watched.add(el);
     let last = '';
     new MutationObserver(() => {
       const t = el.innerText.replace(/\s+/g, ' ').trim();
