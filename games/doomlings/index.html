@@ -2310,8 +2310,18 @@ function* discardFromOwnHand(ctx, player, count, { optional = false, max = null 
   return out;
 }
 
+/** Lonely Age: "Cannot play more than 1 trait on your turn." True when this
+ *  player is on their own turn under it, so a "you may play it now" is off. */
+function lonelyBlocks(g, player) {
+  return Boolean(activeRestrict(topAge(g)).maxPlays) && g.phase === "turn" && seatOf(g) === player;
+}
+
 /** "You may play 1 of them now" over a specific set of just-drawn cards. */
 function* mayPlayOneOf(ctx, cards, { filter = () => true, label = "Play one now?" } = {}) {
+  if (lonelyBlocks(ctx.g, ctx.me)) {
+    ctx.say(`Lonely Age: ${ctx.me.name} can't play another trait this turn.`);
+    return null;
+  }
   const eligible = cards.filter((c) => ctx.me.hand.some((h) => h.uid === c.uid) && filter(c));
   if (!eligible.length) return null;
   const choice = yield ctx.ask.cards({
@@ -2762,6 +2772,7 @@ const EFFECTS = {
       const [drawn] = ctx.draw(1);
       if (!drawn) return;
       ctx.say(`Regenerative Tissue: ${ctx.me.name} drew a card.`);
+      if (lonelyBlocks(ctx.g, ctx.me)) return;   // Lonely Age: no second trait on your turn
       const yes = yield ctx.ask.confirm({
         prompt: `Regenerative Tissue — play ${drawn.name} now? (its action is ignored)`,
       });

@@ -192,3 +192,34 @@ const venomCheck = vm.runInContext(`(function (cards, ageName, playExtra) {
   assert.strictEqual(lonely.final, 'A', 'Lonely Age: Venomous moved even though no extra trait could be played');
 }
 console.log('Doomlings: Venomous moves after the extra trait; Lonely Age blocks extra plays');
+
+// Lonely Age also switches off "you may play it now" (Cold Blood, Nosy, Clever,
+// Photosynthesis) on your own turn (PR #16 review).
+const coldBloodCheck = vm.runInContext(`(function (cards, ageName) {
+  resetUids();
+  const g = dealGame(cards, { names: ['A', 'B'], seed: 9 });
+  const take = (name) => {
+    for (const pile of [g.traitDeck, g.discard, ...g.players.map((p) => p.hand)]) {
+      const i = pile.findIndex((c) => c.name === name);
+      if (i >= 0) return pile.splice(i, 1)[0];
+    }
+    throw new Error('card not found: ' + name);
+  };
+  g.eras[0].push({ ...cards.find((c) => c.name.toLowerCase() === ageName), uid: 'forced-age' });
+  g.phase = 'turn'; g.activeSeat = 0; g.playsLeft = 1;
+  const a = g.players[0];
+  a.hand = [take('COLD BLOOD')];
+  g.players[1].hand = [];
+  const asked = [];
+  let r = playTrait(g, a.hand[0].uid, EFFECTS);
+  while (!r.done) { asked.push(r.request); r = answer(g, r.request.kind === 'cards' ? [] : null); }
+  return { offered: asked.some((q) => /cold blood/i.test(q.prompt || '')), drew: a.hand.length };
+})`, ctx);
+{
+  const lonely = coldBloodCheck(cards, 'lonely age');
+  assert.strictEqual(lonely.drew, 3, 'Lonely Age: Cold Blood should still draw 3');
+  assert(!lonely.offered, 'Lonely Age: Cold Blood still offered to play a drawn card');
+  const normal = coldBloodCheck(cards, 'flourish');
+  assert(normal.offered, 'control: Cold Blood should offer to play a drawn card');
+}
+console.log('Doomlings: Lonely Age also blocks "you may play it now"');
