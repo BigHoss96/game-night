@@ -4,5 +4,6 @@
   { "date": "2026-11-18T03:19:00Z", "game": "doomlings", "issue": 9, "text": "Yes/No prompts (like Age of Exploration's discard-to-draw) now show your hand." },
   { "date": "2026-11-18T03:19:00Z", "game": "doomlings", "issue": 10, "text": "\"Each player\" ages like Age of Exploration now ask every player, not just the first." },
   { "date": "2026-11-18T03:19:00Z", "game": "doomlings", "issue": 12, "text": "Reaction prompts show the card art, and you can tap (i) to read a reaction card before choosing it." },
-  { "date": "2026-11-18T13:20:00Z", "game": "doomlings", "issue": 13, "text": "Phone layout is more compact, so your whole trait pile fits without scrolling." }
+  { "date": "2026-11-18T13:20:00Z", "game": "doomlings", "issue": 13, "text": "Phone layout is more compact, so your whole trait pile fits without scrolling." },
+  { "date": "2026-11-19T13:17:01Z", "game": "doomlings", "issue": 17, "text": "Swiping between cards in Doomlings no longer freezes the game." }
 ]

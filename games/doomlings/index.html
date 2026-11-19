@@ -3489,8 +3489,33 @@ function triggerCard(req) {
 
 let promptResolve = null;
 
+// Card-viewer swipe: the listeners are attached to #sheetBody once and read the
+// current card set from sheetNav. (Adding them on every card open made them pile up
+// and each swipe re-render more of them until the page froze.)
+let sheetNav = null;
+let sheetSwipeBound = false;
+function bindSheetSwipe(body) {
+  if (sheetSwipeBound) return;
+  sheetSwipeBound = true;
+  let x0 = null, y0 = null;
+  body.addEventListener("touchstart", (e) => {
+    if (!sheetNav) { x0 = null; return; }
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
+  }, { passive: true });
+  body.addEventListener("touchend", (e) => {
+    if (x0 == null || !sheetNav) return;
+    const dx = e.changedTouches[0].clientX - x0;
+    const dy = e.changedTouches[0].clientY - y0;
+    x0 = null;
+    if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy)) return;
+    const nav = sheetNav;
+    nav.go(nav.index + (dx < 0 ? 1 : -1));
+  }, { passive: true });
+}
+
 function openSheet(buildBody, buildFoot) {
   const body = $("#sheetBody"); body.innerHTML = "";
+  sheetNav = null; body.classList.remove("cd-swipe");
   const foot = $("#sheetFoot"); foot.innerHTML = "";
   buildBody(body);
   if (buildFoot) { buildFoot(foot); foot.hidden = false; } else { foot.hidden = true; }
@@ -3965,19 +3990,9 @@ function openCardSolo(card, { canPlay = false, canDiscard = false, why = null, n
       body.appendChild(bar);
 
       // Horizontal drag moves between cards; vertical is left to the sheet.
-      let x0 = null, y0 = null;
+      bindSheetSwipe(body);
+      sheetNav = nav;
       body.classList.add("cd-swipe");
-      body.addEventListener("touchstart", (e) => {
-        x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
-      }, { passive: true });
-      body.addEventListener("touchend", (e) => {
-        if (x0 == null) return;
-        const dx = e.changedTouches[0].clientX - x0;
-        const dy = e.changedTouches[0].clientY - y0;
-        x0 = null;
-        if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy)) return;
-        nav.go(nav.index + (dx < 0 ? 1 : -1));
-      }, { passive: true });
     }
 
     if (card.image_url) {
