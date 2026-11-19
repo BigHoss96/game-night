@@ -8,5 +8,6 @@
   { "date": "2026-11-19T13:17:01Z", "game": "doomlings", "issue": 17, "text": "Swiping between cards in Doomlings no longer freezes the game." },
   { "date": "2026-11-19T13:18:55Z", "game": "tap4", "issue": 19, "text": "Tap 4 talks to you properly now: \"You win!\" instead of \"You wins!\", \"You pick up\" instead of \"You picks up\", and so on." },
   { "date": "2026-11-19T13:20:19Z", "game": "tap4", "issue": 18, "text": "Tap 4: at the end of a round, everyone's leftover cards, including face-down ones, are flipped so you can see what you had." },
-  { "date": "2026-11-19T13:21:39Z", "game": "tap4", "issue": 20, "text": "Tap 4 and Flip 7: it's now obvious you can tap your seat on the start screen and type your own name." }
+  { "date": "2026-11-19T13:21:39Z", "game": "tap4", "issue": 20, "text": "Tap 4 and Flip 7: it's now obvious you can tap your seat on the start screen and type your own name." },
+  { "date": "2026-11-19T13:22:17Z", "game": "paydirt", "issue": 22, "text": "Paydirt: the Home team picker now shows both team names, not \"Team 1\" for the first one." }
 ]

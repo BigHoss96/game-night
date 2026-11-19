@@ -175,7 +175,6 @@ function setup() {
   seg('home', 'home'); seg('ql', 'qlen');
   const homeLabels = () => { const bs = $('#home').querySelectorAll('button'); bs[0].textContent = T(prefs.mine).name; bs[1].textContent = T(prefs.opp).name; };
   homeLabels();
-  $('#home').querySelectorAll('button')[0].textContent = 'Team 1';
   $('#mine').onchange = e => { prefs.mine = e.target.value; store.set(PREFS, prefs); homeLabels(); };
   $('#opp').onchange = e => { prefs.opp = e.target.value; store.set(PREFS, prefs); homeLabels(); };
   $('#go').onclick = () => {
