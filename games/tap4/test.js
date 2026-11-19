@@ -28,6 +28,13 @@ const stats = { turns: 0, games: 0, rounds: 0, taps4: 0, tapIns: 0, outsOther: 0
       if (type === 'tapOutOther') { stats.outsOther++; assert(!g.twoP); }
       if (type === 'tapOutSelf') stats.outsSelf++;
       if (type === 'skipped') stats.skips++;
+      if (type === 'roundEnd') for (const p of g.players) {
+        // #18: the round summary shows every leftover card, face-down ones included, and they add up to the score
+        const left = T.leftovers(p);
+        assert.strictEqual(left.reduce((a, x) => a + T.POINTS(x.c), 0), p.lastScore, 'leftovers must add up to the round score');
+        assert.strictEqual(left.filter(x => x.down).length, p.piles.reduce((a, pl) => a + pl.filter(s => !s.up).length, 0), 'face-down cards missing from leftovers');
+        if (left.some(x => x.down)) stats.revealed = (stats.revealed || 0) + 1;
+      }
       if (type === 'turn') stats.turns++;
       if (type === 'cancelSkip') stats.cancels++;
       if (type === 'pickup') { stats.pickups++; stats.maxHand = Math.max(stats.maxHand, e.p.hand.length); }

@@ -18,6 +18,10 @@ const Tap4 = (() => {
   // ---- helpers on a player ----
   const pileTop = pile => pile.length ? pile[pile.length - 1] : null;
   function cardsLeft(p) { return p.hand.length + p.piles.reduce((a, pl) => a + pl.length, 0); }
+  // Every card still counting against a player: hand plus all pile cards, face-down included.
+  function leftovers(p) {
+    return [...p.hand.map(c => ({ c, down: false })), ...p.piles.flatMap(pl => pl.map(s => ({ c: s.c, down: !s.up })))];
+  }
   function scoreOf(p) { return p.hand.reduce((a, c) => a + POINTS(c), 0) + p.piles.reduce((a, pl) => a + pl.reduce((b, s) => b + POINTS(s.c), 0), 0); }
   // Cards the player can play like hand cards: hand + face-up pile tops
   function available(p) {
@@ -451,6 +455,6 @@ const Tap4 = (() => {
     },
   };
 
-  return { Game, Bot, BotAgents, Say, buildDeck, available, cardsLeft, scoreOf, pileTop, flipOdds, idsOfValue, POINTS, NUM, IN, OUT };
+  return { Game, Bot, BotAgents, Say, buildDeck, leftovers, available, cardsLeft, scoreOf, pileTop, flipOdds, idsOfValue, POINTS, NUM, IN, OUT };
 })();
 if (typeof module !== 'undefined') module.exports = Tap4;

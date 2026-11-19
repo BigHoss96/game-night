@@ -391,7 +391,8 @@ function update() {
         const top = Tap4.pileTop(pl);
         const depth = pl.length > 1 ? `<span class="depth">${pl.length}</span>` : '';
         if (!top) return `<div class="slot0"></div>`;
-        return `<div class="pslot">${depth}${cardHTML(top.up ? top.c : null, 'xs')}</div>`;
+        // After the round, face-down cards are flipped so everyone can see what was left.
+        return `<div class="pslot">${depth}${cardHTML(top.up || between ? top.c : null, 'xs', top.up ? '' : 'was-down')}</div>`;
       }).join('');
       continue;
     }
@@ -404,6 +405,7 @@ function update() {
       const top = Tap4.pileTop(pl);
       const depth = pl.length > 1 ? `<span class="depth">${pl.length}</span>` : '';
       if (!top) return `<div class="slot0" style="width:44px;height:62px;border-radius:6px"></div>`;
+      if (!top.up && between) return `<div class="pslot hgrp">${depth}${cardHTML(top.c, 'tr', 'was-down')}</div>`;
       if (!top.up) {
         const can = L && L.flips.includes(i);
         const isSel = sel && sel.kind === 'flip' && sel.x === i;
@@ -506,7 +508,7 @@ async function onEvent(type, e) {
     }
     case 'wentOut': update(); toast(`${esc(Say.who(e.p))} ${Say.is(e.p)} out!`, 'big'); burst(); await sleep(1500); break;
     case 'stalled': toast('Nobody could finish — round called'); await sleep(1000); break;
-    case 'roundEnd': cur = null; update(); controlsWait(''); await sleep(500); await roundSummary(e); break;
+    case 'roundEnd': cur = null; between = true; update(); controlsWait(''); await sleep(500); await roundSummary(e); break;
     case 'gameEnd': store.del(SAVE_KEY); await gameOver(e.winners); break;
   }
   // a number play or Tap In ends a human's turn unless they continue
@@ -520,14 +522,22 @@ function roundSummary(e) {
     const low = sorted[0].total;
     openSheet(`
       <h2>${e.over ? 'Final round' : `Round ${G.round} done`}</h2>
-      <p class="lead">${e.out ? `${esc(e.out.name)} went out.` : 'Round called.'} Cards left in hand and piles count against you. ${e.over ? '' : `Game ends when someone reaches ${G.target}.`}</p>
+      <p class="lead">${e.out ? `${esc(e.out.name)} went out.` : 'Round called.'} Cards left in hand and piles count against you${G.players.some(p => Tap4.leftovers(p).some(x => x.down)) ? ' (blue-edged ones were face down)' : ''}. ${e.over ? '' : `Game ends when someone reaches ${G.target}.`}</p>
       <div class="rows">${sorted.map(p => `
         <div class="row ${p.total === low ? 'lead' : ''}"><div class="pn">${esc(p.name)}</div>
         <span class="res ${p === e.out ? 'f7' : p.lastScore > 40 ? 'bust' : 'ok'}">${p === e.out ? 'Out! +0' : '+' + p.lastScore}</span><div class="tot">${p.total}</div>
-        <div class="bar"><i style="width:${Math.min(100, p.total / G.target * 100)}%"></i></div></div>`).join('')}</div>
+        <div class="bar"><i style="width:${Math.min(100, p.total / G.target * 100)}%"></i></div>${leftStrip(p)}</div>`).join('')}</div>
       <button class="big" id="nextB" style="background:linear-gradient(180deg,#5aa0ff,#2f6cf0)">${e.over ? 'See results' : 'Next round'}</button>`, false);
     $('#nextB').onclick = () => { closeSheet(); save(G.over ? 'over' : 'between'); done(); };
   });
+}
+// The cards a player was stuck with (face-down ones flipped and marked), shown in the round summary.
+function leftStrip(p) {
+  const left = Tap4.leftovers(p);
+  if (!left.length) return '';
+  const order = x => x.c.t === 'num' ? x.c.v : x.c.t === 'in' ? 20 : 30;
+  left.sort((a, b) => order(b) - order(a));
+  return `<div class="left" aria-label="Cards left">${left.map(x => cardHTML(x.c, 'xs', x.down ? 'was-down' : '')).join('')}</div>`;
 }
 function gameOver(ws) {
   return waitUI(done => {
