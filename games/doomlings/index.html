@@ -3131,6 +3131,10 @@ function* replayAction(ctx, candidates, emptyNote) {
 
 function* playFromDiscard(ctx, { ignoreAction, topOnly }) {
   if (!ctx.g.discard.length) return;
+  if (lonelyBlocks(ctx.g, ctx.me)) {
+    ctx.say(`Lonely Age: ${ctx.me.name} can't play another trait this turn.`);
+    return;
+  }
   let card = ctx.g.discard[0];
   if (!topOnly) {
     const choice = yield ctx.ask.cards({

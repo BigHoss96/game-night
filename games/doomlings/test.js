@@ -223,3 +223,33 @@ const coldBloodCheck = vm.runInContext(`(function (cards, ageName) {
   assert(normal.offered, 'control: Cold Blood should offer to play a drawn card');
 }
 console.log('Doomlings: Lonely Age also blocks "you may play it now"');
+
+// Lonely Age also blocks playing from the discard pile (Selective Memory, Trunk,
+// Self-Replicating) on your own turn (PR #16 review).
+const discardPlayCheck = vm.runInContext(`(function (cards, ageName) {
+  resetUids();
+  const g = dealGame(cards, { names: ['A', 'B'], seed: 11 });
+  const take = (name) => {
+    for (const pile of [g.traitDeck, g.discard, ...g.players.map((p) => p.hand)]) {
+      const i = pile.findIndex((c) => c.name === name);
+      if (i >= 0) return pile.splice(i, 1)[0];
+    }
+    throw new Error('card not found: ' + name);
+  };
+  g.eras[0].push({ ...cards.find((c) => c.name.toLowerCase() === ageName), uid: 'forced-age' });
+  g.phase = 'turn'; g.activeSeat = 0; g.playsLeft = 1;
+  const a = g.players[0];
+  a.hand = [take('TRUNK')];
+  g.players[1].hand = [];
+  g.discard.unshift(take('ADORABLE'));
+  let r = playTrait(g, a.hand[0].uid, EFFECTS);
+  while (!r.done) r = answer(g, r.request.kind === 'cards' ? [] : null);
+  return { piled: a.traitPile.map((c) => c.name).join(',') };
+})`, ctx);
+{
+  const lonely = discardPlayCheck(cards, 'lonely age');
+  assert.strictEqual(lonely.piled, 'TRUNK', 'Lonely Age: Trunk still played a card from the discard pile');
+  const normal = discardPlayCheck(cards, 'flourish');
+  assert.strictEqual(normal.piled, 'TRUNK,ADORABLE', 'control: Trunk should play the top discard');
+}
+console.log('Doomlings: Lonely Age also blocks plays from the discard pile');
