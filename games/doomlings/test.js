@@ -253,3 +253,84 @@ const discardPlayCheck = vm.runInContext(`(function (cards, ageName) {
   assert.strictEqual(normal.piled, 'TRUNK,ADORABLE', 'control: Trunk should play the top discard');
 }
 console.log('Doomlings: Lonely Age also blocks plays from the discard pile');
+// Regression (#17): swiping between cards in the card viewer froze the page.
+// Every card open added another pair of touch listeners to #sheetBody, so each
+// swipe ran all the old handlers, which re-rendered and added even more.
+// Run the whole UI script against a tiny fake DOM and swipe through a hand.
+// ---------------------------------------------------------------------------
+{
+  const noop = () => {};
+  class FakeEl {
+    constructor(tag) {
+      this.tagName = (tag || 'div').toUpperCase();
+      this.children = []; this.listeners = {}; this.attrs = {}; this.dataset = {};
+      this.hidden = false; this.disabled = false; this.value = ''; this.textContent = '';
+      const cls = new Set();
+      this.classList = {
+        add: (...c) => c.forEach((x) => cls.add(x)), remove: (...c) => c.forEach((x) => cls.delete(x)),
+        toggle: (c, on) => { const v = on === undefined ? !cls.has(c) : on; v ? cls.add(c) : cls.delete(c); return v; },
+        contains: (c) => cls.has(c),
+      };
+      this.style = new Proxy({ setProperty: noop, removeProperty: noop }, { set: () => true });
+    }
+    set innerHTML(v) { this.children = []; } get innerHTML() { return ''; }
+    set className(v) { this.classList.add(...String(v).split(/\s+/).filter(Boolean)); }
+    appendChild(c) { this.children.push(c); return c; }
+    append(...c) { c.forEach((x) => this.appendChild(x)); }
+    prepend(...c) { this.children.unshift(...c); }
+    replaceChildren(...c) { this.children = c; }
+    remove() {} insertBefore(c) { return this.appendChild(c); } removeChild() {}
+    setAttribute(k, v) { this.attrs[k] = v; } getAttribute(k) { return this.attrs[k]; } removeAttribute(k) { delete this.attrs[k]; }
+    addEventListener(t, f) { (this.listeners[t] = this.listeners[t] || []).push(f); }
+    removeEventListener(t, f) { this.listeners[t] = (this.listeners[t] || []).filter((x) => x !== f); }
+    fire(t, e) { (this.listeners[t] || []).slice().forEach((f) => f(e)); }
+    querySelector() { return new FakeEl(); } querySelectorAll() { return []; }
+    closest() { return null; } contains() { return false; }
+    getBoundingClientRect() { return { left: 0, top: 0, width: 100, height: 100, right: 100, bottom: 100 }; }
+    scrollIntoView() {} scrollTo() {} focus() {} blur() {} click() {} select() {}
+  }
+  const byId = new Map();
+  const get = (sel) => { if (!byId.has(sel)) byId.set(sel, new FakeEl()); return byId.get(sel); };
+  const document = {
+    querySelector: get, getElementById: (id) => get('#' + id), querySelectorAll: () => [],
+    createElement: (t) => new FakeEl(t), createTextNode: (t) => ({ textContent: t }),
+    addEventListener: noop, removeEventListener: noop, body: new FakeEl('body'), documentElement: new FakeEl('html'),
+    visibilityState: 'visible', hidden: false,
+  };
+  const store = {};
+  const win = {
+    document, console, setTimeout: () => 0, clearTimeout: noop, setInterval: () => 0, clearInterval: noop,
+    requestAnimationFrame: () => 0, cancelAnimationFrame: noop, addEventListener: noop, removeEventListener: noop,
+    matchMedia: () => ({ matches: false, addEventListener: noop, addListener: noop }),
+    localStorage: { getItem: (k) => store[k] ?? null, setItem: (k, v) => { store[k] = String(v); }, removeItem: (k) => { delete store[k]; } },
+    navigator: { userAgent: 'test', vibrate: noop }, location: { search: '', hash: '', href: 'http://x/' },
+    history: { replaceState: noop, pushState: noop }, innerWidth: 411, innerHeight: 751,
+    getComputedStyle: () => ({ getPropertyValue: () => '' }), performance: { now: () => 0 },
+  };
+  win.window = win; win.self = win; win.globalThis = win;
+  const uiCtx = vm.createContext(win);
+  scripts.forEach((src, i) => vm.runInContext(src, uiCtx, { filename: `doomlings-ui#${i}` }));
+
+  const body = get('#sheetBody');
+  const hand = vm.runInContext('window.__DOOMLINGS_CARDS__', uiCtx).filter((c) => c.card_type === 'Trait').slice(0, 5)
+    .map((c, i) => ({ ...c, uid: 'swipe' + i }));
+  uiCtx.__hand = hand;
+  vm.runInContext('openCard(__hand[0], { siblings: __hand })', uiCtx);
+  const swipe = (dx) => {
+    body.fire('touchstart', { touches: [{ clientX: 200, clientY: 300 }] });
+    body.fire('touchend', { changedTouches: [{ clientX: 200 + dx, clientY: 300 }] });
+  };
+  const index = () => vm.runInContext('sheetNav && sheetNav.index', uiCtx);
+  for (let k = 0; k < 20; k++) swipe(k % 7 === 6 ? 120 : -120);
+  assert.strictEqual((body.listeners.touchend || []).length, 1, 'card viewer keeps adding swipe listeners (#17)');
+  assert.strictEqual((body.listeners.touchstart || []).length, 1, 'card viewer keeps adding swipe listeners (#17)');
+  assert.strictEqual(index(), 4, 'swiping should land on the last card');
+  swipe(120); swipe(120);
+  assert.strictEqual(index(), 2, 'swiping right should go back two cards');
+  // A plain sheet afterwards must not react to swipes.
+  vm.runInContext('openSheet(() => {})', uiCtx);
+  assert.strictEqual(body.classList.contains('cd-swipe'), false, 'cd-swipe left on a non-card sheet');
+  swipe(-120);
+  assert.strictEqual(index(), null, 'a swipe on a later sheet jumped back to a stale card');
+  console.log('Doomlings: card viewer swipe keeps one listener and stops after the viewer closes');
+}

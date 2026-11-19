@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f3d24">
+<title>Paydirt</title>
+<style>
+:root{--ink:#1d1a14;--cream:#f3ead3;--paper:#fbf5e4;--field:#2f6b34;--field2:#2a6130;--red:#c8372d;--gold:#e0a526;--blue:#2c5aa0;--mute:#7a705c;--line:#d8ccad;
+  --serif:Georgia,'Times New Roman',serif;--sans:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:#1f3d24;color:var(--ink);font-family:var(--sans);min-height:100%}
+body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+.wrap{max-width:560px;margin:0 auto;padding:10px 10px 24px}
+h1.logo{font-family:var(--serif);font-weight:900;font-style:italic;letter-spacing:.04em;color:var(--gold);font-size:52px;margin:18px 0 0;text-align:center;text-shadow:3px 3px 0 #0d1f10}
+.sub{color:#cfe3c9;text-align:center;margin:2px 0 18px;font-size:14px;letter-spacing:.12em;text-transform:uppercase}
+.card{background:var(--paper);border-radius:14px;padding:14px;margin:10px 0;box-shadow:0 2px 0 rgba(0,0,0,.25)}
+.card h3{margin:0 0 10px;font-family:var(--serif);font-size:17px}
+.seg{display:flex;background:#e9dfc4;border-radius:10px;padding:3px;gap:3px}
+.seg button{flex:1;padding:10px 6px;border-radius:8px;font-weight:700;color:var(--mute)}
+.seg button.on{background:var(--ink);color:var(--cream)}
+label.f{display:block;font-size:12px;font-weight:700;color:var(--mute);text-transform:uppercase;letter-spacing:.06em;margin:12px 0 5px}
+select{width:100%;font:inherit;font-size:16px;padding:11px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink)}
+.big{display:block;width:100%;padding:15px;border-radius:12px;background:var(--red);color:#fff;font-weight:800;font-size:18px;letter-spacing:.02em;margin-top:12px;box-shadow:0 3px 0 #8e2219}
+.big.alt{background:var(--ink);box-shadow:0 3px 0 #000}
+.ghost{display:block;width:100%;padding:12px;border-radius:12px;background:rgba(255,255,255,.1);color:var(--cream);font-weight:700;margin-top:8px}
+.card .ghost,.sheet .ghost{background:#e9dfc4;color:var(--ink);border:1px solid var(--line)}
+.sheet .ghost:active,.card .ghost:active{background:#ddd0ae}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.small{font-size:13px;color:var(--mute)}
+
+/* scoreboard */
+.sb{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;background:#111;color:#fff;border-radius:12px;padding:8px 10px;gap:6px;border:3px solid #333}
+.sb .tm{display:flex;align-items:center;gap:8px}
+.sb .tm.r{flex-direction:row-reverse;text-align:right}
+.sb .ab{font-weight:900;font-size:15px;padding:3px 7px;border-radius:6px;min-width:46px;text-align:center}
+.sb .sc{font-family:'Courier New',monospace;font-weight:900;font-size:30px;color:#ffcc3a;min-width:44px;text-align:center}
+.sb .mid{text-align:center;font-family:'Courier New',monospace;color:#ffcc3a}
+.sb .clk{font-size:22px;font-weight:900}.sb .q{font-size:12px;color:#bbb}
+.sb .tos{display:flex;gap:3px;margin-top:3px}.sb .tm.r .tos{justify-content:flex-end}
+.sb .tos i{width:9px;height:4px;background:#ffcc3a;border-radius:2px}.sb .tos i.u{background:#444}
+.sb .pos{width:8px;height:8px;border-radius:50%;background:#ffcc3a;visibility:hidden}.sb .pos.on{visibility:visible}
+
+/* field */
+.fieldbox{margin:8px 0 4px}
+.field{position:relative;height:74px;border-radius:8px;overflow:hidden;background:repeating-linear-gradient(90deg,var(--field) 0 8.333%,var(--field2) 8.333% 16.666%);border:2px solid #f4f1e6}
+.ez{position:absolute;top:0;bottom:0;width:8.333%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:11px;writing-mode:vertical-rl;letter-spacing:.15em}
+.ez.l{left:0;transform:rotate(180deg)}.ez.r{right:0}
+.yl{position:absolute;top:0;bottom:0;width:1px;background:rgba(255,255,255,.55)}
+.yn{position:absolute;bottom:2px;font-size:9px;color:rgba(255,255,255,.8);transform:translateX(-50%);font-weight:700}
+.los{position:absolute;top:0;bottom:0;width:3px;background:#5aa0ff;transform:translateX(-50%)}
+.fdl{position:absolute;top:0;bottom:0;width:3px;background:#ffd23a;transform:translateX(-50%)}
+.ball{position:absolute;top:50%;width:18px;height:11px;background:#7a3d17;border-radius:50%;transform:translate(-50%,-50%);border:1.5px solid #fff;transition:left 1.2s cubic-bezier(.35,.1,.25,1) .35s}
+.sit{color:var(--cream);text-align:center;font-weight:800;font-size:16px;margin:6px 0 2px}
+.sit .dd{color:var(--gold)}
+
+/* result */
+.res{background:var(--paper);border-radius:14px;padding:12px;margin:8px 0;min-height:96px}
+.dicebar{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.dgroup{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--mute);font-weight:700}
+.dice{display:flex;gap:4px;align-items:center}
+.die{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:17px;box-shadow:inset 0 -2px 0 rgba(0,0,0,.25)}
+.die.k{background:#1b1b1b;color:#fff}.die.w{background:#fff;color:#111;border:1px solid #bbb}.die.r{background:#c8372d;color:#fff}.die.g{background:#2d8a43;color:#fff}
+.die.roll{animation:roll .7s ease both}.die.roll:nth-child(2){animation-delay:.08s}.die.roll:nth-child(3){animation-delay:.16s}
+/* after a play: dice roll, then the chart lookups, then the result, then the next call */
+.res.anim .look{animation:fadeup .5s ease .7s both}.res.anim .headline{animation:fadeup .6s ease 1.1s both}.res.anim .notice{animation:fadeup .5s ease 1.5s both}
+.panel.anim{animation:panelin .4s ease 1.5s both}
+@keyframes panelin{from{opacity:0;visibility:hidden;transform:translateY(6px)}to{opacity:1;visibility:visible;transform:none}}.ball.anim{animation:none}
+@keyframes fadeup{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.die.roll,.res.anim *,.panel.anim{animation:none!important}.ball{transition:none}}
+@keyframes roll{0%{transform:rotate(-90deg) scale(.6);opacity:.2}60%{transform:rotate(15deg) scale(1.1)}100%{transform:none;opacity:1}}
+.tot{font-family:var(--serif);font-size:22px;font-weight:900;color:var(--ink);margin-left:4px}
+.look{font-size:13px;margin-top:8px;line-height:1.5}
+.look b{font-family:'Courier New',monospace;background:#efe4c6;padding:1px 5px;border-radius:4px}
+.headline{font-family:var(--serif);font-weight:900;font-size:20px;margin-top:8px;line-height:1.25}
+.headline.score{color:var(--red)}
+.notice{background:var(--gold);color:var(--ink);font-weight:800;border-radius:8px;padding:6px 10px;margin-top:8px;font-size:14px}
+
+/* calls */
+.panel{background:var(--paper);border-radius:14px;padding:12px;margin:8px 0}
+.panel .who{font-weight:800;font-size:14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.call{background:#fff;border:2px solid var(--line);border-radius:11px;padding:9px 6px 8px;text-align:center;min-height:58px}
+.call:active{transform:scale(.97)}
+.call .n{display:block;font-family:var(--serif);font-weight:900;font-size:20px;line-height:1}
+.call .t{display:block;font-size:12px;font-weight:700;margin-top:3px}
+.call .e{display:block;font-size:10px;color:var(--mute);margin-top:2px}
+.call.pass .n{color:var(--blue)}.call.run .n{color:var(--red)}
+.call.k{background:#f1e7cc}
+.call:disabled{opacity:.35}
+.tobtn{background:var(--ink);color:var(--cream);border-radius:9px;padding:7px 11px;font-size:13px;font-weight:800}
+.tobtn:disabled{opacity:.3}
+.next{display:block;width:100%;padding:16px;border-radius:12px;background:var(--gold);color:var(--ink);font-weight:900;font-size:18px;box-shadow:0 3px 0 #9b7210}
+
+/* top bar */
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.top .t{color:var(--gold);font-family:var(--serif);font-style:italic;font-weight:900;font-size:20px}
+.top button{color:var(--cream);font-size:22px;padding:2px 10px;font-weight:900}
+
+/* log */
+.log{background:rgba(0,0,0,.25);border-radius:12px;padding:8px 10px;margin-top:8px;max-height:230px;overflow:auto;color:#e6efe2;font-size:13px}
+.log div{padding:4px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.log .m{color:#9fbf98;font-size:11px;font-weight:700}
+.log .sc{color:var(--gold);font-weight:800}
+
+/* sheets */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.sheet{background:var(--paper);width:100%;max-width:640px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 14px calc(18px + env(safe-area-inset-bottom))}
+.sheet h2{font-family:var(--serif);margin:0 0 10px;font-size:22px}
+.sheet .x{float:right;font-size:24px;font-weight:900;padding:0 6px}
+.hand{position:fixed;inset:0;background:#1f3d24;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--cream);text-align:center;padding:30px}
+.hand h2{font-family:var(--serif);font-size:30px;color:var(--gold);margin:0 0 8px}
+.hand .big{max-width:320px}
+
+/* team card */
+.chart{border-collapse:collapse;font-family:'Courier New',monospace;font-size:11px;width:100%}
+.chart th,.chart td{border:1px solid var(--line);padding:2px 3px;text-align:center;white-space:nowrap}
+.chart th{background:var(--ink);color:var(--cream);font-family:var(--sans);font-size:10px;position:sticky;top:0}
+.chart td.rn{background:#efe4c6;font-weight:900}
+.chart td.hit{background:var(--gold);font-weight:900}
+.chart td.sp{color:var(--red);font-weight:700}
+.tcwrap{overflow:auto;max-height:60vh;border-radius:8px;border:1px solid var(--line)}
+.box{width:100%;border-collapse:collapse;font-size:14px}.box td,.box th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:right}.box td:first-child,.box th:first-child{text-align:left}
+.rules p,.rules li{font-size:14px;line-height:1.5}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--cream);padding:10px 16px;border-radius:10px;font-weight:700;z-index:40}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div id="toasts"></div>
+<script>
+/*TEAMS*/
+</script>
+<script>
+/*ENGINE*/
+</script>
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+};
+const SAVE = 'paydirt.save.v1', PREFS = 'paydirt.prefs.v1';
+PD.setTeams(PD_TEAMS);
+const IDS = Object.keys(PD_TEAMS).sort((a, b) => (PD_TEAMS[a].city + PD_TEAMS[a].name).localeCompare(PD_TEAMS[b].city + PD_TEAMS[b].name));
+const T = id => PD_TEAMS[id];
+const fullName = id => `${T(id).city} ${T(id).name}`;
+const textOn = hex => { const n = parseInt(hex.slice(1), 16); const l = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)); return l > 150 ? '#111' : '#fff'; };
+
+let S = null;   // { g, mode:'bot'|'pnp', human:[bool,bool], step, offCall, holder, last, busy }
+let prefs = Object.assign({ mode: 'bot', mine: 'CHI', opp: 'GB', home: 1, qlen: 900 }, store.get(PREFS, {}));
+
+function toast(t) { const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; $('#toasts').appendChild(d); setTimeout(() => d.remove(), 2200); }
+
+// ---------------- setup ----------------
+function setup() {
+  S = null;
+  const saved = store.get(SAVE, null);
+  const opts = id => IDS.map(t => `<option value="${t}" ${t === id ? 'selected' : ''}>${esc(fullName(t))} (${T(t).record})</option>`).join('');
+  $('#app').innerHTML = `
+    <h1 class="logo">PAYDIRT!</h1>
+    <div class="sub">Pro football dice &amp; charts · ${T('CHI').season} season</div>
+    ${saved && !saved.g.over ? `<div class="card"><h3>Game in progress</h3><div class="small">${esc(PD.abbr(saved.g, 0))} ${saved.g.score[0]} – ${esc(PD.abbr(saved.g, 1))} ${saved.g.score[1]} · ${qName(saved.g.qtr)} ${PD.clockText(saved.g.clock)}</div><button class="big alt" id="resume">Continue game</button></div>` : ''}
+    <div class="card">
+      <h3>New game</h3>
+      <div class="seg" id="mode"><button data-v="bot">Vs bot</button><button data-v="pnp">Pass &amp; play</button></div>
+      <label class="f" id="l1">${prefs.mode === 'bot' ? 'Your team' : 'Team 1'}</label><select id="mine">${opts(prefs.mine)}</select>
+      <label class="f" id="l2">${prefs.mode === 'bot' ? 'Bot team' : 'Team 2'}</label><select id="opp">${opts(prefs.opp)}</select>
+      <label class="f">Home team</label><div class="seg" id="home"><button data-v="0">Team 1</button><button data-v="1">Team 2</button></div>
+      <label class="f">Quarter length</label><div class="seg" id="ql"><button data-v="900">15 min</button><button data-v="600">10 min</button><button data-v="300">5 min</button></div>
+      <button class="big" id="go">Kick off</button>
+    </div>
+    <div class="row"><button class="ghost" id="cards">Team cards</button><button class="ghost" id="rules">How to play</button></div>
+    ${window.GNReport ? '<button class="ghost" onclick="GNReport.open()">⚑ Report a bug</button>' : ''}
+    <p class="small" style="color:#9fbf98;text-align:center;margin-top:16px">Team charts built from real ${T('CHI').season} NFL play-by-play (nflverse).<br>Fan-made, not affiliated with the publishers of the original game.</p>`;
+  const seg = (id, key, cb) => { const el = $('#' + id); const sync = () => el.querySelectorAll('button').forEach(b => b.classList.toggle('on', String(prefs[key]) === b.dataset.v)); el.onclick = e => { const b = e.target.closest('button'); if (!b) return; prefs[key] = isNaN(+b.dataset.v) ? b.dataset.v : +b.dataset.v; sync(); store.set(PREFS, prefs); cb && cb(); }; sync(); };
+  seg('mode', 'mode', () => { $('#l1').textContent = prefs.mode === 'bot' ? 'Your team' : 'Team 1'; $('#l2').textContent = prefs.mode === 'bot' ? 'Bot team' : 'Team 2'; });
+  seg('home', 'home'); seg('ql', 'qlen');
+  const homeLabels = () => { const bs = $('#home').querySelectorAll('button'); bs[0].textContent = T(prefs.mine).name; bs[1].textContent = T(prefs.opp).name; };
+  homeLabels();
+  $('#mine').onchange = e => { prefs.mine = e.target.value; store.set(PREFS, prefs); homeLabels(); };
+  $('#opp').onchange = e => { prefs.opp = e.target.value; store.set(PREFS, prefs); homeLabels(); };
+  $('#go').onclick = () => {
+    if (prefs.mine === prefs.opp) { toast('Pick two different teams'); return; }
+    // side 0 = visitors, side 1 = home
+    const home = prefs.home === 0 ? prefs.mine : prefs.opp, away = prefs.home === 0 ? prefs.opp : prefs.mine;
+    const g = PD.newGame({ teams: [away, home], qlen: prefs.qlen });
+    const mineSide = away === prefs.mine ? 0 : 1;
+    S = { g, mode: prefs.mode, human: prefs.mode === 'pnp' ? [true, true] : [mineSide === 0, mineSide === 1], step: null, holder: null, last: null };
+    const rec = 1 - g.poss;
+    S.last = { headline: `${fullName(g.teams[rec])} win the toss and will receive.` };
+    persist(); flow();
+  };
+  if ($('#resume')) $('#resume').onclick = () => { S = saved; S.step = null; S.busy = false; flow(); };
+  $('#cards').onclick = () => teamCards(prefs.mine);
+  $('#rules').onclick = rulesSheet;
+}
+const qName = q => q >= 5 ? 'OT' : ['', '1st', '2nd', '3rd', '4th'][q];
+function persist() { if (S) store.set(SAVE, { g: S.g, mode: S.mode, human: S.human, last: S.last, holder: S.holder }); }
+
+// ---------------- game flow ----------------
+function flow() {
+  const g = S.g;
+  const notes = PD.prepare(g);
+  if (notes.length) { S.last = Object.assign({}, S.last || {}, { notices: (S.last && S.last.notices || []).concat(notes) }); }
+  if (g.over) { persist(); render(); finalSheet(); return; }
+  S.offCall = null; S.defCall = null;
+  const off = g.poss;
+  if (S.human[off]) { S.step = 'off'; needHolder(off); }
+  else {
+    S.offCall = PD.botOffense(g);
+    if (PD.needsDefense(g, S.offCall)) { S.defCall = null; S.step = 'def'; needHolder(1 - off); }
+    else S.step = 'botgo';
+  }
+  persist(); render();
+}
+function needHolder(side) {
+  if (S.mode !== 'pnp') return;
+  if (S.holder !== null && S.holder !== side) S.handoff = side; else S.handoff = null;
+  if (S.holder === null) S.holder = side;
+}
+function pickOff(call) {
+  const g = S.g; S.offCall = call;
+  if (PD.needsDefense(g, call)) {
+    const d = 1 - g.poss;
+    if (S.human[d]) { S.step = 'def'; needHolder(d); render(); return; }
+    S.defCall = PD.botDefense(g);
+  }
+  resolve();
+}
+function pickDef(form) { S.defCall = form; resolve(); }
+function resolve() {
+  const g = S.g;
+  const before = { poss: g.poss, score: g.score.slice() };
+  // where the ball was, so the next render can slide it to the new spot
+  const was = { poss: g.poss, ball: g.phase === 'kickoff' ? (g.from || 35) : g.ball };
+  const e = PD.play(g, S.offCall, S.defCall);
+  const scored = g.score[0] !== before.score[0] || g.score[1] !== before.score[1];
+  S.last = { e, scored, notices: e.notice ? [e.notice] : [] };
+  // bots may call timeouts between plays
+  for (const s of [0, 1]) if (!S.human[s] && PD.botTimeout(g, s)) { PD.timeout(g, s); S.last.notices.push(`Timeout ${PD.abbr(g, s)}`); }
+  S.step = null; S.anim = true;
+  // the field always shows the offense driving right, so flip the old spot if possession changed
+  S.from = g.over ? null : was.poss === g.poss ? was.ball : 100 - was.ball;
+  flow();
+}
+
+// ---------------- render ----------------
+function scoreboard(g) {
+  const tm = (s, r) => {
+    const t = T(g.teams[s]);
+    return `<div class="tm ${r ? 'r' : ''}"><div><span class="ab" style="background:${t.color};color:${textOn(t.color)}">${t.id}</span><div class="tos">${[0, 1, 2].map(i => `<i class="${i < g.to[s] ? '' : 'u'}"></i>`).join('')}</div></div><span class="sc">${g.score[s]}</span><span class="pos ${g.poss === s && !g.over && g.phase !== 'kickoff' ? 'on' : ''}"></span></div>`;
+  };
+  return `<div class="sb">${tm(0)}<div class="mid"><div class="clk">${g.over ? 'FINAL' : PD.clockText(g.clock)}</div><div class="q">${g.over ? (g.qtr >= 5 ? 'OT' : '') : qName(g.qtr) + (g.untimed ? ' · untimed down' : '')}</div></div>${tm(1, true)}</div>`;
+}
+function field(g) {
+  // offense always drives to the right
+  const off = g.poss, O = T(g.teams[off]), D = T(g.teams[1 - off]);
+  const x = b => 8.333 + b * 0.83333;
+  let marks = '';
+  for (let y = 10; y < 100; y += 10) marks += `<div class="yl" style="left:${x(y)}%"></div><div class="yn" style="left:${x(y)}%">${y <= 50 ? y : 100 - y}</div>`;
+  const kick = g.phase === 'kickoff', pat = g.phase === 'pat';
+  const ball = kick ? (g.from || 35) : g.ball;
+  const fd = !kick && !pat && !g.over ? Math.min(100, g.ball + g.togo) : null;
+  return `<div class="fieldbox"><div class="field">
+    <div class="ez l" style="background:${O.color}">${O.name.toUpperCase()}</div><div class="ez r" style="background:${D.color}">${D.name.toUpperCase()}</div>
+    ${marks}${g.over ? '' : `<div class="los" style="left:${x(ball)}%"></div>`}${fd !== null && fd < 100 ? `<div class="fdl" style="left:${x(fd)}%"></div>` : ''}
+    ${g.over ? '' : `<div class="ball" data-to="${x(ball)}" style="left:${x(S.anim && S.from != null ? S.from : ball)}%"></div>`}
+  </div></div>`;
+}
+function situation(g) {
+  if (g.over) return '';
+  const a = PD.abbr(g, g.poss);
+  if (g.phase === 'kickoff') return `<div class="sit">${a} kicks off from the ${g.from || 35}</div>`;
+  if (g.phase === 'pat') return `<div class="sit">${a} · Try after touchdown</div>`;
+  return `<div class="sit">${a} ball · <span class="dd">${PD.downText(g)}</span> at ${PD.spotText(g, g.poss, g.ball)}</div>`;
+}
+function diceHtml(d, cls, anim) { return d.dice.map((v, i) => `<span class="die ${cls[i]} ${anim ? 'roll' : ''}">${v}</span>`).join('') + `<span class="tot">${d.total}</span>`; }
+function resultHtml() {
+  const L = S.last; if (!L) return '';
+  const g = S.g;
+  let h = '';
+  if (L.e && L.e.det) {
+    const e = L.e, d = e.det, offT = PD.abbr(g, e.poss), defT = PD.abbr(g, 1 - e.poss);
+    const anim = S.anim;
+    h += `<div class="dicebar"><div class="dgroup">${offT} ${d.call === 'KO' || d.call === 'ONS' || d.call === 'P' || d.call === 'FG' || d.call === 'XP' ? 'kick' : 'offense'}<div class="dice">${diceHtml(d.off, ['k', 'w', 'w'], anim)}</div></div>
+      ${d.def ? `<div class="dgroup">${defT} defense<div class="dice">${diceHtml(d.def, ['r', 'g'], anim)}</div></div>` : ''}</div>`;
+    const look = [];
+    const col = PD.PLAYS[d.call] || d.call;
+    look.push(`${offT} ${esc(col)} #${d.off.total} → <b>${esc(d.off.res || 'blank')}</b>`);
+    if (d.def) look.push(`${defT} ${esc(PD.FORMS[d.form])} (${d.form}) #${d.def.total} → <b>${esc(d.def.res || 'blank')}</b>`);
+    for (const r of d.rerolls) look.push(`${r.def ? defT : offT} ${esc(PD.PLAYS[r.col] || r.col)} #${r.total} → <b>${esc(r.res || 'blank')}</b>`);
+    h += `<div class="look">${look.join('<br>')}</div>`;
+  }
+  if (L.headline) h += `<div class="headline">${esc(L.headline)}</div>`;
+  if (L.e) h += `<div class="headline ${L.scored ? 'score' : ''}">${esc(L.e.txt)}</div>`;
+  for (const n of (L.notices || [])) h += `<div class="notice">${esc(n)}</div>`;
+  return `<div class="res ${S.anim ? 'anim' : ''}">${h}</div>`;
+}
+function playBtn(c, g, side) {
+  const T0 = T(g.teams[side]);
+  const pass = +c >= 5;
+  return `<button class="call ${pass ? 'pass' : 'run'}" data-c="${c}"><span class="n">${c}</span><span class="t">${PD.PLAYS[c]}</span><span class="e">avg ${PD.colEV(T0, c).toFixed(1)}</span></button>`;
+}
+function panelHtml() {
+  const g = S.g;
+  if (g.over) return `<div class="panel"><button class="next" id="newg">New game</button></div>`;
+  const side = S.step === 'def' ? 1 - g.poss : g.poss;
+  const name = PD.abbr(g, side);
+  const toBtn = `<button class="tobtn" id="tob" ${PD.canTimeout(g, side) ? '' : 'disabled'}>Timeout (${g.to[side]})</button>`;
+  if (S.step === 'botgo') {
+    return `<div class="panel"><div class="who">${PD.abbr(g, g.poss)} ${g.phase === 'kickoff' ? (S.offCall === 'ONS' ? 'lines up for an onside kick' : 'is ready to kick off') : g.phase === 'pat' ? 'lines up for the extra point' : S.offCall === 'P' ? 'sends out the punt team' : S.offCall === 'FG' ? 'tries a field goal' : S.offCall === 'K' ? 'takes a knee' : 'spikes it'}</div><button class="next" id="go">Snap ▸</button></div>`;
+  }
+  if (S.step === 'off') {
+    if (g.phase === 'kickoff') return `<div class="panel"><div class="who">${name} kickoff</div><div class="grid3" style="grid-template-columns:1fr 1fr"><button class="call k" data-c="KO"><span class="n">KO</span><span class="t">Kickoff</span></button><button class="call k" data-c="ONS"><span class="n">ON</span><span class="t">Onside kick</span><span class="e">13–20 recovers</span></button></div></div>`;
+    if (g.phase === 'pat') {
+      if (S.twoPt) return `<div class="panel"><div class="who">${name} two-point play <button class="tobtn" id="back2">Back</button></div><div class="grid3">${PD.SCRIM.map(c => playBtn(c, g, side)).join('')}</div></div>`;
+      return `<div class="panel"><div class="who">${name} try after touchdown</div><div class="grid3" style="grid-template-columns:1fr 1fr"><button class="call k" data-c="XP"><span class="n">1</span><span class="t">Kick extra point</span></button><button class="call k" id="go2"><span class="n">2</span><span class="t">Go for two</span><span class="e">one play from the 2</span></button></div></div>`;
+    }
+    const legal = PD.legalOff(g);
+    const fg = legal.indexOf('FG') >= 0 ? Math.round(PD.fgChance(g, side, g.ball) * 100) : null;
+    return `<div class="panel"><div class="who"><span>${name} offense · call a play</span>${toBtn}</div><div class="grid3">${PD.SCRIM.map(c => playBtn(c, g, side)).join('')}
+      <button class="call k" data-c="P"><span class="n">P</span><span class="t">Punt</span></button>
+      <button class="call k" data-c="FG" ${fg === null ? 'disabled' : ''}><span class="n">FG</span><span class="t">Field goal</span><span class="e">${fg === null ? 'out of range' : `${100 - g.ball + 17} yds · ${fg}%`}</span></button>
+      <button class="call k" data-c="${legal.indexOf('S') >= 0 ? 'S' : 'K'}"><span class="n">${legal.indexOf('S') >= 0 ? 'S' : 'K'}</span><span class="t">${legal.indexOf('S') >= 0 ? 'Spike' : 'Kneel'}</span></button>
+      ${legal.indexOf('S') >= 0 ? `<button class="call k" data-c="K" style="grid-column:span 3;min-height:40px"><span class="t">QB kneel</span></button>` : ''}
+    </div></div>`;
+  }
+  if (S.step === 'def') {
+    const D = T(g.teams[side]);
+    const hint = g.phase === 'pat' ? ' (two-point try)' : '';
+    return `<div class="panel"><div class="who"><span>${name} defense${hint} · pick a formation</span>${toBtn}</div><div class="grid3">${Object.keys(PD.FORMS).map(f => `<button class="call" data-f="${f}"><span class="n">${f}</span><span class="t">${PD.FORMS[f]}</span></button>`).join('')}</div></div>`;
+  }
+  return '';
+}
+function logHtml(g) {
+  const items = g.log.slice(-40).reverse().map(l => `<div><span class="m">${qName(l.qtr)} ${PD.clockText(l.clock)}${l.down ? ' · ' + esc(PD.abbr(g, l.poss)) + ' ' + esc(l.down) + ' at ' + esc(l.spot) : ''}</span><br><span class="${/TOUCHDOWN|GOOD!|SAFETY/.test(l.txt) ? 'sc' : ''}">${esc(l.txt)}</span></div>`).join('');
+  return items ? `<div class="log" id="log">${items}</div>` : '';
+}
+function render() {
+  const g = S.g;
+  $('#app').innerHTML = `<div class="top"><span class="t">Paydirt!</span><button id="menu" aria-label="Menu">⋯</button></div>
+    ${scoreboard(g)}${field(g)}${situation(g)}${resultHtml()}${S.anim ? panelHtml().replace('class="panel"', 'class="panel anim"') : panelHtml()}${logHtml(g)}`;
+  if (S.anim) { const b = $('.ball'); if (b) { void b.offsetWidth; b.style.left = b.dataset.to + '%'; } }
+  S.anim = false; S.from = null;
+  $('#menu').onclick = menuSheet;
+  document.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { if (S.step === 'off') { if (g.phase === 'pat' && b.dataset.c !== 'XP') S.twoPt = false; pickOff(b.dataset.c); } });
+  document.querySelectorAll('[data-f]').forEach(b => b.onclick = () => pickDef(b.dataset.f));
+  if ($('#go')) $('#go').onclick = () => resolve();
+  if ($('#go2')) $('#go2').onclick = () => { S.twoPt = true; render(); };
+  if ($('#back2')) $('#back2').onclick = () => { S.twoPt = false; render(); };
+  if ($('#newg')) $('#newg').onclick = () => { store.del(SAVE); setup(); };
+  if ($('#tob')) $('#tob').onclick = () => { const side = S.step === 'def' ? 1 - g.poss : g.poss; if (PD.timeout(g, side)) { S.last = Object.assign({}, S.last, { notices: (S.last.notices || []).concat([`Timeout ${PD.abbr(g, side)} — clock stopped at ${PD.clockText(g.clock)}`]) }); persist(); render(); } };
+  if (S.handoff !== null && S.handoff !== undefined && S.mode === 'pnp') handoff(S.handoff);
+}
+function handoff(side) {
+  const g = S.g; const t = T(g.teams[side]);
+  const role = side === g.poss ? 'offense' : 'defense';
+  const d = document.createElement('div'); d.className = 'hand';
+  d.innerHTML = `<h2>Pass to the ${esc(t.city)} ${esc(t.name)}</h2><p>${role === 'defense' ? 'The offense has called its play. No peeking!' : 'Your offense is up.'}</p><button class="big" style="background:${t.color};color:${textOn(t.color)}">I'm the ${esc(t.id)} coach — ${role}</button>`;
+  d.querySelector('button').onclick = () => { S.holder = side; S.handoff = null; d.remove(); };
+  document.body.appendChild(d);
+}
+
+// ---------------- sheets ----------------
+function sheet(html, onOpen) {
+  const s = document.createElement('div'); s.className = 'scrim';
+  s.innerHTML = `<div class="sheet"><button class="x" aria-label="Close">×</button>${html}</div>`;
+  s.onclick = e => { if (e.target === s || e.target.classList.contains('x')) s.remove(); };
+  document.body.appendChild(s); onOpen && onOpen(s); return s;
+}
+function menuSheet() {
+  const g = S.g;
+  sheet(`<h2>Menu</h2>
+    <button class="ghost" id="mBox">Box score</button>
+    <button class="ghost" id="mC0">${esc(fullName(g.teams[0]))} card</button>
+    <button class="ghost" id="mC1">${esc(fullName(g.teams[1]))} card</button>
+    <button class="ghost" id="mRules">How to play</button>
+    ${window.GNReport ? '<button class="ghost" id="bugM">⚑ Report a bug</button>' : ''}
+    <button class="ghost" id="mQuit">Quit to main menu</button>`, s => {
+    const close = () => s.remove();
+    s.querySelector('#mBox').onclick = () => { close(); boxSheet(); };
+    s.querySelector('#mC0').onclick = () => { close(); teamCards(g.teams[0]); };
+    s.querySelector('#mC1').onclick = () => { close(); teamCards(g.teams[1]); };
+    s.querySelector('#mRules').onclick = () => { close(); rulesSheet(); };
+    if (s.querySelector('#bugM')) s.querySelector('#bugM').onclick = () => { close(); GNReport.open(); };
+    s.querySelector('#mQuit').onclick = () => { close(); persist(); setup(); };
+  });
+}
+function boxRows(g) {
+  const st = g.stats, a = PD.abbr(g, 0), b = PD.abbr(g, 1);
+  const r = (k, f) => `<tr><td>${k}</td><td>${f(st[0])}</td><td>${f(st[1])}</td></tr>`;
+  return `<table class="box"><tr><th></th><th>${a}</th><th>${b}</th></tr>
+    ${r('Rushing', s => `${s.rush}-${s.rushY}`)}${r('Passing', s => `${s.comp}/${s.att}, ${s.passY}`)}${r('Sacked', s => s.sacks)}
+    ${r('Total yards', s => s.rushY + s.passY)}${r('Interceptions thrown', s => s.int)}${r('Fumbles', s => s.fum)}${r('Penalties', s => `${s.pen}-${s.penY}`)}</table>`;
+}
+function boxSheet() { sheet(`<h2>Box score</h2>${boxRows(S.g)}`); }
+function finalSheet() {
+  const g = S.g; const w = g.score[0] === g.score[1] ? null : g.score[0] > g.score[1] ? 0 : 1;
+  store.del(SAVE);
+  sheet(`<h2>Final${g.qtr >= 5 ? ' (OT)' : ''}</h2><p style="font-family:var(--serif);font-size:20px;font-weight:900">${esc(fullName(g.teams[0]))} ${g.score[0]}<br>${esc(fullName(g.teams[1]))} ${g.score[1]}</p>
+    <p>${w === null ? 'A tie!' : esc(T(g.teams[w]).name) + ' win.'}</p>${boxRows(g)}<button class="big" id="again">New game</button>`, s => { s.querySelector('#again').onclick = () => { s.remove(); setup(); }; });
+}
+function teamCards(id) {
+  let side = 'off';
+  const hl = {};  // highlight the cells from the last play
+  if (S && S.last && S.last.e && S.last.e.det) {
+    const e = S.last.e, d = e.det, oT = S.g.teams[e.poss], dT = S.g.teams[1 - e.poss];
+    hl[oT + ':o:' + d.call + ':' + d.off.total] = 1;
+    if (d.def) hl[dT + ':d:' + d.form + d.call + ':' + d.def.total] = 1;
+  }
+  const s = sheet('<div id="tc"></div>');
+  const draw = () => {
+    const t = T(id);
+    const sel = IDS.map(x => `<option value="${x}" ${x === id ? 'selected' : ''}>${esc(fullName(x))}</option>`).join('');
+    let tbl = '';
+    if (side === 'off') {
+      const cols = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'B', 'QT'];
+      tbl = `<table class="chart"><tr><th>#</th>${cols.map(c => `<th>${c}</th>`).join('')}</tr>` + t.off['1'].map((_, i) => `<tr><td class="rn">${i + 10}</td>${cols.map(c => { const v = t.off[c][i]; const sp = /[A-Z]/.test(v); return `<td class="${hl[id + ':o:' + c + ':' + (i + 10)] ? 'hit' : sp ? 'sp' : ''}">${esc(v)}</td>`; }).join('')}</tr>`).join('') + '</table>';
+    } else if (side === 'st') {
+      const cols = [['KO', 'Kickoff'], ['KR', 'KO ret'], ['P', 'Punt'], ['PR', 'Punt ret'], ['IR', 'INT ret'], ['FG', 'FG']];
+      tbl = `<table class="chart"><tr><th>#</th>${cols.map(c => `<th>${c[1]}</th>`).join('')}<th>Fum</th><th>PAT</th></tr>` + t.off.KO.map((_, i) => `<tr><td class="rn">${i + 10}</td>${cols.map(c => `<td class="${hl[id + ':o:' + c[0] + ':' + (i + 10)] ? 'hit' : ''}">${esc(t.off[c[0]][i])}</td>`).join('')}<td>${t.fumRec.indexOf(i + 10) >= 0 ? 'Own' : ''}</td><td>${t.patMiss.indexOf(i + 10) >= 0 ? 'NG' : ''}</td></tr>`).join('') + '</table>';
+    } else {
+      tbl = `<table class="chart"><tr><th>Def</th><th>#</th>${PD.SCRIM.map(c => `<th>${c}</th>`).join('')}</tr>` + Object.keys(PD.FORMS).map(f => [1, 2, 3, 4, 5].map(n => `<tr><td class="rn">${n === 1 ? f : ''}</td><td class="rn">${n}</td>${PD.SCRIM.map(c => { const v = t.def[f][c][n - 1]; return `<td class="${hl[id + ':d:' + f + c + ':' + n] ? 'hit' : /[A-Z(]/.test(v) ? 'sp' : ''}">${esc(v)}</td>`; }).join('')}</tr>`).join('')).join('') + '</table>';
+    }
+    s.querySelector('#tc').innerHTML = `<h2>${esc(t.city)} ${esc(t.name)} <span class="small">${t.season} · ${t.record}</span></h2>
+      <select id="tcs">${sel}</select>
+      <div class="seg" style="margin:10px 0" id="tcv"><button data-v="off" class="${side === 'off' ? 'on' : ''}">Offense</button><button data-v="def" class="${side === 'def' ? 'on' : ''}">Defense</button><button data-v="st" class="${side === 'st' ? 'on' : ''}">Special teams</button></div>
+      <div class="tcwrap">${tbl}</div>
+      <p class="small">${side === 'def' ? 'Rows are the defensive dice (red + green, 1–5). Blank = no change; numbers add to the offense; ( ) overrides.' : 'Rows are the offensive dice: tens die + two ones dice (10–39). * = out of bounds, † = downed/out of bounds.'}</p>`;
+    s.querySelector('#tcs').onchange = e => { id = e.target.value; draw(); };
+    s.querySelector('#tcv').onclick = e => { const b = e.target.closest('button'); if (b) { side = b.dataset.v; draw(); } };
+  };
+  draw();
+}
+function rulesSheet() {
+  sheet(`<h2>How to play</h2><div class="rules">
+    <p>Each snap, the offense secretly calls one of nine plays and the defense secretly picks one of six formations. Then the dice decide.</p>
+    <p><b>Offense dice</b> (black tens die, two white dice) give a number from 10 to 39. Look it up in the offense's column for the play called. <b>Defense dice</b> (red + green) give 1 to 5; look that up under the defense's formation for the same play.</p>
+    <ul>
+      <li>Numbers add together: a 6-yard run against a −2 is a 4-yard gain.</li>
+      <li>A number in ( ) overrides the other side. INC, INT, F (fumble) and TD on the offense's chart stand on their own.</li>
+      <li><b>B</b> breakaway and <b>QT</b> QB trapped send you to the B or QT column for a new roll.</li>
+      <li><b>OFF</b>/<b>DEF</b> are penalties: the offense rolls again for the play result and the fouled team takes whichever is better. <b>PI</b> is pass interference, a spot foul and first down.</li>
+      <li>Calling the right formation helps: Short Yardage stuffs inside runs, Long Pass takes away the bomb, Blitz can trap the QB but gets burned by draws and screens.</li>
+    </ul>
+    <p><b>Kicking:</b> the Kickoff, Punt and Field Goal columns are on each team's special-teams card. A field goal is good when the number rolled is at least the distance to the goal line. Most plays take 40 seconds; incompletions and late out-of-bounds plays take 10. Each team gets 3 timeouts a half, which cut the last play to 10 seconds.</p>
+    <p>Overtime is one sudden-death period: next score wins.</p>
+    <p class="small">Team charts are generated from each team's real ${T('CHI').season} play-by-play, broken out by run gap and pass depth.</p></div>`);
+}
+
+setup();
+</script>
+</body>
+</html>

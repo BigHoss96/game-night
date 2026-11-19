@@ -480,6 +480,35 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
   border:1px dashed var(--edge)}
 .deck-top img{width:100%;height:100%;object-fit:cover;display:block}
 
+/* ==========================================================================
+   COMPACT TABLE (#13). On a typical phone (~410x750) the age panel, deck row,
+   hand and a tall action dock left the trait pile only a sliver of screen, so
+   you had to scroll to see it. Tighten the chrome so the pile gets the room;
+   the age panel stays tappable for its full card.
+   ========================================================================== */
+.board{padding:8px 12px 8px}
+.age{gap:10px;padding:8px 10px;margin-bottom:8px}
+.age img{width:42px;border-radius:6px}
+.age-name{font-size:15px;margin-top:0}
+.age-text{font-size:12px;line-height:1.4;margin-top:2px}
+.age-rule{margin-top:5px;font-size:9px;padding:2px 7px}
+.decks{margin-bottom:8px}
+.deck{padding:5px 8px;gap:7px}
+.deck-mini,.deck-top{width:18px;height:26px}
+.pile-head{margin-bottom:6px}
+/* "COLORLESS 1" ran into the next column's label */
+.col-label{letter-spacing:.02em;overflow:hidden;text-overflow:ellipsis}
+.gp button{width:26px;height:26px}
+.hand-head{padding:6px 14px 0}
+.hand{padding:6px 14px 8px}
+.hc{width:78px}
+.hand-empty{padding:8px 14px 10px}
+.act{padding-bottom:calc(8px + var(--safe-b))}
+.cta{padding:10px 14px;font-size:15px;border-radius:12px}
+.cta-sub{font-size:10.5px;margin-top:1px}
+.act-row{margin-top:6px}
+.minor{padding:7px;font-size:12px;border-radius:9px}
+
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
@@ -3510,8 +3539,33 @@ function triggerCard(req) {
 
 let promptResolve = null;
 
+// Card-viewer swipe: the listeners are attached to #sheetBody once and read the
+// current card set from sheetNav. (Adding them on every card open made them pile up
+// and each swipe re-render more of them until the page froze.)
+let sheetNav = null;
+let sheetSwipeBound = false;
+function bindSheetSwipe(body) {
+  if (sheetSwipeBound) return;
+  sheetSwipeBound = true;
+  let x0 = null, y0 = null;
+  body.addEventListener("touchstart", (e) => {
+    if (!sheetNav) { x0 = null; return; }
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
+  }, { passive: true });
+  body.addEventListener("touchend", (e) => {
+    if (x0 == null || !sheetNav) return;
+    const dx = e.changedTouches[0].clientX - x0;
+    const dy = e.changedTouches[0].clientY - y0;
+    x0 = null;
+    if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy)) return;
+    const nav = sheetNav;
+    nav.go(nav.index + (dx < 0 ? 1 : -1));
+  }, { passive: true });
+}
+
 function openSheet(buildBody, buildFoot) {
   const body = $("#sheetBody"); body.innerHTML = "";
+  sheetNav = null; body.classList.remove("cd-swipe");
   const foot = $("#sheetFoot"); foot.innerHTML = "";
   buildBody(body);
   if (buildFoot) { buildFoot(foot); foot.hidden = false; } else { foot.hidden = true; }
@@ -3986,19 +4040,9 @@ function openCardSolo(card, { canPlay = false, canDiscard = false, why = null, n
       body.appendChild(bar);
 
       // Horizontal drag moves between cards; vertical is left to the sheet.
-      let x0 = null, y0 = null;
+      bindSheetSwipe(body);
+      sheetNav = nav;
       body.classList.add("cd-swipe");
-      body.addEventListener("touchstart", (e) => {
-        x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
-      }, { passive: true });
-      body.addEventListener("touchend", (e) => {
-        if (x0 == null) return;
-        const dx = e.changedTouches[0].clientX - x0;
-        const dy = e.changedTouches[0].clientY - y0;
-        x0 = null;
-        if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy)) return;
-        nav.go(nav.index + (dx < 0 ? 1 : -1));
-      }, { passive: true });
     }
 
     if (card.image_url) {

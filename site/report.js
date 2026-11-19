@@ -81,7 +81,17 @@
   .gnr .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
   .gnr .msg{margin-top:12px;padding:12px;border-radius:12px;font-size:14px;line-height:1.4}
   .gnr .msg.ok{background:#e3f6ea;color:#14532d}.gnr .msg.bad{background:#fde8e8;color:#7f1d1d}
-  .gnr .big{text-align:center;padding:14px 0 4px}.gnr .big div{font-size:46px}`;
+  .gnr .big{text-align:center;padding:14px 0 4px}.gnr .big div{font-size:46px}
+  .gnr .known{margin-top:14px;border:1.5px solid #e3d8c7;border-radius:14px;background:#fbf6ec;padding:10px 12px}
+  .gnr .known h4{margin:0 0 6px;font-size:13px;font-weight:800;color:#3d362e}
+  .gnr .known ul{list-style:none;margin:0;padding:0}
+  .gnr .known li button{all:unset;box-sizing:border-box;display:flex;gap:8px;align-items:flex-start;width:100%;padding:8px 2px;border-top:1px solid #eee3d2;cursor:pointer;font-size:14px;line-height:1.3;color:#1f1b16}
+  .gnr .known li:first-child button{border-top:0}
+  .gnr .known .st{flex:none;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:3px 6px;border-radius:6px;color:#fff;margin-top:1px}
+  .gnr .known .more{display:block;margin-top:6px;font-size:13px;font-weight:700;color:#2f6cf0;text-decoration:none}
+  .gnr .known.hit{border-color:#2f6cf0;background:#eef4ff}
+  .gnr .dup{margin-top:10px;padding:10px 12px;border-radius:12px;background:#e3f6ea;color:#14532d;font-size:14px;line-height:1.4}
+  .gnr .dup a{color:#14532d;font-weight:700}`;
 
   let scrim = null;
   function close() { if (scrim) { scrim.remove(); scrim = null; } }
@@ -97,6 +107,8 @@
       <form class="gnr" novalidate>
         <h2>Report a bug</h2>
         <p>Something broken, confusing, or against the rules? Tell us what happened.</p>
+        <div class="known" hidden></div>
+        <div class="match known hit" hidden></div>
         <label for="gnr-what">What happened?</label>
         <textarea id="gnr-what" maxlength="4000" placeholder="e.g. I played a Tap In and the stack didn't clear. I expected it to…"></textarea>
         <label for="gnr-name">Your name <span style="text-transform:none;letter-spacing:0;font-weight:500">(optional)</span></label>
@@ -114,6 +126,7 @@
     scrim.addEventListener('click', e => { if (e.target === scrim) close(); });
     f.querySelector('.no').onclick = close;
     setTimeout(() => what.focus(), 250);
+    showKnown(f, what);
 
     const show = (kind, html) => { msg.hidden = false; msg.className = 'msg ' + kind; msg.innerHTML = html; };
     f.onsubmit = async e => {
@@ -137,6 +150,43 @@
         show('bad', `Couldn't send that (${String(err.message || err).replace(/[<>]/g, '')}). Check your connection and try again.`);
       }
     };
+  }
+
+  // --- "Already on our list": open reports for this game, so people don't file duplicates ---
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const issuesPage = () => (GN.base || '') + 'issues.html';
+  function showKnown(f, what) {
+    const I = window.GNIssues; if (!I) return;
+    const box = f.querySelector('.known:not(.match)'), match = f.querySelector('.match');
+    const game = GN.game || 'site';
+    const row = i => `<li><button type="button" data-n="${i.number}"><span class="st" style="background:${i.status.color}">${esc(i.status.label)}</span><span>${esc(i.title)}</span></button></li>`;
+    const dupNote = i => `<div class="dup">✓ <b>#${i.number} is already on our list</b>, so there's no need to send it again. ${i.status.label === 'Fix planned' ? 'A fix is planned — usually within a day.' : 'We\u2019re on it.'} <a href="${esc(i.url)}" target="_blank" rel="noopener">Details</a> · <a href="#" data-close>Close</a><br><span style="font-size:12.5px">Something different, or extra details that might help? Keep typing below.</span></div>`;
+    const wire = (el, list) => el.querySelectorAll('button[data-n]').forEach(b => b.onclick = () => {
+      const i = list.find(x => x.number === +b.dataset.n);
+      const old = el.querySelector('.dup'); if (old) old.remove();
+      el.insertAdjacentHTML('beforeend', dupNote(i));
+      const c = el.querySelector('[data-close]'); if (c) c.onclick = e => { e.preventDefault(); close(); };
+    });
+    I.load().then(all => {
+      if (!scrim) return;
+      const mine = all.filter(i => i.game === game);
+      if (mine.length) {
+        box.hidden = false;
+        box.innerHTML = `<h4>Already reported for ${esc(I.gameName(game))} — is it one of these?</h4><ul>${mine.slice(0, 6).map(row).join('')}</ul>` +
+          `<a class="more" href="${issuesPage()}" target="_blank" rel="noopener">See all known issues (${all.length}) ›</a>`;
+        wire(box, mine);
+      }
+      // As they type, point out an existing report that sounds like the same thing
+      let t = 0;
+      what.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => {
+        const best = all.map(i => ({ i, s: I.similarity(what.value, i) })).sort((a, b) => b.s - a.s)[0];
+        if (best && best.s >= 2) {
+          match.hidden = false;
+          match.innerHTML = `<h4>This sounds like a known issue:</h4><ul>${row(best.i)}</ul>`;
+          wire(match, [best.i]);
+        } else match.hidden = true;
+      }, 350); });
+    }).catch(() => {});
   }
 
   // Only show report buttons once the relay is set up (report.config.json → endpoint)

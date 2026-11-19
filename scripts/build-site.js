@@ -9,6 +9,10 @@ const reportCfg = JSON.parse(read('report.config.json'));
 let version = (process.env.GITHUB_SHA || '').slice(0, 7);
 if (!version) { try { version = execSync('git rev-parse --short HEAD', { cwd: root }).toString().trim(); } catch (e) { version = 'local'; } }
 version += ' ' + new Date().toISOString().slice(0, 10);
+// built: exact build time. The update notice compares it with version.json to spot old cached copies,
+// and lists changelog.json entries dated after it as "fixed since your version".
+const built = new Date().toISOString();
+const changelog = JSON.parse(read('changelog.json'));
 // Saved-game keys each app keeps in localStorage — attached to bug reports so bugs can be replayed
 const SAVE_KEYS = {
   flip7: ['flip7.save.v1', 'flip7.prefs.v1'],
@@ -16,10 +20,12 @@ const SAVE_KEYS = {
   mahj: ['mahj-settings', 'mahj-scores', 'mahj-dealer'],
   tally: ['tally-v1'],
   doomlings: [],   // no saved games yet
+  paydirt: ['paydirt.save.v1', 'paydirt.prefs.v1'],
   site: [],
 };
 const reportTags = (game, prefix) =>
-  `<script>window.GN=${JSON.stringify({ game, version, keys: SAVE_KEYS[game] || [], endpoint: reportCfg.endpoint || '' })};</script>\n<script src="${prefix}report.js"></script>\n`;
+  `<script>window.GN=${JSON.stringify({ game, version, built, base: prefix, repo: 'BigHoss96/game-night', games: GAME_NAMES, keys: SAVE_KEYS[game] || [], endpoint: reportCfg.endpoint || '' })};</script>\n` +
+  ['known-issues.js', 'report.js', 'update.js'].map(f => `<script src="${prefix}${f}?v=${built.replace(/\D/g, '')}"></script>\n`).join('');
 
 // fit: the virtual screen a game lays its table out on when played on a desktop; it's scaled up
 // (at most `max`×) to fill the window. Games without fit just use their desktop.css at normal size.
@@ -31,7 +37,9 @@ const GAMES = [
   { id: 'tally', name: 'Tally', color: '#f4efe6', bg: '#f4efe6', build: () => read('games/tally/index.html') },
   // testing: true → listed only on testing.html (not the home page), kept out of search engines
   { id: 'doomlings', name: 'Doomlings', testing: true, color: '#131219', bg: '#131219', build: () => read('games/doomlings/index.html') },
+  { id: 'paydirt', name: 'Paydirt', testing: true, color: '#1f3d24', bg: '#1f3d24', build: () => read('games/paydirt/src.html').replace('/*TEAMS*/', () => read('games/paydirt/teams.js')).replace('/*ENGINE*/', () => read('games/paydirt/engine.js')) },
 ];
+const GAME_NAMES = Object.fromEntries(GAMES.map(g => [g.id, g.name]).concat([['site', 'Home page']]));
 const NOINDEX = '<meta name="robots" content="noindex">\n';
 // Desktop/mobile switch (shared/layout.js) + each game's games/<id>/desktop.css, inlined so there's no flash
 const LAYOUT_JS = read('shared/layout.js');
@@ -68,9 +76,13 @@ for (const g of GAMES) {
   }, null, 2));
 }
 // home page and testing area get the report sheet too
-for (const page of ['index.html', 'testing.html']) {
+for (const page of ['index.html', 'testing.html', 'issues.html']) {
   const f = path.join(out, page);
   fs.writeFileSync(f, fs.readFileSync(f, 'utf8').replace(/<\/title>/i, m => m + '\n' + reportTags('site', '')));
 }
+// version.json: what the newest build is + recent fixes. Fetched fresh (never cached) by update.js and issues.html.
+fs.writeFileSync(path.join(out, 'version.json'), JSON.stringify({
+  version, built, changes: changelog.slice().sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 80),
+}, null, 1));
 fs.writeFileSync(path.join(out, '.nojekyll'), '');
 console.log('Built _site/ with', GAMES.map(g => g.id + (g.testing ? ' (testing)' : '')).join(', '));

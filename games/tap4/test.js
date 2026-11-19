@@ -28,6 +28,13 @@ const stats = { turns: 0, games: 0, rounds: 0, taps4: 0, tapIns: 0, outsOther: 0
       if (type === 'tapOutOther') { stats.outsOther++; assert(!g.twoP); }
       if (type === 'tapOutSelf') stats.outsSelf++;
       if (type === 'skipped') stats.skips++;
+      if (type === 'roundEnd') for (const p of g.players) {
+        // #18: the round summary shows every leftover card, face-down ones included, and they add up to the score
+        const left = T.leftovers(p);
+        assert.strictEqual(left.reduce((a, x) => a + T.POINTS(x.c), 0), p.lastScore, 'leftovers must add up to the round score');
+        assert.strictEqual(left.filter(x => x.down).length, p.piles.reduce((a, pl) => a + pl.filter(s => !s.up).length, 0), 'face-down cards missing from leftovers');
+        if (left.some(x => x.down)) stats.revealed = (stats.revealed || 0) + 1;
+      }
       if (type === 'turn') stats.turns++;
       if (type === 'cancelSkip') stats.cancels++;
       if (type === 'pickup') { stats.pickups++; stats.maxHand = Math.max(stats.maxHand, e.p.hand.length); }
@@ -62,3 +69,38 @@ const stats = { turns: 0, games: 0, rounds: 0, taps4: 0, tapIns: 0, outsOther: 0
   for (const k in stats.wins) stats.wins[k] = Math.round(stats.wins[k]);
   console.log('OK', stats);
 })().catch(e => { console.error(e); process.exit(1); });
+
+// Wording (#19): a seat named "You" must read "You win!", not "You wins!".
+{
+  const S = T.Say;
+  const you = { name: 'You' }, rosie = { name: 'Rosie' }, gus = { name: 'Gus' };
+  assert.strictEqual(S.winners([you]), 'You win!');
+  assert.strictEqual(S.winners([rosie]), 'Rosie wins!');
+  assert.strictEqual(S.winners([gus, you]), 'You & Gus win!');
+  assert.strictEqual(S.winners([rosie, gus]), 'Rosie & Gus win!');
+  const pickup = (p, n) => `${S.who(p)} ${S.verb(p, 'picks', 'pick')} up ${n} cards`;
+  assert.strictEqual(pickup(you, 3), 'You pick up 3 cards');
+  assert.strictEqual(pickup(rosie, 3), 'Rosie picks up 3 cards');
+  assert.strictEqual(`${S.cap(S.whose(you))} turn`, 'Your turn');
+  assert.strictEqual(`${S.cap(S.whose(rosie))} turn`, "Rosie's turn");
+  assert.strictEqual(`${S.who(you)} ${S.is(you)} out`, 'You are out');
+  assert.strictEqual(`${S.who(gus)} ${S.verb(gus, 'loses', 'lose')} ${S.their(gus)} next turn`, 'Gus loses their next turn');
+  assert.strictEqual(`${S.who(you)} ${S.verb(you, 'loses', 'lose')} ${S.their(you)} next turn`, 'You lose your next turn');
+  assert(S.isYou({ name: ' you ' }) && !S.isYou({ name: 'Youssef' }));
+  // Every caption in the app goes through the helpers: no raw "<name> plays/picks/is …".
+  const app = require('fs').readFileSync(require('path').join(__dirname, 'app.js'), 'utf8');
+  const raw = app.match(/\$\{esc\(e\.(p|starter|to)\.name\)\} (\w+)/g) || [];
+  const bad = raw.filter(m => /(s|is)$/.test(m.split(' ').pop()));
+  assert.deepStrictEqual(bad, [], 'captions that would say "You plays" etc.');
+  console.log('Tap 4 wording OK');
+}
+
+// #20: a blank name is "You" for a lone human, typed names are trimmed and kept.
+{
+  const n = T.seatNames;
+  assert.deepStrictEqual(n([{ name: '', kind: 'human' }, { name: 'Rosie', kind: 'bot' }]), ['You', 'Rosie']);
+  assert.deepStrictEqual(n([{ name: '  Austin ', kind: 'human' }, { name: '', kind: 'bot' }]), ['Austin', 'Bot 2']);
+  assert.deepStrictEqual(n([{ name: '', kind: 'human' }, { name: ' ', kind: 'human' }]), ['Player 1', 'Player 2']);
+  assert.deepStrictEqual(n([{ name: 'You', kind: 'human' }, { name: 'Gus', kind: 'bot' }]), ['You', 'Gus']);
+  console.log('Tap 4 seat names OK');
+}
