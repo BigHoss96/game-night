@@ -327,6 +327,15 @@ const Flip7 = (() => {
     }
   }
 
-  return { Game, Bot, buildDeck, roundScore, bustOdds, cardCount, NUM, MOD, ACT };
+  // Names for a new game from the setup seats. A blank name falls back to "You" for the
+  // only human at the table, "Player N" for other humans and "Bot N" for bots.
+  function seatNames(seats) {
+    const humans = seats.filter(s => s.kind === 'human').length;
+    const first = seats.findIndex(s => s.kind === 'human');
+    return seats.map((s, i) => String(s.name || '').trim() ||
+      (s.kind === 'bot' ? 'Bot ' + (i + 1) : i === first && humans === 1 ? 'You' : 'Player ' + (i + 1)));
+  }
+
+  return { Game, Bot, buildDeck, seatNames, roundScore, bustOdds, cardCount, NUM, MOD, ACT };
 })();
 if (typeof module !== 'undefined') module.exports = Flip7;

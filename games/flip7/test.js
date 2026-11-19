@@ -80,3 +80,11 @@ const stats = { games: 0, rounds: 0, flip7: 0, busts: 0, saves: 0, freezes: 0, f
   }
   console.log('OK', stats);
 })().catch(e => { console.error(e); process.exit(1); });
+
+// Seat names: a blank name is "You" for a lone human, typed names are trimmed and kept.
+{
+  const n = require('./engine.js').seatNames;
+  assert.deepStrictEqual(n([{ name: '', kind: 'human' }, { name: 'Rosie', kind: 'bot' }]), ['You', 'Rosie']);
+  assert.deepStrictEqual(n([{ name: ' Rob ', kind: 'human' }, { name: '', kind: 'bot' }]), ['Rob', 'Bot 2']);
+  assert.deepStrictEqual(n([{ name: '', kind: 'human' }, { name: '', kind: 'human' }]), ['Player 1', 'Player 2']);
+}

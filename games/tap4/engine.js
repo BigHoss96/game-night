@@ -455,6 +455,15 @@ const Tap4 = (() => {
     },
   };
 
-  return { Game, Bot, BotAgents, Say, buildDeck, leftovers, available, cardsLeft, scoreOf, pileTop, flipOdds, idsOfValue, POINTS, NUM, IN, OUT };
+  // Names for a new game from the setup seats. A blank name falls back to "You" for the
+  // only human at the table, "Player N" for other humans and "Bot N" for bots.
+  function seatNames(seats) {
+    const humans = seats.filter(s => s.kind === 'human').length;
+    const first = seats.findIndex(s => s.kind === 'human');
+    return seats.map((s, i) => String(s.name || '').trim() ||
+      (s.kind === 'bot' ? 'Bot ' + (i + 1) : i === first && humans === 1 ? 'You' : 'Player ' + (i + 1)));
+  }
+
+  return { Game, Bot, BotAgents, Say, buildDeck, leftovers, seatNames, available, cardsLeft, scoreOf, pileTop, flipOdds, idsOfValue, POINTS, NUM, IN, OUT };
 })();
 if (typeof module !== 'undefined') module.exports = Tap4;

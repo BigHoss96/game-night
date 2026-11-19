@@ -34,7 +34,12 @@ input{font:inherit;color:inherit}
 .h{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
 .seats{display:flex;flex-direction:column;gap:8px}
 .seat{display:grid;grid-template-columns:1fr auto 36px;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:8px}
-.seat input{background:transparent;border:0;outline:0;font-size:18px;font-weight:600;padding:6px 6px;min-width:0}
+.seat .nm{position:relative;display:block;min-width:0}
+.seat input{width:100%;background:rgba(255,255,255,.06);border:0;border-bottom:1.5px solid rgba(255,255,255,.28);border-radius:8px 8px 2px 2px;outline:0;font-size:18px;font-weight:600;padding:6px 26px 6px 8px;min-width:0;color:inherit}
+.seat input::placeholder{color:var(--dim);font-weight:500}
+.seat input:focus{background:rgba(255,255,255,.1);border-bottom-color:#fff}
+.seat .pen{position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--dim);pointer-events:none}
+.seat input:focus + .pen{opacity:0}
 .seat .x{width:36px;height:36px;border-radius:10px;color:var(--dim);font-size:20px}
 .seat .lvl{grid-column:1 / -1}
 .seg{display:flex;background:rgba(0,0,0,.25);border-radius:10px;padding:3px;gap:2px}
@@ -300,7 +305,7 @@ function renderSetup() {
       <div class="seats">
         ${prefs.seats.map((s, i) => `
           <div class="seat">
-            <input value="${esc(s.name)}" maxlength="12" data-name="${i}" aria-label="Player name">
+            <label class="nm"><input value="${esc(s.kind === 'human' && s.name === 'You' ? '' : s.name)}" maxlength="12" data-name="${i}" aria-label="Player name" placeholder="${s.kind === 'bot' ? 'Bot name' : i === prefs.seats.findIndex(x => x.kind === 'human') ? 'Your name' : 'Player name'}" autocomplete="off" enterkeyhint="done"><span class="pen" aria-hidden="true">✎</span></label>
             ${seg('kind', [['human', 'Human'], ['bot', 'Bot']], s.kind, i)}
             <button class="x" data-del="${i}" ${prefs.seats.length <= 2 ? 'disabled style="opacity:.25"' : ''} aria-label="Remove">✕</button>
             ${s.kind === 'bot' ? `<div class="lvl">${seg('level', [['easy', 'Easy'], ['normal', 'Normal'], ['hard', 'Hard']], s.level || 'normal', i)}</div>` : ''}
@@ -324,7 +329,11 @@ function renderSetup() {
     ${window.GNReport ? '<button class="ghost" onclick="GNReport.open()">⚑ Report a bug</button>' : ''}
   `;
   const root = $('#setup');
-  root.querySelectorAll('[data-name]').forEach(inp => inp.oninput = () => { prefs.seats[+inp.dataset.name].name = inp.value; savePrefs(); });
+  root.querySelectorAll('[data-name]').forEach(inp => {
+    inp.oninput = () => { prefs.seats[+inp.dataset.name].name = inp.value; savePrefs(); };
+    inp.onfocus = () => inp.select(); // typing replaces the old name
+    inp.onkeydown = ev => { if (ev.key === 'Enter') inp.blur(); };
+  });
   root.querySelectorAll('[data-seg]').forEach(sg => sg.querySelectorAll('button').forEach(b => b.onclick = () => {
     const key = sg.dataset.seg, i = sg.dataset.i, v = b.dataset.v;
     if (i != null) {
@@ -347,7 +356,8 @@ function pickBotName() { const used = new Set(prefs.seats.map(s => s.name)); ret
 
 /* ================= GAME FLOW ================= */
 function seatsForGame() {
-  return prefs.seats.map((s, i) => ({ name: (s.name || '').trim() || (s.kind === 'bot' ? 'Bot ' + (i + 1) : 'Player ' + (i + 1)), kind: s.kind, level: s.level || 'normal' }));
+  const names = Flip7.seatNames(prefs.seats);
+  return prefs.seats.map((s, i) => ({ name: names[i], kind: s.kind, level: s.level || 'normal' }));
 }
 function makeEmit(myRun) {
   return async (type, e) => {

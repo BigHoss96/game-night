@@ -94,3 +94,13 @@ const stats = { turns: 0, games: 0, rounds: 0, taps4: 0, tapIns: 0, outsOther: 0
   assert.deepStrictEqual(bad, [], 'captions that would say "You plays" etc.');
   console.log('Tap 4 wording OK');
 }
+
+// #20: a blank name is "You" for a lone human, typed names are trimmed and kept.
+{
+  const n = T.seatNames;
+  assert.deepStrictEqual(n([{ name: '', kind: 'human' }, { name: 'Rosie', kind: 'bot' }]), ['You', 'Rosie']);
+  assert.deepStrictEqual(n([{ name: '  Austin ', kind: 'human' }, { name: '', kind: 'bot' }]), ['Austin', 'Bot 2']);
+  assert.deepStrictEqual(n([{ name: '', kind: 'human' }, { name: ' ', kind: 'human' }]), ['Player 1', 'Player 2']);
+  assert.deepStrictEqual(n([{ name: 'You', kind: 'human' }, { name: 'Gus', kind: 'bot' }]), ['You', 'Gus']);
+  console.log('Tap 4 seat names OK');
+}

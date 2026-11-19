@@ -34,7 +34,12 @@ input{font:inherit;color:inherit}
 .h{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
 .seats{display:flex;flex-direction:column;gap:8px}
 .seat{display:grid;grid-template-columns:1fr auto 36px;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:8px}
-.seat input{background:transparent;border:0;outline:0;font-size:18px;font-weight:600;padding:6px 6px;min-width:0}
+.seat .nm{position:relative;display:block;min-width:0}
+.seat input{width:100%;background:rgba(255,255,255,.06);border:0;border-bottom:1.5px solid rgba(255,255,255,.28);border-radius:8px 8px 2px 2px;outline:0;font-size:18px;font-weight:600;padding:6px 26px 6px 8px;min-width:0;color:inherit}
+.seat input::placeholder{color:var(--dim);font-weight:500}
+.seat input:focus{background:rgba(255,255,255,.1);border-bottom-color:#fff}
+.seat .pen{position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--dim);pointer-events:none}
+.seat input:focus + .pen{opacity:0}
 .seat .x{width:36px;height:36px;border-radius:10px;color:var(--dim);font-size:20px}
 .seat .lvl{grid-column:1 / -1}
 .seg{display:flex;background:rgba(0,0,0,.25);border-radius:10px;padding:3px;gap:2px}
