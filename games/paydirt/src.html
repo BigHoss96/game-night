@@ -89,6 +89,11 @@ select{width:100%;font:inherit;font-size:16px;padding:11px;border-radius:10px;bo
 .call.pass .n{color:var(--blue)}.call.run .n{color:var(--red)}
 .call.k{background:#f1e7cc}
 .call:disabled{opacity:.35}
+.grp{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.grp .call{min-height:92px;display:flex;flex-direction:column;justify-content:center}
+.grp .call .n{font-size:24px}.grp .call .t{font-size:13px}
+.call.kick .n{color:var(--ink)}
+.back{background:#e9dfc4;color:var(--ink);border-radius:9px;padding:7px 11px;font-size:13px;font-weight:800}
 .tobtn{background:var(--ink);color:var(--cream);border-radius:9px;padding:7px 11px;font-size:13px;font-weight:800}
 .tobtn:disabled{opacity:.3}
 .next{display:block;width:100%;padding:16px;border-radius:12px;background:var(--gold);color:var(--ink);font-weight:900;font-size:18px;box-shadow:0 3px 0 #9b7210}
@@ -208,7 +213,7 @@ function flow() {
   const notes = PD.prepare(g);
   if (notes.length) { S.last = Object.assign({}, S.last || {}, { notices: (S.last && S.last.notices || []).concat(notes) }); }
   if (g.over) { persist(); render(); finalSheet(); return; }
-  S.offCall = null; S.defCall = null;
+  S.offCall = null; S.defCall = null; S.group = null;
   const off = g.poss;
   if (S.human[off]) { S.step = 'off'; needHolder(off); }
   else {
@@ -304,7 +309,7 @@ function resultHtml() {
 function playBtn(c, g, side) {
   const T0 = T(g.teams[side]);
   const pass = +c >= 5;
-  return `<button class="call ${pass ? 'pass' : 'run'}" data-c="${c}"><span class="n">${c}</span><span class="t">${PD.PLAYS[c]}</span><span class="e">avg ${PD.colEV(T0, c).toFixed(1)}</span></button>`;
+  return `<button class="call ${pass ? 'pass' : 'run'}" data-c="${c}"><span class="n">${c}</span><span class="t">${PD.PLAYS[c]}</span><span class="e">avg ${PD.colEV(T0, c).toFixed(1)} yds</span></button>`;
 }
 function panelHtml() {
   const g = S.g;
@@ -323,7 +328,20 @@ function panelHtml() {
     }
     const legal = PD.legalOff(g);
     const fg = legal.indexOf('FG') >= 0 ? Math.round(PD.fgChance(g, side, g.ball) * 100) : null;
-    return `<div class="panel"><div class="who"><span>${name} offense · call a play</span>${toBtn}</div><div class="grid3">${PD.SCRIM.map(c => playBtn(c, g, side)).join('')}
+    const T0 = T(g.teams[side]);
+    // Step 1: pick the kind of play. Step 2: the specific plays, with average yards from this team's chart.
+    if (!S.group) {
+      const best = cs => Math.max(...cs.map(c => PD.colEV(T0, c))).toFixed(1);
+      return `<div class="panel"><div class="who"><span>${name} offense · call a play</span>${toBtn}</div><div class="grp">
+        <button class="call run" data-grp="run"><span class="n">Run</span><span class="t">4 plays</span><span class="e">best avg ${best(PD.SCRIM.slice(0, 4))} yds</span></button>
+        <button class="call pass" data-grp="pass"><span class="n">Pass</span><span class="t">5 plays</span><span class="e">best avg ${best(PD.SCRIM.slice(4))} yds</span></button>
+        <button class="call k kick" data-grp="kick"><span class="n">Kick</span><span class="t">Punt · FG · ${legal.indexOf('S') >= 0 ? 'Spike' : 'Kneel'}</span><span class="e">${fg === null ? 'FG out of range' : `FG ${fg}%`}</span></button>
+      </div></div>`;
+    }
+    const head = `<div class="who"><span>${name} · ${S.group === 'run' ? 'Run plays' : S.group === 'pass' ? 'Pass plays' : 'Kick or clock'}</span><span style="display:flex;gap:6px"><button class="back" id="grpBack">‹ Back</button>${toBtn}</span></div>`;
+    if (S.group === 'run') return `<div class="panel">${head}<div class="grid3" style="grid-template-columns:1fr 1fr">${PD.SCRIM.slice(0, 4).map(c => playBtn(c, g, side)).join('')}</div></div>`;
+    if (S.group === 'pass') return `<div class="panel">${head}<div class="grid3">${PD.SCRIM.slice(4).map(c => playBtn(c, g, side)).join('')}</div></div>`;
+    return `<div class="panel">${head}<div class="grid3">
       <button class="call k" data-c="P"><span class="n">P</span><span class="t">Punt</span></button>
       <button class="call k" data-c="FG" ${fg === null ? 'disabled' : ''}><span class="n">FG</span><span class="t">Field goal</span><span class="e">${fg === null ? 'out of range' : `${100 - g.ball + 17} yds · ${fg}%`}</span></button>
       <button class="call k" data-c="${legal.indexOf('S') >= 0 ? 'S' : 'K'}"><span class="n">${legal.indexOf('S') >= 0 ? 'S' : 'K'}</span><span class="t">${legal.indexOf('S') >= 0 ? 'Spike' : 'Kneel'}</span></button>
@@ -351,6 +369,8 @@ function render() {
   document.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { if (S.step === 'off') { if (g.phase === 'pat' && b.dataset.c !== 'XP') S.twoPt = false; pickOff(b.dataset.c); } });
   document.querySelectorAll('[data-f]').forEach(b => b.onclick = () => pickDef(b.dataset.f));
   if ($('#go')) $('#go').onclick = () => resolve();
+  document.querySelectorAll('[data-grp]').forEach(b => b.onclick = () => { S.group = b.dataset.grp; render(); });
+  if ($('#grpBack')) $('#grpBack').onclick = () => { S.group = null; render(); };
   if ($('#go2')) $('#go2').onclick = () => { S.twoPt = true; render(); };
   if ($('#back2')) $('#back2').onclick = () => { S.twoPt = false; render(); };
   if ($('#newg')) $('#newg').onclick = () => { store.del(SAVE); setup(); };

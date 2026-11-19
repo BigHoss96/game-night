@@ -1,4 +1,5 @@
 [
+  { "date": "2026-11-19T15:25:45Z", "game": "doomlings", "issue": 7, "text": "Doomlings: Venomous now moves only after you play its extra trait, and Lonely Age really limits you to one trait per turn." },
   { "date": "2026-11-18T03:16:00Z", "game": "doomlings", "issue": 5, "text": "Age of Peace now really ignores action cards: no more \"stop this action?\" prompts for actions that won't happen." },
   { "date": "2026-11-18T03:16:00Z", "game": "doomlings", "issue": 11, "text": "Prosperity: you can now end your turn without stabilizing." },
   { "date": "2026-11-18T03:19:00Z", "game": "doomlings", "issue": 9, "text": "Yes/No prompts (like Age of Exploration's discard-to-draw) now show your hand." },
@@ -12,5 +13,5 @@
   { "date": "2026-11-19T13:22:17Z", "game": "paydirt", "issue": 22, "text": "Paydirt: the Home team picker now shows both team names, not \"Team 1\" for the first one." },
   { "date": "2026-11-19T13:22:25Z", "game": "paydirt", "issue": 23, "text": "Paydirt: the in-game menu buttons are readable now (they were pale text on a pale background)." },
   { "date": "2026-11-19T13:23:52Z", "game": "paydirt", "issue": 24, "text": "Paydirt: after each play the dice roll, the result fades in and the ball slides down the field, so you can follow what happened." },
-  { "date": "2026-11-19T15:25:45Z", "game": "doomlings", "issue": 7, "text": "Doomlings: Venomous now moves only after you play its extra trait, and Lonely Age really limits you to one trait per turn." }
+  { "date": "2026-11-19T15:29:22Z", "game": "paydirt", "issue": 25, "text": "Paydirt: calling a play now starts with Run, Pass or Kick, then shows those plays with their average yards." }
 ]
