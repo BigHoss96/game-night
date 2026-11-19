@@ -154,6 +154,105 @@ const peaceCheck = vm.runInContext(`(function (cards, ageName) {
 console.log('Doomlings: Age of Peace ignores actions and offers no stop-the-action reactions');
 
 // ---------------------------------------------------------------------------
+// Regression (#7): Venomous is "Play 1 more trait. THEN move Venomous". It
+// moves only after that extra trait is played, and Lonely Age ("Cannot play
+// more than 1 trait on your turn") blocks the extra play, so it stays put.
+// ---------------------------------------------------------------------------
+const venomCheck = vm.runInContext(`(function (cards, ageName, playExtra) {
+  resetUids();
+  const g = dealGame(cards, { names: ['A', 'B'], seed: 7 });
+  const take = (name) => {
+    for (const pile of [g.traitDeck, g.discard, ...g.players.map((p) => p.hand)]) {
+      const i = pile.findIndex((c) => c.name === name);
+      if (i >= 0) return pile.splice(i, 1)[0];
+    }
+    throw new Error('card not found: ' + name);
+  };
+  g.eras[0].push({ ...cards.find((c) => c.name.toLowerCase() === ageName), uid: 'forced-age' });
+  g.phase = 'turn'; g.activeSeat = 0; g.playsLeft = 1;
+  const [a, b] = g.players;
+  a.hand = [take('VENOMOUS'), take('ADORABLE')];
+  b.hand = [];
+  const where = () => (a.traitPile.some((c) => c.name === 'VENOMOUS') ? 'A' : b.traitPile.some((c) => c.name === 'VENOMOUS') ? 'B' : '?');
+  const drive = (r) => { while (!r.done) r = answer(g, r.request.kind === 'player' ? r.request.options[0] : null); };
+  drive(playTrait(g, a.hand[0].uid, EFFECTS));
+  const afterVenomous = { where: where(), playsLeft: g.playsLeft };
+  if (playExtra && g.playsLeft > 0) drive(playTrait(g, a.hand.find((c) => c.name === 'ADORABLE').uid, EFFECTS));
+  return { afterVenomous, final: where(), adorablePlayed: a.traitPile.some((c) => c.name === 'ADORABLE') };
+})`, ctx);
+{
+  const normal = venomCheck(cards, 'flourish', true);
+  assert.strictEqual(normal.afterVenomous.where, 'A', 'Venomous moved before the extra trait was played');
+  assert.strictEqual(normal.afterVenomous.playsLeft, 1, 'Venomous should grant 1 more play');
+  assert(normal.adorablePlayed, 'extra trait was not played');
+  assert.strictEqual(normal.final, 'B', 'Venomous did not move after the extra trait');
+  const lonely = venomCheck(cards, 'lonely age', true);
+  assert.strictEqual(lonely.afterVenomous.playsLeft, 0, 'Lonely Age: Venomous granted an extra play');
+  assert(!lonely.adorablePlayed, 'Lonely Age: a second trait was played');
+  assert.strictEqual(lonely.final, 'A', 'Lonely Age: Venomous moved even though no extra trait could be played');
+}
+console.log('Doomlings: Venomous moves after the extra trait; Lonely Age blocks extra plays');
+
+// Lonely Age also switches off "you may play it now" (Cold Blood, Nosy, Clever,
+// Photosynthesis) on your own turn (PR #16 review).
+const coldBloodCheck = vm.runInContext(`(function (cards, ageName) {
+  resetUids();
+  const g = dealGame(cards, { names: ['A', 'B'], seed: 9 });
+  const take = (name) => {
+    for (const pile of [g.traitDeck, g.discard, ...g.players.map((p) => p.hand)]) {
+      const i = pile.findIndex((c) => c.name === name);
+      if (i >= 0) return pile.splice(i, 1)[0];
+    }
+    throw new Error('card not found: ' + name);
+  };
+  g.eras[0].push({ ...cards.find((c) => c.name.toLowerCase() === ageName), uid: 'forced-age' });
+  g.phase = 'turn'; g.activeSeat = 0; g.playsLeft = 1;
+  const a = g.players[0];
+  a.hand = [take('COLD BLOOD')];
+  g.players[1].hand = [];
+  const asked = [];
+  let r = playTrait(g, a.hand[0].uid, EFFECTS);
+  while (!r.done) { asked.push(r.request); r = answer(g, r.request.kind === 'cards' ? [] : null); }
+  return { offered: asked.some((q) => /cold blood/i.test(q.prompt || '')), drew: a.hand.length };
+})`, ctx);
+{
+  const lonely = coldBloodCheck(cards, 'lonely age');
+  assert.strictEqual(lonely.drew, 3, 'Lonely Age: Cold Blood should still draw 3');
+  assert(!lonely.offered, 'Lonely Age: Cold Blood still offered to play a drawn card');
+  const normal = coldBloodCheck(cards, 'flourish');
+  assert(normal.offered, 'control: Cold Blood should offer to play a drawn card');
+}
+console.log('Doomlings: Lonely Age also blocks "you may play it now"');
+
+// Lonely Age also blocks playing from the discard pile (Selective Memory, Trunk,
+// Self-Replicating) on your own turn (PR #16 review).
+const discardPlayCheck = vm.runInContext(`(function (cards, ageName) {
+  resetUids();
+  const g = dealGame(cards, { names: ['A', 'B'], seed: 11 });
+  const take = (name) => {
+    for (const pile of [g.traitDeck, g.discard, ...g.players.map((p) => p.hand)]) {
+      const i = pile.findIndex((c) => c.name === name);
+      if (i >= 0) return pile.splice(i, 1)[0];
+    }
+    throw new Error('card not found: ' + name);
+  };
+  g.eras[0].push({ ...cards.find((c) => c.name.toLowerCase() === ageName), uid: 'forced-age' });
+  g.phase = 'turn'; g.activeSeat = 0; g.playsLeft = 1;
+  const a = g.players[0];
+  a.hand = [take('TRUNK')];
+  g.players[1].hand = [];
+  g.discard.unshift(take('ADORABLE'));
+  let r = playTrait(g, a.hand[0].uid, EFFECTS);
+  while (!r.done) r = answer(g, r.request.kind === 'cards' ? [] : null);
+  return { piled: a.traitPile.map((c) => c.name).join(',') };
+})`, ctx);
+{
+  const lonely = discardPlayCheck(cards, 'lonely age');
+  assert.strictEqual(lonely.piled, 'TRUNK', 'Lonely Age: Trunk still played a card from the discard pile');
+  const normal = discardPlayCheck(cards, 'flourish');
+  assert.strictEqual(normal.piled, 'TRUNK,ADORABLE', 'control: Trunk should play the top discard');
+}
+console.log('Doomlings: Lonely Age also blocks plays from the discard pile');
 // Regression (#17): swiping between cards in the card viewer froze the page.
 // Every card open added another pair of touch listeners to #sheetBody, so each
 // swipe ran all the old handlers, which re-rendered and added even more.
