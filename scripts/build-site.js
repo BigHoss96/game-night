@@ -20,6 +20,7 @@ const SAVE_KEYS = {
   mahj: ['mahj-settings', 'mahj-scores', 'mahj-dealer'],
   tally: ['tally-v1'],
   doomlings: [],   // no saved games yet
+  paydirt: ['paydirt.save.v1', 'paydirt.prefs.v1'],
   site: [],
 };
 const reportTags = (game, prefix) =>
@@ -36,6 +37,7 @@ const GAMES = [
   { id: 'tally', name: 'Tally', color: '#f4efe6', bg: '#f4efe6', build: () => read('games/tally/index.html') },
   // testing: true → listed only on testing.html (not the home page), kept out of search engines
   { id: 'doomlings', name: 'Doomlings', testing: true, color: '#131219', bg: '#131219', build: () => read('games/doomlings/index.html') },
+  { id: 'paydirt', name: 'Paydirt', testing: true, color: '#1f3d24', bg: '#1f3d24', build: () => read('games/paydirt/src.html').replace('/*TEAMS*/', () => read('games/paydirt/teams.js')).replace('/*ENGINE*/', () => read('games/paydirt/engine.js')) },
 ];
 const GAME_NAMES = Object.fromEntries(GAMES.map(g => [g.id, g.name]).concat([['site', 'Home page']]));
 const NOINDEX = '<meta name="robots" content="noindex">\n';
