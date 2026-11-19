@@ -24,6 +24,7 @@ let viewerId = 0, handHidden = false, uiTurn = null; // uiTurn: active human sel
 const humans = () => G ? G.players.filter(p => p.kind === 'human') : [];
 const multiHuman = () => humans().length > 1;
 const cardsLeft = p => Tap4.cardsLeft(p);
+const Say = Tap4.Say;
 
 const ICON = {
   in: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10"/><path d="M12 10V4.5a1.5 1.5 0 0 1 3 0V10"/><path d="M15 10V6.5a1.5 1.5 0 0 1 3 0v6.5c0 4-2.5 7-6.5 7-3 0-4.6-1.6-6-4l-2.2-3.9a1.5 1.5 0 0 1 2.6-1.5L9 13"/><path d="M3 4l2 1.5M2.5 8.5H5"/></svg>',
@@ -416,7 +417,7 @@ function update() {
     }).join('');
     const hand = s.querySelector('.hand');
     if (handHidden && multiHuman()) {
-      hand.innerHTML = `<div class="hidden-hand">${cardHTML(null, 'tr')}<span>${p.hand.length} cards · hidden until it's ${esc(p.name)}'s turn</span></div>`;
+      hand.innerHTML = `<div class="hidden-hand">${cardHTML(null, 'tr')}<span>${p.hand.length} cards · hidden until it's ${esc(Say.whose(p))} turn</span></div>`;
     } else {
       const groups = [];
       for (let v = 12; v >= 1; v--) { const cs = p.hand.filter(c => c.t === 'num' && c.v === v); if (cs.length) groups.push({ kind: 'num', v, cs }); }
@@ -460,50 +461,50 @@ async function onEvent(type, e) {
   switch (type) {
     case 'roundStart':
       between = false; cur = null; update();
-      caption(`Round ${e.round}<small>${esc(e.starter.name)} goes first</small>`); controlsWait('Dealing…');
+      caption(`Round ${e.round}<small>${esc(Say.who(e.starter))} ${Say.verb(e.starter, 'goes', 'go')} first</small>`); controlsWait('Dealing…');
       await sleep(900); break;
     case 'resume': update(); break;
     case 'turn':
       if (multiHuman() && !handHidden && e.p.id !== viewerId) handHidden = true;
       cur = e.p; save('turn'); update();
-      caption(e.p.kind === 'human' ? '' : `${esc(e.p.name)}'s turn`);
+      caption(e.p.kind === 'human' ? '' : `${esc(Say.cap(Say.whose(e.p)))} turn`);
       break;
     case 'cancelSkip':
-      update(); caption(`${esc(e.p.name)} cancels the Tap Out<small>with a Tap In</small>`); await sleep(900); break;
+      update(); caption(`${esc(Say.who(e.p))} ${Say.verb(e.p, 'cancels', 'cancel')} the Tap Out<small>with a Tap In</small>`); await sleep(900); break;
     case 'skipped':
-      update(); caption(`${esc(e.p.name)} is Tapped Out<small>Loses this turn</small>`); controlsWait(''); await sleep(1000); endHumanTurn(e.p); break;
+      update(); caption(`${esc(Say.who(e.p))} ${Say.is(e.p)} Tapped Out<small>${Say.verb(e.p, 'Loses', 'You lose')} this turn</small>`); controlsWait(''); await sleep(1000); endHumanTurn(e.p); break;
     case 'flip': {
       const s = seatEl(e.p);
       const slot = s && (s.querySelectorAll('.tpiles > *, .prow > *')[e.pile]);
-      caption(`${esc(e.p.name)} flips a face-down card…`);
+      caption(`${esc(Say.who(e.p))} ${Say.verb(e.p, 'flips', 'flip')} a face-down card…`);
       await fly(slot || s, $('#stack'), cardHTML(e.card, 'fl'));
       break;
     }
     case 'play':
       if (!e.flipped) await fly(seatEl(e.p), $('#stack'), cardHTML(e.cards[0], 'fl'), e.cards.length > 1 ? '×' + e.cards.length : '');
       update();
-      caption(`${esc(e.p.name)} plays ${cardWord(e.cards[0].v, e.cards.length)}`);
+      caption(`${esc(Say.who(e.p))} ${Say.verb(e.p, 'plays', 'play')} ${cardWord(e.cards[0].v, e.cards.length)}`);
       await sleep(e.p.kind === 'human' ? 250 : 450); break;
     case 'flipFail':
-      update(); caption(`${esc(e.p.name)} flipped a ${e.card.v}<small>Too high — picks up the stack</small>`); await sleep(900); break;
+      update(); caption(`${esc(Say.who(e.p))} flipped a ${e.card.v}<small>Too high — ${Say.verb(e.p, 'picks up the stack', 'you pick up the stack')}</small>`); await sleep(900); break;
     case 'tapped':
       update(); toast('TAPPED!', 'tap'); buzz([40, 30, 40]);
-      caption(e.by === 'tapin' ? `${esc(e.p.name)} plays a Tap In<small>Stack cleared — go again</small>` : `${esc(e.p.name)} makes ${WORDS[e.n] ? WORDS[e.n].toLowerCase() : e.n} ${e.v}s<small>Stack cleared — go again</small>`);
+      caption(e.by === 'tapin' ? `${esc(Say.who(e.p))} ${Say.verb(e.p, 'plays', 'play')} a Tap In<small>Stack cleared — go again</small>` : `${esc(Say.who(e.p))} ${Say.verb(e.p, 'makes', 'make')} ${WORDS[e.n] ? WORDS[e.n].toLowerCase() : e.n} ${e.v}s<small>Stack cleared — go again</small>`);
       await sleep(1100); break;
     case 'stackCleared': update(); break;
     case 'tapOutSelf':
-      update(); caption(`${esc(e.p.name)} plays a Tap Out<small>Skips their own turn</small>`); await sleep(900); endHumanTurn(e.p); break;
+      update(); caption(`${esc(Say.who(e.p))} ${Say.verb(e.p, 'plays', 'play')} a Tap Out<small>${Say.verb(e.p, 'Skips their', 'You skip your')} own turn</small>`); await sleep(900); endHumanTurn(e.p); break;
     case 'tapOutOther':
       await fly(seatEl(e.p), seatEl(e.to), cardHTML(e.card, 'fl'));
-      update(); caption(`${esc(e.p.name)} taps out ${esc(e.to.name)}<small>${esc(e.to.name)} loses their next turn</small>`); await sleep(900); break;
+      update(); caption(`${esc(Say.who(e.p))} ${Say.verb(e.p, 'taps', 'tap')} ${Say.isYou(e.to) ? 'you out' : 'out ' + esc(e.to.name)}<small>${esc(Say.who(e.to))} ${Say.verb(e.to, 'loses', 'lose')} ${Say.their(e.to)} next turn</small>`); await sleep(900); break;
     case 'pickup': {
       const s = seatEl(e.p);
       await fly($('#stack'), s, cardHTML(null, 'fl'), '×' + e.n);
-      update(); caption(`${esc(e.p.name)} picks up ${e.n} card${e.n === 1 ? '' : 's'}`);
+      update(); caption(`${esc(Say.who(e.p))} ${Say.verb(e.p, 'picks', 'pick')} up ${e.n} card${e.n === 1 ? '' : 's'}`);
       if (s) { s.classList.remove('shake'); void s.offsetWidth; s.classList.add('shake'); }
       await sleep(800); endHumanTurn(e.p); break;
     }
-    case 'wentOut': update(); toast(`${esc(e.p.name)} is out!`, 'big'); burst(); await sleep(1500); break;
+    case 'wentOut': update(); toast(`${esc(Say.who(e.p))} ${Say.is(e.p)} out!`, 'big'); burst(); await sleep(1500); break;
     case 'stalled': toast('Nobody could finish — round called'); await sleep(1000); break;
     case 'roundEnd': cur = null; update(); controlsWait(''); await sleep(500); await roundSummary(e); break;
     case 'gameEnd': store.del(SAVE_KEY); await gameOver(e.winners); break;
@@ -532,9 +533,8 @@ function gameOver(ws) {
   return waitUI(done => {
     const sorted = [...G.players].sort((a, b) => a.total - b.total);
     burst();
-    const names = ws.map(w => esc(w.name)).join(' & ');
     openSheet(`
-      <div style="text-align:center;margin-bottom:10px"><div style="font-size:54px">🏆</div><h2>${names} win${ws.length > 1 ? '' : 's'}!</h2><p class="lead">Lowest score: ${ws[0].total} after ${G.round} rounds</p></div>
+      <div style="text-align:center;margin-bottom:10px"><div style="font-size:54px">🏆</div><h2>${esc(Say.winners(ws))}</h2><p class="lead">Lowest score: ${ws[0].total} after ${G.round} rounds</p></div>
       <div class="rows">${sorted.map((p, i) => `<div class="row ${ws.includes(p) ? 'lead' : ''}"><div class="pn">${i + 1}. ${esc(p.name)}</div><span></span><div class="tot">${p.total}</div></div>`).join('')}</div>
       <button class="big" id="againB" style="background:linear-gradient(180deg,#5aa0ff,#2f6cf0)">Rematch</button>
       <div class="btnrow"><button class="ghost" id="setupB">Change players</button></div>`, false);

@@ -431,6 +431,26 @@ const Tap4 = (() => {
     chooseOut: async (g, p, t, f) => Bot.chooseOut(g, p, t, f),
   };
 
-  return { Game, Bot, BotAgents, buildDeck, available, cardsLeft, scoreOf, pileTop, flipOdds, idsOfValue, POINTS, NUM, IN, OUT };
+  // ---- wording: a seat named "You" is talked to in the second person ----
+  // ("You win!", "You pick up 3 cards", "Gus taps you out"); everyone else by name.
+  const isYou = p => !!p && /^you$/i.test(String(p.name || '').trim());
+  const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;
+  const Say = {
+    isYou,
+    cap,
+    who: (p, lower) => isYou(p) ? (lower ? 'you' : 'You') : p.name,          // You / Rosie
+    verb: (p, s, base) => isYou(p) ? base : s,                               // plays / play
+    whose: p => isYou(p) ? 'your' : p.name + "'s",                           // your / Rosie's
+    their: p => isYou(p) ? 'your' : 'their',                                 // your / their
+    is: p => isYou(p) ? 'are' : 'is',
+    // "You win!", "Rosie wins!", "You & Gus win!" (you first)
+    winners(ws) {
+      const list = [...ws].sort((a, b) => (isYou(b) ? 1 : 0) - (isYou(a) ? 1 : 0));
+      const names = list.map(w => isYou(w) ? 'You' : w.name).join(' & ');
+      return `${names} ${list.length > 1 || isYou(list[0]) ? 'win' : 'wins'}!`;
+    },
+  };
+
+  return { Game, Bot, BotAgents, Say, buildDeck, available, cardsLeft, scoreOf, pileTop, flipOdds, idsOfValue, POINTS, NUM, IN, OUT };
 })();
 if (typeof module !== 'undefined') module.exports = Tap4;

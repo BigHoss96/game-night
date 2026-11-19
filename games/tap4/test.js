@@ -62,3 +62,28 @@ const stats = { turns: 0, games: 0, rounds: 0, taps4: 0, tapIns: 0, outsOther: 0
   for (const k in stats.wins) stats.wins[k] = Math.round(stats.wins[k]);
   console.log('OK', stats);
 })().catch(e => { console.error(e); process.exit(1); });
+
+// Wording (#19): a seat named "You" must read "You win!", not "You wins!".
+{
+  const S = T.Say;
+  const you = { name: 'You' }, rosie = { name: 'Rosie' }, gus = { name: 'Gus' };
+  assert.strictEqual(S.winners([you]), 'You win!');
+  assert.strictEqual(S.winners([rosie]), 'Rosie wins!');
+  assert.strictEqual(S.winners([gus, you]), 'You & Gus win!');
+  assert.strictEqual(S.winners([rosie, gus]), 'Rosie & Gus win!');
+  const pickup = (p, n) => `${S.who(p)} ${S.verb(p, 'picks', 'pick')} up ${n} cards`;
+  assert.strictEqual(pickup(you, 3), 'You pick up 3 cards');
+  assert.strictEqual(pickup(rosie, 3), 'Rosie picks up 3 cards');
+  assert.strictEqual(`${S.cap(S.whose(you))} turn`, 'Your turn');
+  assert.strictEqual(`${S.cap(S.whose(rosie))} turn`, "Rosie's turn");
+  assert.strictEqual(`${S.who(you)} ${S.is(you)} out`, 'You are out');
+  assert.strictEqual(`${S.who(gus)} ${S.verb(gus, 'loses', 'lose')} ${S.their(gus)} next turn`, 'Gus loses their next turn');
+  assert.strictEqual(`${S.who(you)} ${S.verb(you, 'loses', 'lose')} ${S.their(you)} next turn`, 'You lose your next turn');
+  assert(S.isYou({ name: ' you ' }) && !S.isYou({ name: 'Youssef' }));
+  // Every caption in the app goes through the helpers: no raw "<name> plays/picks/is …".
+  const app = require('fs').readFileSync(require('path').join(__dirname, 'app.js'), 'utf8');
+  const raw = app.match(/\$\{esc\(e\.(p|starter|to)\.name\)\} (\w+)/g) || [];
+  const bad = raw.filter(m => /(s|is)$/.test(m.split(' ').pop()));
+  assert.deepStrictEqual(bad, [], 'captions that would say "You plays" etc.');
+  console.log('Tap 4 wording OK');
+}
