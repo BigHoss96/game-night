@@ -85,6 +85,11 @@ var __run = function (cards, seed, players, setup) {
 const ctx = vm.createContext({ console });
 vm.runInContext(engineSrc + driver, ctx, { filename: 'doomlings-engine' });
 const run = vm.runInContext('__run', ctx);
+const breakdown = vm.runInContext('scoreBreakdown', ctx);
+const winners = vm.runInContext('scoreWinners', ctx);
+// ties: everyone on the top total wins
+assert.deepStrictEqual([...winners([{ id: 2, total: 30 }, { id: 0, total: 30 }, { id: 1, total: 12 }])], [2, 0]);
+assert.deepStrictEqual([...winners([{ id: 1, total: 31 }, { id: 0, total: 30 }])], [1]);
 
 let games = 0;
 for (let seed = 1; seed <= 300; seed++) {
@@ -93,6 +98,18 @@ for (let seed = 1; seed <= 300; seed++) {
   assert.strictEqual(g.phase, 'over', `seed ${seed}: game did not reach scoring`);
   assert.strictEqual(g.scores.length, players, `seed ${seed}: missing scores`);
   assert.strictEqual(traitCount, 113, `seed ${seed}: traits were lost or duplicated`);
+  // #27: the Final scores breakdown must add up to each player's total, and every
+  // card line must point at a card in that player's trait pile.
+  for (const sc of g.scores) {
+    const b = breakdown(g, sc);
+    const lines = b.sections.flatMap((x) => x.lines);
+    assert.strictEqual(lines.reduce((a, l) => a + l.amount, 0), sc.total, `seed ${seed}: ${sc.name} breakdown != total`);
+    assert.strictEqual(b.face + b.bonus + b.adjust, sc.total, `seed ${seed}: ${sc.name} sum check`);
+    const uids = new Set(b.cards.map((c) => c.uid));
+    for (const l of lines) if (l.uid && l.from == null) assert(uids.has(l.uid), `seed ${seed}: ${l.name} not in ${sc.name}'s pile`);
+  }
+  const w = winners(g.scores);
+  assert(w.length >= 1 && w.every((id) => g.scores.find((x) => x.id === id).total === g.scores[0].total), `seed ${seed}: winners`);
   games++;
 }
 
