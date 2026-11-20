@@ -69,7 +69,20 @@ select{width:100%;font:inherit;font-size:16px;padding:11px;border-radius:10px;bo
 .panel.anim{animation:panelin .4s ease 1.5s both}
 @keyframes panelin{from{opacity:0;visibility:hidden;transform:translateY(6px)}to{opacity:1;visibility:visible;transform:none}}.ball.anim{animation:none}
 @keyframes fadeup{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion:reduce){.die.roll,.res.anim *,.panel.anim{animation:none!important}.ball{transition:none}}
+/* big-moment banners (#26): land after the dice, just before the headline */
+.hl{display:inline-block;margin-top:8px;padding:5px 12px;border-radius:8px;font-weight:900;letter-spacing:.06em;font-size:18px;background:var(--gold);color:var(--ink)}
+.hl-turnover{background:var(--red);color:#fff}.hl-td{box-shadow:0 0 0 2px #fff,0 0 18px var(--glow,var(--gold))}
+.res.anim .hl-td{animation:hlpop .55s cubic-bezier(.2,1.6,.4,1) .9s both,hlglow 1.2s ease-in-out 1.45s 2}
+.res.anim .hl-turnover{animation:hlpop .45s ease .9s both,hlshake .45s ease 1.35s}
+.res.anim .hl-big,.res.anim .hl-safety{animation:hlpop .5s cubic-bezier(.2,1.5,.4,1) .9s both,hlpulse .9s ease 1.4s 2}
+@keyframes hlpop{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:none}}
+@keyframes hlshake{0%,100%{transform:none}20%{transform:translateX(-6px) rotate(-2deg)}40%{transform:translateX(6px) rotate(2deg)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes hlpulse{50%{transform:scale(1.08)}}
+@keyframes hlglow{50%{box-shadow:0 0 0 2px #fff,0 0 32px 6px var(--glow,var(--gold))}}
+.field.flash-td,.field.flash-turnover,.field.flash-big,.field.flash-safety{animation:fflash .9s ease 1s both}
+.field.flash-td{--fl:rgba(255,255,255,.75)}.field.flash-turnover{--fl:rgba(200,55,45,.8)}.field.flash-big,.field.flash-safety{--fl:rgba(224,165,38,.8)}
+@keyframes fflash{0%,100%{box-shadow:inset 0 0 0 0 transparent}35%{box-shadow:inset 0 0 0 6px var(--fl),0 0 16px var(--fl)}}
+@media (prefers-reduced-motion:reduce){.die.roll,.res.anim *,.panel.anim,.field[class*=flash-]{animation:none!important}.ball{transition:none}}
 @keyframes roll{0%{transform:rotate(-90deg) scale(.6);opacity:.2}60%{transform:rotate(15deg) scale(1.1)}100%{transform:none;opacity:1}}
 .tot{font-family:var(--serif);font-size:22px;font-weight:900;color:var(--ink);margin-left:4px}
 .look{font-size:13px;margin-top:8px;line-height:1.5}
@@ -241,12 +254,16 @@ function pickOff(call) {
 function pickDef(form) { S.defCall = form; resolve(); }
 function resolve() {
   const g = S.g;
-  const before = { poss: g.poss, score: g.score.slice() };
+  const before = { poss: g.poss, score: g.score.slice(), ball: g.ball, phase: g.phase };
   // where the ball was, so the next render can slide it to the new spot
   const was = { poss: g.poss, ball: g.phase === 'kickoff' ? (g.from || 35) : g.ball };
   const e = PD.play(g, S.offCall, S.defCall);
   const scored = g.score[0] !== before.score[0] || g.score[1] !== before.score[1];
-  S.last = { e, scored, notices: e.notice ? [e.notice] : [] };
+  S.last = { e, scored, notices: e.notice ? [e.notice] : [], hl: PD.highlight(before, g, e) };
+  // a little buzz for the biggest moments, timed with the banner (skipped for reduced motion)
+  if (S.last.hl && (S.last.hl.kind === 'td' || S.last.hl.kind === 'turnover') && navigator.vibrate && !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+    setTimeout(() => { try { navigator.vibrate(S.last.hl.kind === 'td' ? [60, 50, 120] : [140]); } catch (_) {} }, 950);
+  }
   // bots may call timeouts between plays
   for (const s of [0, 1]) if (!S.human[s] && PD.botTimeout(g, s)) { PD.timeout(g, s); S.last.notices.push(`Timeout ${PD.abbr(g, s)}`); }
   S.step = null; S.anim = true;
@@ -274,7 +291,8 @@ function field(g) {
   const ball = kick ? (g.from || 35) : g.ball;
   const fd = !kick && !pat && !g.over ? Math.min(100, g.ball + g.togo) : null;
   const dir = g.poss === 0 ? 'r' : 'l';
-  return `<div class="fieldbox"><div class="field">
+  const flash = S.anim && S.last && S.last.hl ? ` flash-${S.last.hl.kind}` : '';
+  return `<div class="fieldbox"><div class="field${flash}">
     <div class="ez l" style="background:${L.color}">${L.name.toUpperCase()}</div><div class="ez r" style="background:${R.color}">${R.name.toUpperCase()}</div>
     ${marks}${g.over ? '' : `<div class="los" style="left:${x(fx(ball))}%"></div>`}${fd !== null && fd < 100 ? `<div class="fdl" style="left:${x(fx(fd))}%"></div>` : ''}
     ${g.over ? '' : `<div class="ball ${dir}" data-to="${x(fx(ball))}" style="left:${x(S.anim && S.from != null ? S.from : fx(ball))}%"></div>`}
@@ -305,7 +323,12 @@ function resultHtml() {
     h += `<div class="look">${look.join('<br>')}</div>`;
   }
   if (L.headline) h += `<div class="headline">${esc(L.headline)}</div>`;
-  if (L.e) h += `<div class="headline ${L.scored ? 'score' : ''}">${esc(L.e.txt)}</div>`;
+  if (L.hl) {
+    const tc = T(g.teams[L.hl.side]).color;
+    const st = L.hl.kind === 'td' ? ` style="background:${tc};color:${textOn(tc)};--glow:${tc}"` : '';
+    h += `<div class="hl hl-${L.hl.kind}"${st}>${esc(L.hl.label)}</div>`;
+  }
+    if (L.e) h += `<div class="headline ${L.scored ? 'score' : ''}">${esc(L.e.txt)}</div>`;
   for (const n of (L.notices || [])) h += `<div class="notice">${esc(n)}</div>`;
   return `<div class="res ${S.anim ? 'anim' : ''}">${h}</div>`;
 }

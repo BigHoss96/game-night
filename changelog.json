@@ -15,5 +15,6 @@
   { "date": "2026-11-19T13:23:52Z", "game": "paydirt", "issue": 24, "text": "Paydirt: after each play the dice roll, the result fades in and the ball slides down the field, so you can follow what happened." },
   { "date": "2026-11-19T15:29:22Z", "game": "paydirt", "issue": 25, "text": "Paydirt: calling a play now starts with Run, Pass or Kick, then shows those plays with their average yards." },
   { "date": "2026-11-20T03:16:29Z", "game": "paydirt", "issue": 28, "text": "Paydirt: the field now stays put like a TV broadcast, with each team defending its own end zone, so the ball moves left or right depending on who has it." },
-  { "date": "2026-11-20T03:17:33Z", "game": "doomlings", "issue": 27, "text": "Doomlings: on the Final scores screen, tap any player to see exactly which cards and bonuses made up their score, or tap Replay scoring to watch it again. Ties now show every winner." }
+  { "date": "2026-11-20T03:17:33Z", "game": "doomlings", "issue": 27, "text": "Doomlings: on the Final scores screen, tap any player to see exactly which cards and bonuses made up their score, or tap Replay scoring to watch it again. Ties now show every winner." },
+  { "date": "2026-11-20T03:19:12Z", "game": "paydirt", "issue": 26, "text": "Paydirt: touchdowns, turnovers and big plays now get their own splashy banner and a flash on the field, so the big moments feel big." }
 ]

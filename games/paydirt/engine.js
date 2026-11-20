@@ -496,7 +496,38 @@ function botTimeout(g, side) {
 // `yard` is counted from that side's own goal line, like g.ball.
 function fieldX(side, yard) { return side === 0 ? yard : 100 - yard; }
 
-const api = { PLAYS, fieldX, FORMS, SCRIM, OPROB, parse, newGame, setTeams, team, abbr, play, prepare, legalOff, needsDefense, canTimeout, timeout,
+// Is this play a big moment worth a banner? before = { poss, score, ball, phase } snapshot taken
+// just before PD.play(); g is the game after it; e is the log entry it returned.
+// Returns { kind: 'td' | 'turnover' | 'safety' | 'big', label, side } or null for ordinary plays.
+function highlight(before, g, e) {
+  if (!before || !e) return null;
+  const txt = e.txt || '', call = e.det && e.det.call;
+  const gain = [0, 1].map(s => g.score[s] - before.score[s]);
+  const scrim = before.phase === 'scrimmage' && SCRIM.indexOf(call) >= 0;
+  const lostBall = scrim && g.poss !== before.poss;
+  for (const s of [0, 1]) {
+    if (gain[s] >= 6) {
+      const lab = /INTERCEPTED/.test(txt) ? 'PICK SIX!' : s !== before.poss && /FUMBLE/i.test(txt) ? 'FUMBLE RETURN TD!' : 'TOUCHDOWN!';
+      return { kind: 'td', label: lab, side: s };
+    }
+    if (gain[s] === 2 && /SAFETY/.test(txt)) return { kind: 'safety', label: 'SAFETY!', side: s };
+  }
+  if (lostBall) {
+    const label = /INTERCEPTED/.test(txt) ? 'INTERCEPTED!' : /FUMBLE/i.test(txt) ? 'FUMBLE!' : /on downs/i.test(txt) ? 'TURNOVER ON DOWNS' : 'TURNOVER!';
+    return { kind: 'turnover', label, side: g.poss };
+  }
+  if (/BLOCKED/.test(txt)) return { kind: 'turnover', label: 'BLOCKED!', side: 1 - before.poss };
+  if (/FUMBLED!/.test(txt) && before.phase === 'kickoff') return { kind: 'turnover', label: 'FUMBLE!', side: before.poss };
+  if (scrim && g.poss === before.poss && (g.phase === 'scrimmage' || g.phase === before.phase)) {
+    const y = g.ball - before.ball;
+    if (y >= 20 || (/^Breakaway!/.test(txt) && y > 0)) return { kind: 'big', label: `BIG PLAY! +${y}`, side: g.poss };
+  }
+  const ret = /returned (\d+) yards/.exec(txt);
+  if (ret && +ret[1] >= 40 && (before.phase === 'kickoff' || call === 'P')) return { kind: 'big', label: `BIG RETURN! ${ret[1]} yds`, side: g.poss };
+  return null;
+}
+
+const api = { PLAYS, fieldX, highlight, FORMS, SCRIM, OPROB, parse, newGame, setTeams, team, abbr, play, prepare, legalOff, needsDefense, canTimeout, timeout,
   botOffense, botDefense, botTimeout, spotText, downText, clockText, fgChance, rollOff, rollDef, value, colEV };
 if (typeof module !== 'undefined') module.exports = api; else root.PD = api;
 })(this);

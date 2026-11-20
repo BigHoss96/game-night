@@ -37,6 +37,26 @@ assert.strictEqual(E.fieldX(1, 25), 75);
 assert.strictEqual(E.fieldX(1, 0), 100, 'home goal line is on the right');
 let fxChecked = 0;
 
+// big-moment banners (#26)
+{
+  const H = (b, a, txt, call) => E.highlight(Object.assign({ poss: 0, score: [0, 0], ball: 30, phase: 'scrimmage' }, b),
+    Object.assign({ poss: 0, score: [0, 0], ball: 30, phase: 'scrimmage' }, a), { txt, det: { call } });
+  assert.strictEqual(H({}, { score: [6, 0], phase: 'pat', ball: 98 }, '70-yard touchdown pass! TOUCHDOWN GB!', '8').kind, 'td');
+  // the reported play: GB long pass picked off at the GB 22, CHI returns it 30 yards
+  const intc = H({ ball: 22 }, { poss: 1, ball: 58 }, 'INTERCEPTED by CHI, returned 30 yards.', '8');
+  assert.strictEqual(intc.kind, 'turnover'); assert.strictEqual(intc.label, 'INTERCEPTED!'); assert.strictEqual(intc.side, 1);
+  assert.strictEqual(H({}, { poss: 1, score: [0, 6], phase: 'pat' }, 'INTERCEPTED! CHI returns it all the way. TOUCHDOWN!', '7').label, 'PICK SIX!');
+  assert.strictEqual(H({}, { poss: 1, ball: 70 }, 'FUMBLE! Recovered by CHI.', '2').label, 'FUMBLE!');
+  assert.strictEqual(H({}, { poss: 1, ball: 45 }, 'Gain of 2. Turnover on downs.', '1').label, 'TURNOVER ON DOWNS');
+  const big = H({}, { ball: 55 }, 'Complete, gain of 25. First down!', '7');
+  assert.strictEqual(big.kind, 'big'); assert.strictEqual(big.label, 'BIG PLAY! +25');
+  assert.strictEqual(H({}, { poss: 1, ball: 25 }, '45-yard punt, returned 5 yards to the CHI 25.', 'P'), null, 'a punt is not a turnover');
+  assert.strictEqual(H({}, { ball: 34 }, 'Gain of 4.', '2'), null);
+  assert.strictEqual(H({}, { score: [3, 0], phase: 'kickoff' }, '40-yard field goal is GOOD.', 'FG'), null);
+  assert.strictEqual(H({}, { poss: 1, score: [0, 2], phase: 'kickoff' }, 'Sacked, tackled in the end zone. SAFETY!', '8').kind, 'safety');
+}
+const hlCount = { td: 0, turnover: 0, big: 0, safety: 0 }; let hlPlays = 0;
+
 // ---- simulation ----
 let seed = 7;
 const rng = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
@@ -53,8 +73,9 @@ for (let gi = 0; gi < N; gi++) {
     const call = E.botOffense(g, rng);
     assert(E.legalOff(g).indexOf(call) >= 0, `illegal call ${call} in ${g.phase}`);
     const form = E.needsDefense(g, call) ? E.botDefense(g, rng) : null;
-    const bf = { poss: g.poss, ball: g.ball, phase: g.phase };
-    E.play(g, call, form, rng);
+    const bf = { poss: g.poss, ball: g.ball, phase: g.phase, score: g.score.slice() };
+    const ent = E.play(g, call, form, rng);
+    const hl = E.highlight(bf, g, ent); hlPlays++; if (hl) hlCount[hl.kind]++;
     if (bf.phase === 'scrimmage' && g.phase === 'scrimmage' && g.poss === bf.poss && !g.over) {
       // a gain of N moves the ball N yards toward the offense's goal: right for side 0, left for side 1
       const d = E.fieldX(g.poss, g.ball) - E.fieldX(bf.poss, bf.ball);
@@ -86,6 +107,9 @@ if (process.env.PD_TEAMS) {
   const rows = Object.entries(agg.byTeam).map(([t, v]) => [t, (v.pf / v.n).toFixed(1), (v.pa / v.n).toFixed(1), (v.w / v.n).toFixed(2), TEAMS[t].record]).sort((x, y) => y[3] - x[3]);
   for (const r of rows) console.log(r.join('\t'));
 }
+for (const k of ['td', 'turnover', 'big']) assert(hlCount[k] > 0 && hlCount[k] / hlPlays < 0.2, `highlight rate ${k} ${hlCount[k]}/${hlPlays}`);
+assert((hlCount.td + hlCount.turnover + hlCount.big + hlCount.safety) / hlPlays < 0.25, 'too many highlights');
+console.log(`paydirt highlights per game: td ${(hlCount.td / N).toFixed(1)} turnover ${(hlCount.turnover / N).toFixed(1)} big ${(hlCount.big / N).toFixed(1)} safety ${(hlCount.safety / N).toFixed(2)}`);
 assert(fxChecked > 1000, 'field direction checked on many plays');
 // sanity bands around real NFL numbers
 assert(ppg > 15 && ppg < 32, `points per team ${ppg}`);
