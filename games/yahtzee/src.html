@@ -26,39 +26,42 @@ input[type=text]{width:100%;font:inherit;font-size:16px;padding:11px;border:1px 
 .big:disabled{opacity:.45}
 .big.go{background:var(--green);box-shadow:0 4px 0 #1d6b3c}
 .ghost{display:block;width:100%;padding:12px;border-radius:12px;background:rgba(255,255,255,.08);color:#fff;font-weight:800;margin-top:8px}
-.panel .ghost{background:#efebe0;color:var(--ink)}
+.panel .ghost,.sheet .ghost{background:#efebe0;color:var(--ink);border:1px solid var(--line)}
+.panel .ghost:active,.sheet .ghost:active{background:#e2dccb}
 .small{font-size:13px;color:var(--mute)}
 .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .top b{font-style:italic;font-weight:900;font-size:22px}
 .top button{font-size:24px;font-weight:900;padding:0 10px}
-.players{display:flex;gap:6px;margin-bottom:8px;overflow-x:auto}
-html:not(.gn-desktop) .pl{padding:4px 9px;display:flex;justify-content:space-between;align-items:center;gap:6px}
-html:not(.gn-desktop) .pl .s{font-size:18px}
-html:not(.gn-desktop) .sc td{height:31px}
-html:not(.gn-desktop) .status{margin:5px 0 0}
-.pl{flex:1;min-width:76px;background:var(--bg2);border-radius:12px;padding:7px 9px;border:2px solid transparent;transition:border-color .2s,transform .2s}
-.pl.on{border-color:var(--gold);transform:translateY(-1px)}
+.players{display:flex;gap:6px;margin-bottom:4px;overflow-x:auto}
+.deck{position:sticky;top:0;z-index:5;background:var(--bg);margin:0 -10px;padding:6px 10px 8px;box-shadow:0 8px 12px -8px rgba(0,0,0,.5)}
+.pl{flex:1;min-width:70px;background:var(--bg2);border-radius:10px;padding:4px 9px;border:2px solid transparent;transition:border-color .2s,transform .2s;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.pl.on{border-color:var(--gold)}
 .pl .n{font-size:12px;font-weight:800;color:#aab4d4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pl .s{font-size:22px;font-weight:900}
-.status{min-height:22px;text-align:center;font-weight:800;color:#dfe5f7;margin:8px 0 4px}
-.rollrow{display:flex;gap:8px;align-items:stretch}
-.rollrow .big{margin-top:8px}
-.pips{display:flex;gap:5px;justify-content:center;margin-top:6px}
-.pips i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.2)}.pips i.on{background:var(--gold)}
-table.sc{width:100%;border-collapse:separate;border-spacing:0;background:var(--card);color:var(--ink);border-radius:14px;overflow:hidden;margin-top:12px;font-size:15px}
-.sc th{background:var(--ink);color:#fff;font-size:12px;padding:7px 4px;font-weight:800}
-.sc th.me,.sc td.me{min-width:64px}
-.sc td{padding:0 6px;height:34px;border-bottom:1px solid var(--line);text-align:center}
-.sc td:first-child{text-align:left;font-weight:700}
-.sc td.cat small{display:block;font-size:10px;color:var(--mute);font-weight:600;line-height:1}
-.sc tr.sub td{background:#f4f1e8;font-size:13px;color:var(--mute);font-weight:800}
-.sc tr.tot td{background:var(--ink);color:#fff;font-weight:900;font-size:17px;height:40px}
+.pl .s{font-size:18px;font-weight:900}
+#tray{margin:2px 0 0}
+.status{min-height:20px;text-align:center;font-weight:800;color:#dfe5f7;margin:2px 0 0;font-size:14px}
+.rollrow{display:flex;gap:10px;align-items:center}
+.rollrow .big{margin-top:6px;flex:1;padding:13px}
+.pips{display:flex;gap:5px;justify-content:center;flex:none;margin-top:6px}
+.pips i{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.2)}.pips i.on{background:var(--gold)}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;align-items:start}
+table.sc{width:100%;border-collapse:separate;border-spacing:0;background:var(--card);color:var(--ink);border-radius:12px;overflow:hidden;font-size:15px;table-layout:fixed}
+.sc th{background:var(--ink);color:#fff;font-size:11px;padding:6px 2px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sc th:first-child{text-align:left;padding-left:8px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;width:52%}
+.sc td{padding:0 2px;height:42px;border-bottom:1px solid var(--line);text-align:center;font-size:18px}
+.sc td:first-child{text-align:left;font-weight:800;font-size:13px;line-height:1.1;padding-left:8px}
+.sc td.cat small{display:block;font-size:10px;color:var(--mute);font-weight:600;margin-top:1px}
+.sc tr.sub td{background:#f4f1e8;font-size:12px;color:var(--mute);font-weight:800;height:30px}
+.sc tr.sub td small{opacity:.6}
 .sc td.cell{font-weight:900}
-.sc td.opt{color:#b07d06;background:#fff6dc;cursor:pointer}
+.sc td.opt{color:#b07d06;background:#fff6dc;cursor:pointer;font-weight:900}
 .sc td.opt.zero{color:#b3ab98;background:#faf7ee}
 .sc td.sel{background:var(--gold)!important;color:var(--ink)!important;box-shadow:inset 0 0 0 2px #b07d06}
 .sc td.cur{background:#fbf8ef}
 .sc td.flash{animation:flash .9s}
+.sc.many td{font-size:15px}
+.sc.many th:first-child{width:46%}.sc.many td:first-child{font-size:12px}
+.sc.many tr.sub td{font-size:11px}
 @keyframes flash{0%,60%{background:var(--gold)}100%{background:transparent}}
 .banner{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%) scale(.6);z-index:50;font-weight:900;font-style:italic;font-size:64px;color:#fff;text-shadow:0 5px 0 var(--red),0 10px 30px rgba(0,0,0,.6);opacity:0;pointer-events:none;white-space:nowrap}
 .banner.show{animation:ban 1.9s ease forwards}
@@ -135,15 +138,16 @@ function setup() {
 // ---------------- game screen ----------------
 function startGame() {
   $('#app').innerHTML = `<div class="top"><b>Yahtzee!</b><button id="menu" aria-label="Menu">⋯</button></div>
-    <div class="players" id="players"></div>
-    <div id="tray"></div>
-    <div class="status" id="status"></div>
-    <div class="rollrow"><button class="big" id="rollBtn">Roll</button></div>
-    <div class="pips" id="pips"></div>
-    <div id="card"></div>`;
+    <div class="deck" id="deck">
+      <div class="players" id="players"></div>
+      <div id="tray"></div>
+      <div class="status" id="status"></div>
+      <div class="rollrow"><button class="big" id="rollBtn">Roll</button><div class="pips" id="pips" aria-label="rolls left"></div></div>
+    </div>
+    <div class="cards" id="card"></div>`;
   if (cur().bot) { G.rolls = 0; G.held = [false, false, false, false, false]; }   // a bot resumes its turn from the start
   const desk = document.documentElement.classList.contains('gn-desktop');
-  tray = Dice3D.create($('#tray'), desk ? { count: 5, railLabel: 'held' } : { count: 5, railLabel: 'held', rows: 2.5, ratio: 0.36, max: 60 });
+  tray = Dice3D.create($('#tray'), { count: 5, row: true, max: desk ? 76 : 66 });
   tray.onTap = toggleHold;
   tray.lineup(G.dice, G.held.map(h => h ? 'held' : 'free'));
   if (G.rolls === 0) tray.setFrozen(true);
@@ -179,18 +183,18 @@ function renderCard() {
   const p = cur(), me = G.turn;
   const showOpts = humanTurn() && G.rolls > 0 && !busy;
   const legal = showOpts ? YZ.legal(p.card, G.dice) : [];
-  const head = `<tr><th style="text-align:left;padding-left:8px">Box</th>${G.players.map((q, i) => `<th class="${i === me ? 'me' : ''}">${esc(q.name)}</th>`).join('')}</tr>`;
-  const row = k => `<tr><td class="cat">${YZ.NAMES[k]}${HINT[k] ? `<small>${HINT[k]}</small>` : ''}</td>${G.players.map((q, i) => {
+  const many = G.players.length > 2 ? ' many' : '';
+  const head = title => `<tr><th>${title}</th>${G.players.map((q, i) => `<th class="${i === me ? 'me' : ''}">${esc(G.players.length > 2 ? q.name.slice(0, 2) : q.name)}</th>`).join('')}</tr>`;
+  const row = k => `<tr><td class="cat">${SHORT[k] || YZ.NAMES[k]}${HINT[k] ? `<small>${HINT[k]}</small>` : ''}</td>${G.players.map((q, i) => {
     const v = q.card[k];
     if (v != null) return `<td class="cell ${i === me ? 'cur' : ''}" data-k="${k}" data-p="${i}">${v}</td>`;
     if (i === me && legal.indexOf(k) >= 0) { const s = YZ.score(q.card, k, G.dice); return `<td class="opt ${s ? '' : 'zero'} ${sel === k ? 'sel' : ''}" data-opt="${k}">${s}</td>`; }
     return `<td class="${i === me ? 'cur' : ''}" data-k="${k}" data-p="${i}"></td>`;
   }).join('')}</tr>`;
   const sub = (label, f) => `<tr class="sub"><td>${label}</td>${G.players.map(q => `<td>${f(YZ.totals(q.card))}</td>`).join('')}</tr>`;
-  $('#card').innerHTML = `<table class="sc">${head}${YZ.UPPER.map(row).join('')}
-    ${sub('Upper total', t => `${t.up}<span style="opacity:.6">/63</span>`)}${sub('Bonus (63+)', t => t.bonus || '—')}
-    ${YZ.CATS.slice(6).map(row).join('')}${sub('Yahtzee bonus', t => t.ybonus || '—')}
-    <tr class="tot"><td>Total</td>${G.players.map(q => `<td>${YZ.totals(q.card).total}</td>`).join('')}</tr></table>`;
+  $('#card').innerHTML = `<table class="sc${many}">${head('Upper')}${YZ.UPPER.map(row).join('')}
+      ${sub('Up total', t => many ? t.up : `${t.up}<small>/63</small>`)}${sub('Bonus', t => t.bonus || '—')}</table>
+    <table class="sc${many}">${head('Lower')}${YZ.CATS.slice(6).map(row).join('')}${sub('Yahtzee +', t => t.ybonus || '—')}</table>`;
   document.querySelectorAll('[data-opt]').forEach(td => td.onclick = () => {
     if (busy) return;
     const k = td.dataset.opt;
@@ -198,7 +202,8 @@ function renderCard() {
     sel = k; render();
   });
 }
-const HINT = { three: 'sum of dice', four: 'sum of dice', full: '25', small: '30', large: '40', yahtzee: '50', chance: 'sum of dice' };
+const SHORT = { three: '3 of a Kind', four: '4 of a Kind', full: 'Full House', small: 'Sm Straight', large: 'Lg Straight' };
+const HINT = { ones: 'add 1s', twos: 'add 2s', threes: 'add 3s', fours: 'add 4s', fives: 'add 5s', sixes: 'add 6s', three: 'sum', four: 'sum', full: '25', small: '4 in a row · 30', large: '5 in a row · 40', yahtzee: '50', chance: 'sum' };
 
 function toggleHold(i) {
   if (!humanTurn() || busy || G.rolls === 0 || G.rolls >= 3) { if (G.rolls >= 3 && humanTurn()) tray.nope(i); return; }
@@ -318,7 +323,7 @@ function menu() {
 }
 function rules() {
   sheet(`<h2>How to play</h2><div class="rules">
-    <p>Each turn you get up to <b>three rolls</b>. After the first and second roll, tap dice to <b>hold</b> them (they slide to the rail) and roll the rest. Then pick one box on your scorecard. Every box is used once, so the game is 13 turns.</p>
+    <p>Each turn you get up to <b>three rolls</b>. After the first and second roll, tap dice to <b>hold</b> them (they light up and slide to the left) and roll the rest. Then pick one box on your scorecard. Every box is used once, so the game is 13 turns.</p>
     <ul>
       <li><b>Ones–Sixes:</b> total of that number. Reach <b>63</b> in the upper section for a <b>35-point bonus</b>.</li>
       <li><b>3 / 4 of a Kind:</b> sum of all dice. <b>Chance:</b> sum of anything.</li>
