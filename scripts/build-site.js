@@ -81,7 +81,7 @@ for (const g of GAMES) {
   }, null, 2));
 }
 // home page and testing area get the report sheet too
-for (const page of ['index.html', 'testing.html', 'issues.html', 'shelf.html']) {
+for (const page of ['index.html', 'classic.html', 'testing.html', 'issues.html']) {
   const f = path.join(out, page);
   fs.writeFileSync(f, fs.readFileSync(f, 'utf8').replace(/<\/title>/i, m => m + '\n' + reportTags('site', '')));
 }
