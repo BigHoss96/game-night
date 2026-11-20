@@ -16,5 +16,9 @@
   { "date": "2026-11-19T15:29:22Z", "game": "paydirt", "issue": 25, "text": "Paydirt: calling a play now starts with Run, Pass or Kick, then shows those plays with their average yards." },
   { "date": "2026-11-20T03:16:29Z", "game": "paydirt", "issue": 28, "text": "Paydirt: the field now stays put like a TV broadcast, with each team defending its own end zone, so the ball moves left or right depending on who has it." },
   { "date": "2026-11-20T03:17:33Z", "game": "doomlings", "issue": 27, "text": "Doomlings: on the Final scores screen, tap any player to see exactly which cards and bonuses made up their score, or tap Replay scoring to watch it again. Ties now show every winner." },
-  { "date": "2026-11-20T03:19:12Z", "game": "paydirt", "issue": 26, "text": "Paydirt: touchdowns, turnovers and big plays now get their own splashy banner and a flash on the field, so the big moments feel big." }
+  { "date": "2026-11-20T03:19:12Z", "game": "paydirt", "issue": 26, "text": "Paydirt: touchdowns, turnovers and big plays now get their own splashy banner and a flash on the field, so the big moments feel big." },
+  {"date": "2026-11-20T13:13:03Z", "game": "farkle", "issue": 32, "text": "Farkle: the in-game menu is readable now (it was white text on a cream background)."},
+  {"date": "2026-11-20T13:13:03Z", "game": "farkle", "issue": 33, "text": "Farkle: the scoring chart now sits right under the buttons, and the combos your roll can make light up so you know which dice to grab."},
+  {"date": "2026-11-20T13:13:03Z", "game": "yahtzee", "issue": 30, "text": "Yahtzee: the in-game menu is readable now (it was white text on a cream background)."},
+  {"date": "2026-11-20T13:13:03Z", "game": "yahtzee", "issue": 31, "text": "Yahtzee: new layout. The dice sit in one row and spin in place, held dice light up and slide to the left, and the scorecard shows Upper and Lower side by side so it all fits on screen."}
 ]

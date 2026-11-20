@@ -32,7 +32,8 @@ input[type=text]{width:100%;font:inherit;font-size:16px;padding:11px;border:1px 
 .big:disabled{opacity:.4}
 .big.bank{background:var(--green);box-shadow:0 4px 0 #1d6b3c}
 .ghost{display:block;width:100%;padding:12px;border-radius:12px;background:rgba(255,255,255,.1);color:#fff;font-weight:800;margin-top:8px}
-.panel .ghost{background:#f1e6d3;color:var(--ink)}
+.panel .ghost,.sheet .ghost{background:#f1e6d3;color:var(--ink);border:1px solid var(--line)}
+.panel .ghost:active,.sheet .ghost:active{background:#e6d6bb}
 .small{font-size:13px;color:var(--mute)}
 .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .top b{font-family:Georgia,serif;font-weight:900;font-size:24px;color:var(--gold)}
@@ -44,12 +45,18 @@ input[type=text]{width:100%;font:inherit;font-size:16px;padding:11px;border:1px 
 .pl .s{font-size:21px;font-weight:900}
 .pl .bar{height:5px;border-radius:3px;background:rgba(255,255,255,.12);margin-top:4px;overflow:hidden}.pl .bar i{display:block;height:100%;background:var(--gold);transition:width .6s}
 .pl .x{font-size:11px;color:#e3c8ad}
-.turn{display:flex;justify-content:space-between;align-items:baseline;margin:10px 4px 0}
+.turn{display:flex;justify-content:space-between;align-items:baseline;margin:6px 4px 0}
 .turn .lbl{font-size:12px;font-weight:800;color:#e3c8ad;text-transform:uppercase;letter-spacing:.08em}
 .turn .pts{font-size:34px;font-weight:900;color:#fff}
 .sel{min-height:22px;text-align:center;font-weight:800;color:var(--gold);margin:4px 0}
 .sel.bad{color:#ffb4a8}
 .btns{display:flex;gap:8px}.btns .big{margin-top:6px}
+.chart{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:6px}
+.chart div{display:flex;justify-content:space-between;align-items:baseline;gap:6px;background:rgba(255,255,255,.07);border-radius:8px;padding:4px 8px;font-size:13px;color:#e3c8ad;transition:background .2s,color .2s}
+.chart div b{color:#fff;font-size:13px;white-space:nowrap}
+.chart div.hit{background:var(--gold);color:var(--ink)}.chart div.hit b{color:var(--ink)}
+.chart div small{display:block;font-size:11px;font-weight:800}
+.chart .cap{grid-column:1/-1;background:none;padding:0 2px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
 .status{text-align:center;color:#e3c8ad;font-weight:700;min-height:20px;margin-top:8px}
 .final{background:var(--gold);color:var(--ink);text-align:center;font-weight:900;border-radius:10px;padding:6px;margin-bottom:8px}
 .banner{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%);z-index:50;font-family:Georgia,serif;font-weight:900;font-size:68px;color:var(--gold);text-shadow:0 5px 0 #7a2d14,0 12px 30px rgba(0,0,0,.7);opacity:0;pointer-events:none;white-space:nowrap}
@@ -147,8 +154,10 @@ function startGame() {
     <div class="turn"><span class="lbl" id="who"></span><span class="pts" id="tp">0</span></div>
     <div class="sel" id="sel"></div>
     <div class="btns"><button class="big" id="roll">Roll</button><button class="big bank" id="bank">Bank</button></div>
-    <div class="status" id="status"></div>`;
-  tray = Dice3D.create($('#tray'), { count: 6, railLabel: 'set aside' });
+    <div class="status" id="status"></div>
+    <div class="chart" id="pts"></div>`;
+  const desk = document.documentElement.classList.contains('gn-desktop');
+  tray = Dice3D.create($('#tray'), desk ? { count: 6, railLabel: 'set aside' } : { count: 6, railLabel: 'set aside', ratio: 0.4, rows: 3.2 });
   tray.onTap = tap;
   sel = [];
   syncTray(false);
@@ -173,6 +182,7 @@ function render() {
   if (sel.length && !ss) { selEl.textContent = "Those dice don't all score"; selEl.className = 'sel bad'; }
   else if (ss) { selEl.textContent = `${FK.describe(sel.map(i => G.dice[i]))} = ${fmt(ss)}`; selEl.className = 'sel'; }
   else selEl.textContent = '';
+  renderChart();
   const rb = $('#roll'), bb = $('#bank');
   if (!human()) { rb.disabled = bb.disabled = true; rb.textContent = 'Roll'; bb.textContent = 'Bank'; return; }
   const free = FK.freeIdx(G).length - sel.length;
@@ -191,6 +201,13 @@ function render() {
   if (!G.rolled) st = G.turnPts ? '' : 'Roll to start your turn';
   else if (!sel.length) st = 'Tap scoring dice to set them aside';
   $('#status').textContent = st;
+}
+// Always-on scoring chart; rows the dice still on the table can make are lit
+function renderChart() {
+  const live = G.rolled && !busy && !G.farkled ? FK.freeIdx(G).map(i => G.dice[i]) : [];
+  const av = FK.available(live);
+  $('#pts').innerHTML = `<div class="cap">${live.length ? (Object.keys(av).length ? 'Lit = in this roll' : 'Nothing scores') : 'Scoring'}</div>` +
+    FK.CHART.map(r => `<div class="${av[r.k] ? 'hit' : ''}"><span>${r.label}${av[r.k] && av[r.k] !== r.pts ? `<small>${esc(av[r.k])}</small>` : ''}</span><b>${r.pts}</b></div>`).join('');
 }
 function tap(i) {
   if (!human() || busy || !G.rolled || G.state[i] === 'locked') return;

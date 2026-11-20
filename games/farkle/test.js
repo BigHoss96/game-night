@@ -15,6 +15,20 @@ assert(F.canScore([2, 3, 3, 6, 6, 2]) === true, 'three pairs scores');
 assert(F.canScore([2, 3, 4, 6, 6, 3]) === false);
 assert(F.canScore([2, 3]) === false && F.canScore([2, 2, 2]) === true);
 assert.strictEqual(F.describe([1, 1, 5, 4, 4, 4]), 'Three 4s + 2 ones + a five');
+// in-game scoring chart: which rows the current roll can make
+const A = d => Object.keys(F.available(d)).sort().join(',');
+assert.strictEqual(A([1, 1, 5, 4, 4, 4]), 'five,one,threeN');
+assert.strictEqual(A([2, 3, 4, 6, 6, 3]), '', 'farkle roll lights nothing');
+assert.strictEqual(A([1, 2, 3, 4, 5, 6]), 'five,one,straight');
+assert.strictEqual(A([2, 2, 4, 4, 6, 6]), 'pairs');
+assert.strictEqual(A([2, 2, 2, 2, 6, 6]), 'four,pairs,threeN');
+assert.strictEqual(A([3, 3, 3, 6, 6, 6]), 'threeN,trips');
+assert.strictEqual(A([1, 1, 1, 1, 1]), 'fivek,four,one,three1');
+assert.strictEqual(A([2, 2, 4, 4]), '', 'pairs only count with all six dice');
+assert.strictEqual(F.available([4, 4, 4, 6, 6, 6]).threeN, '4s = 400, 6s = 600');
+F.CHART.forEach(r => assert(r.k && r.label && r.pts));
+// every die that can score is covered by some lit row (and a roll that can't score lights nothing)
+for (let t = 0; t < 3000; t++) { const n = 1 + (t % 6), d = Array.from({ length: n }, () => 1 + Math.floor(Math.random() * 6)); assert.strictEqual(Object.keys(F.available(d)).length > 0, F.canScore(d), d.join('')); }
 
 // entry rule and final round
 let g = F.newGame([{ name: 'A' }, { name: 'B' }]);

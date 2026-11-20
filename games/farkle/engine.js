@@ -57,6 +57,30 @@ function options(dice, idx) {
   return out;
 }
 
+// Scoring-chart rows, and which of them the dice in front of you can make right now.
+const CHART = [
+  { k: 'one', label: 'Each 1', pts: '100' }, { k: 'five', label: 'Each 5', pts: '50' },
+  { k: 'three1', label: 'Three 1s', pts: '1,000' }, { k: 'threeN', label: 'Three 2s–6s', pts: '×100' },
+  { k: 'four', label: '4 of a kind', pts: '1,000' }, { k: 'fivek', label: '5 of a kind', pts: '2,000' },
+  { k: 'six', label: '6 of a kind', pts: '3,000' }, { k: 'straight', label: 'Straight 1–6', pts: '1,500' },
+  { k: 'pairs', label: 'Three pairs', pts: '1,500' }, { k: 'trips', label: 'Two triplets', pts: '2,500' },
+];
+function available(dice) {
+  const c = countsOf(dice), out = {};
+  if (c[1]) out.one = c[1] > 1 ? `${c[1]} × 100` : '100';
+  if (c[5]) out.five = c[5] > 1 ? `${c[5]} × 50` : '50';
+  if (c[1] >= 3) out.three1 = '1,000';
+  const tri = [2, 3, 4, 5, 6].filter(v => c[v] >= 3);
+  if (tri.length) out.threeN = tri.map(v => `${v}s = ${v * 100}`).join(', ');
+  for (let v = 1; v <= 6; v++) { if (c[v] >= 4) out.four = `${v}s`; if (c[v] >= 5) out.fivek = `${v}s`; if (c[v] >= 6) out.six = `${v}s`; }
+  if (dice.length === 6) {
+    if ([1, 2, 3, 4, 5, 6].every(v => c[v] === 1)) out.straight = '1,500';
+    if ([1, 2, 3, 4, 5, 6].every(v => c[v] % 2 === 0) && c.reduce((a, x) => a + (x === 2 ? 1 : x === 4 ? 2 : 0), 0) === 3) out.pairs = '1,500';
+    if ([1, 2, 3, 4, 5, 6].filter(v => c[v] === 3).length === 2) out.trips = '2,500';
+  }
+  return out;
+}
+
 // ---------- game ----------
 function newGame(players, opts) {
   const g = { players: players.map(p => ({ name: p.name, bot: !!p.bot, skill: p.skill || 'sharp', score: 0, on: false, farkles: 0 })),
@@ -201,6 +225,6 @@ function botPick(g, skill) {
   return bestO;
 }
 
-const api = { table, DEFAULT_OPTS, scoreOf, describe, canScore, options, newGame, startTurn, roll, keep, bank, farkle, canBank, canRollAgain, freeIdx, botPick, shouldBank };
+const api = { CHART, available, table, DEFAULT_OPTS, scoreOf, describe, canScore, options, newGame, startTurn, roll, keep, bank, farkle, canBank, canRollAgain, freeIdx, botPick, shouldBank };
 if (typeof module !== 'undefined') module.exports = api; else root.FK = api;
 })(this);
