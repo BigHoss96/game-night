@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#20140d">
+<meta name="robots" content="noindex">
+<title>Game Night</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/site-192.png">
+<link rel="apple-touch-icon" href="icons/site-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Permanent+Marker&display=swap" rel="stylesheet">
+<style>
+/* ---------- room ---------- */
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:#20140d}
+body{font-family:"Bricolage Grotesque",system-ui,sans-serif;color:#f6efe2;min-height:100vh;overflow-x:hidden;
+  background:
+    radial-gradient(120% 60% at 50% 0%,rgba(255,200,120,.16),transparent 70%),
+    repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 2px,transparent 2px 44px),
+    linear-gradient(#3a2618,#24170f 70%,#1a100a);
+  padding:calc(env(safe-area-inset-top) + 18px) 14px calc(env(safe-area-inset-bottom) + 28px)}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+.room{max-width:1120px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:26px}
+@media (min-width:900px){.room{grid-template-columns:1.6fr 1fr;align-items:start}}
+.sign{grid-column:1/-1;justify-self:center;text-align:center;padding:10px 26px 12px;border-radius:10px;
+  background:linear-gradient(#8a5a33,#6b4325);box-shadow:inset 0 2px 0 rgba(255,255,255,.18),inset 0 -3px 0 rgba(0,0,0,.25),0 8px 18px rgba(0,0,0,.45);position:relative}
+.sign:before,.sign:after{content:'';position:absolute;top:-16px;width:2px;height:18px;background:#2a1a10}
+.sign:before{left:22%}.sign:after{right:22%}
+.sign h1{font-size:clamp(34px,9vw,54px);font-weight:800;letter-spacing:-.03em;line-height:1;color:#ffe2a8;text-shadow:0 2px 0 #3d2412}
+.sign h1 span{color:#ffc94d}
+.sign p{color:#f1d7b0;font-size:14px;margin-top:4px}
+
+/* ---------- bookcase (cube shelving) ---------- */
+.case{min-width:0;background:linear-gradient(#f0e6d6,#e3d5bf);padding:12px;border-radius:6px;
+  box-shadow:0 18px 40px rgba(0,0,0,.55),inset 0 0 0 1px rgba(0,0,0,.08);display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cubby{position:relative;min-width:0;min-height:190px;border-radius:2px;padding:10px 10px 0;display:flex;flex-direction:column;justify-content:flex-end;
+  background:linear-gradient(#2c1d14,#3d2a1d 30%,#4a3424);box-shadow:inset 0 10px 18px rgba(0,0,0,.55),inset 8px 0 14px rgba(0,0,0,.35),inset -8px 0 14px rgba(0,0,0,.35)}
+.cubby .lbl{position:absolute;left:8px;top:6px;font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,235,205,.35)}
+
+/* box spines (boxes lie flat, stacked; you read the long side) */
+.spine{position:relative;min-width:0;overflow:visible;display:flex;align-items:center;gap:8px;width:100%;margin-top:2px;padding:0 10px;border-radius:3px;text-align:left;
+  color:var(--ink,#fff);background:var(--bg);box-shadow:inset 0 2px 0 rgba(255,255,255,.22),inset 0 -3px 0 rgba(0,0,0,.28),0 3px 4px rgba(0,0,0,.45);
+  transition:transform .18s ease,filter .18s;transform:translateX(var(--x,0)) rotate(var(--r,0deg))}
+.spine:hover{transform:translateX(calc(var(--x,0px) + 4px)) rotate(var(--r,0deg));filter:brightness(1.08)}
+.spine:active{transform:translateX(calc(var(--x,0px) + 8px)) scale(1.02)}
+.spine img{width:30px;height:30px;border-radius:6px;flex:none;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.spine .t{font-weight:800;font-size:var(--fs,19px);letter-spacing:-.01em;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.spine .p{font-size:10px;font-weight:800;opacity:.75;white-space:nowrap}
+.spine .band{position:absolute;right:0;top:0;bottom:0;width:7px;border-radius:0 3px 3px 0;background:var(--band,rgba(255,255,255,.18))}
+.spine .p{margin-right:10px}
+@media (max-width:639px){.spine .p{display:none}.spine{padding:0 14px 0 8px;gap:7px}.spine img{width:26px;height:26px}.spine .t{font-size:min(var(--fs,19px),5.2vw)}}
+.spine .saved{position:absolute;left:-4px;top:-7px;background:#ffc94d;color:#2a1a10;font-size:9px;font-weight:800;padding:2px 6px;border-radius:999px;box-shadow:0 1px 3px rgba(0,0,0,.4);letter-spacing:.04em}
+.spine.out{visibility:hidden}
+
+/* the score pad (Tally) leaning in a cubby */
+.pad{position:relative;align-self:flex-end;width:72%;height:96px;margin:0 6px 2px auto;transform:rotate(-4deg);transform-origin:bottom right;
+  background:repeating-linear-gradient(#fff6a8 0 15px,#9cc3e8 15px 16px);border-radius:3px 3px 2px 2px;box-shadow:0 4px 8px rgba(0,0,0,.5);color:#3a2a10;text-align:left;padding:18px 10px 0 30px}
+.pad:before{content:'';position:absolute;left:0;right:0;top:0;height:14px;background:#7a4b28;border-radius:3px 3px 0 0}
+.pad:after{content:'';position:absolute;left:22px;top:14px;bottom:0;width:1px;background:#e88}
+.pad b{font-family:'Permanent Marker',cursive;font-size:21px;display:block;line-height:1.1}
+.pad small{font-size:10px;font-weight:800}
+.pad:hover{transform:rotate(-2deg)}
+
+/* in-development cardboard box */
+.carton{position:relative;width:100%;height:132px;border-radius:3px;margin-top:4px;color:#2b1d10;
+  background:linear-gradient(#d2a26b,#bb8a52);box-shadow:inset 0 3px 0 rgba(255,255,255,.25),inset 0 -6px 0 rgba(0,0,0,.15),0 4px 8px rgba(0,0,0,.5)}
+.carton:before{content:'';position:absolute;left:46%;width:14%;top:0;bottom:0;background:linear-gradient(rgba(240,225,190,.55),rgba(230,210,170,.45));box-shadow:inset 0 0 0 1px rgba(0,0,0,.05)}
+.carton .m{position:absolute;left:8px;right:8px;top:24px;font-family:'Permanent Marker',cursive;font-size:clamp(15px,4.6vw,21px);line-height:1.05;transform:rotate(-3deg);text-align:center}
+.carton .m small{display:block;font-size:12px;margin-top:6px;opacity:.8}
+.carton .stk{position:absolute;right:8px;bottom:8px;background:#fff7d6;font-size:10px;font-weight:800;padding:3px 6px;transform:rotate(4deg);box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.carton:hover{filter:brightness(1.05)}
+
+/* ---------- corkboard ---------- */
+.cork{position:relative;border-radius:8px;padding:18px 14px 20px;
+  background:radial-gradient(circle at 20% 30%,rgba(0,0,0,.08) 1px,transparent 2px) 0 0/7px 7px,radial-gradient(circle at 60% 70%,rgba(255,255,255,.08) 1px,transparent 2px) 0 0/9px 9px,linear-gradient(135deg,#c89a62,#b5854f);
+  box-shadow:inset 0 0 0 10px #6e4526,inset 0 0 0 12px #4e2f19,inset 0 0 30px rgba(0,0,0,.35),0 16px 34px rgba(0,0,0,.5)}
+.cork h2{font-family:'Permanent Marker',cursive;font-weight:400;font-size:26px;color:#3a220f;text-align:center;margin:4px 0 12px;transform:rotate(-1.5deg)}
+.pins{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:16px 12px;padding:0 6px}
+.note{position:relative;background:#fffdf6;color:#2a2219;border-radius:2px;padding:20px 10px 10px;min-height:96px;text-align:left;font-size:13px;line-height:1.3;
+  background-image:linear-gradient(#e86c6c,#e86c6c),repeating-linear-gradient(transparent 0 17px,#c9dcf0 17px 18px);background-size:100% 1px,100% 100%;background-position:0 16px,0 2px;background-repeat:no-repeat,repeat;
+  box-shadow:0 6px 10px rgba(0,0,0,.35);transform:rotate(var(--r,0deg));transition:transform .15s;text-decoration:none;display:block}
+.note:hover{transform:rotate(0) scale(1.03)}
+.note:before{content:'';position:absolute;left:50%;top:-6px;width:16px;height:16px;margin-left:-8px;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--pin2,#ff8a7a),var(--pin,#c62d1f) 70%);box-shadow:0 3px 3px rgba(0,0,0,.4)}
+.note b{display:block;font-weight:700;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.note .g{display:block;font-size:11px;color:#7a6a58;margin-top:6px;font-weight:700}
+.note .s{display:inline-block;font-size:10px;font-weight:800;color:#fff;border-radius:999px;padding:2px 7px;margin-top:5px}
+.note.add{background:#fff3a6;background-image:none;font-family:'Permanent Marker',cursive;font-size:19px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;color:#5a3a10;cursor:pointer}
+.note.add small{font-family:"Bricolage Grotesque",sans-serif;font-size:12px;font-weight:700;margin-top:4px}
+.note.msg{background:#eef4ff;background-image:none;--pin:#2c6ed1;--pin2:#8fb6ff}
+.cork .all{display:block;text-align:center;margin-top:14px;color:#3a220f;font-weight:800;font-size:14px;text-decoration:none}
+footer{grid-column:1/-1;text-align:center;color:#b39a7c;font-size:13px;line-height:1.6}
+footer a{color:#ffe6a6;font-weight:700;text-decoration:none}
+
+/* ---------- pulled-out box ---------- */
+.stage{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 16px calc(env(safe-area-inset-bottom) + 20px);
+  background:rgba(12,7,4,0);transition:background .35s;perspective:1100px}
+.stage.on{background:rgba(12,7,4,.78)}
+.box3d{position:absolute;left:0;top:0;transform-style:preserve-3d;will-change:transform}
+.face{position:absolute;left:0;top:0;backface-visibility:hidden;border-radius:3px;overflow:hidden}
+.face.front{display:flex;align-items:center;gap:8px;padding:0 10px;background:var(--bg);color:var(--ink,#fff);box-shadow:inset 0 2px 0 rgba(255,255,255,.22),inset 0 -3px 0 rgba(0,0,0,.28)}
+.face.front img{width:30px;height:30px;border-radius:6px}
+.face.front .t{font-weight:800;font-size:19px}
+.face.top{background:var(--cover,var(--bg));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:16px;color:var(--ink,#fff);
+  box-shadow:inset 0 0 0 6px rgba(255,255,255,.12),inset 0 0 40px rgba(0,0,0,.35)}
+.face.top img{width:44%;max-width:170px;border-radius:22px;box-shadow:0 10px 24px rgba(0,0,0,.45)}
+.face.top h3{font-size:clamp(28px,8vw,42px);font-weight:800;letter-spacing:-.03em;line-height:1;text-shadow:0 3px 0 rgba(0,0,0,.3)}
+.face.top .tag{font-size:13px;font-weight:700;opacity:.85}
+.face.top .ribbon{position:absolute;right:-34px;top:18px;transform:rotate(35deg);background:#ffc94d;color:#2a1a10;font-size:11px;font-weight:800;padding:4px 40px;letter-spacing:.1em}
+.face.side{background:linear-gradient(90deg,rgba(0,0,0,.35),rgba(0,0,0,.15)),var(--bg)}
+.face.under{background:#c9b294}
+.details{position:absolute;left:50%;width:min(380px,calc(100vw - 32px));transform:translate(-50%,16px);opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;
+  background:#fbf5e9;color:#2a1a10;border-radius:16px;padding:14px;box-shadow:0 16px 40px rgba(0,0,0,.5)}
+.details.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.details p{font-size:15px;line-height:1.4}
+.details .meta{font-size:13px;font-weight:800;color:#8a6a48;margin-top:6px}
+.details .row{display:flex;gap:8px;margin-top:12px}
+.play{flex:1;display:block;text-align:center;text-decoration:none;font-weight:800;font-size:19px;padding:14px;border-radius:12px;background:#d9482f;color:#fff;box-shadow:0 4px 0 #8f2a1c}
+.play:active{transform:translateY(2px);box-shadow:0 2px 0 #8f2a1c}
+.back{padding:14px 16px;border-radius:12px;background:#eadcc4;font-weight:800;color:#2a1a10}
+.saved-note{font-size:13px;font-weight:800;color:#1f7a45;margin-top:8px}
+
+/* opened carton */
+.open-carton{position:relative;width:min(380px,calc(100vw - 32px));border-radius:6px;padding:46px 16px 18px;transform:scale(.6);opacity:0;transition:transform .35s cubic-bezier(.3,1.4,.5,1),opacity .25s;
+  background:linear-gradient(#a8784a,#8f6238);box-shadow:inset 0 0 0 6px #c99a62,inset 0 14px 28px rgba(0,0,0,.45),0 20px 40px rgba(0,0,0,.55)}
+.open-carton.on{transform:none;opacity:1}
+.flap{position:absolute;background:linear-gradient(#d8a96f,#c4935a);box-shadow:0 2px 4px rgba(0,0,0,.3)}
+.flap.l{left:-28px;top:0;bottom:0;width:30px;transform:skewY(-12deg)}.flap.r{right:-28px;top:0;bottom:0;width:30px;transform:skewY(12deg)}
+.flap.t{left:10px;right:10px;top:-26px;height:28px;transform:skewX(-10deg)}
+.open-carton h3{position:absolute;left:0;right:0;top:12px;text-align:center;font-family:'Permanent Marker',cursive;font-weight:400;font-size:20px;color:#2b1d10}
+.open-carton .spine{margin-top:8px;--x:0px}
+.open-carton .spine:after{content:'TESTING';position:absolute;right:52px;top:50%;transform:translateY(-50%) rotate(-6deg);background:#fff7d6;color:#7a3a10;font-size:9px;font-weight:800;padding:2px 5px;letter-spacing:.08em}
+.open-carton .hint{color:#f7e2c2;font-size:13px;text-align:center;margin-top:14px}
+@media (prefers-reduced-motion:reduce){.spine,.note,.open-carton{transition:none}}
+</style>
+</head>
+<body>
+<div class="room">
+  <div class="sign"><h1>Game <span>Night</span></h1><p>Pick a box off the shelf</p></div>
+  <section aria-label="Game shelf"><div class="case" id="case"></div></section>
+  <section class="cork" aria-label="Bug board"><h2>Bug board</h2><div class="pins" id="pins"></div><a class="all" href="issues.html">All known issues &amp; recent fixes ›</a></section>
+  <footer><b>Play offline like an app:</b> open a game, then use your browser's menu → <b>Add to Home Screen</b>.<br>
+    Fan-made versions for friends and family. Not affiliated with the publishers of the original games.<br>Your games and scores are saved only in your browser.<br><a href="index.html">Old home page</a></footer>
+</div>
+<script>
+'use strict';
+// Everything on the shelf. dev: true = lives in the In Development box.
+const GAMES = [
+  { id: 'flip7', name: 'Flip 7', bg: 'linear-gradient(90deg,#2a1f55,#1a1438)', cover: 'radial-gradient(circle at 50% 35%,#4b3a9a,#1a1438 75%)', band: '#ff5a6e', players: '2–8', fs: '21px',
+    tag: 'Push your luck', desc: 'Collect seven different numbers without flipping a duplicate.', meta: '2–8 players · bots or pass-and-play', save: 'flip7.save.v1' },
+  { id: 'tap4', name: 'Tap 4', bg: 'linear-gradient(90deg,#7a3b14,#5a2a0e)', cover: 'radial-gradient(circle at 50% 35%,#b0602a,#4a220b 75%)', band: '#ffc94d', players: '2–6',
+    tag: 'Equal or lower', desc: 'Play equal or lower, make four of a kind to tap the stack, and empty your hand first.', meta: '2–6 players · bots or pass-and-play', save: 'tap4.save.v1' },
+  { id: 'yahtzee', name: 'Yahtzee', bg: 'linear-gradient(90deg,#1d2f5c,#14213d)', cover: 'radial-gradient(circle at 50% 35%,#2f4f9a,#14213d 75%)', band: '#e2463b', players: '1–4',
+    tag: 'Five dice · three rolls', desc: 'Thirteen boxes to fill. Chase the 35-point bonus and extra Yahtzees.', meta: '1–4 players · vs bots', save: 'yahtzee.save.v1' },
+  { id: 'farkle', name: 'Farkle', bg: 'linear-gradient(90deg,#6b2f17,#3b1d12)', cover: 'radial-gradient(circle at 50% 35%,#8e3d1c,#2e150c 75%)', band: '#f5b83d', players: '2–4',
+    tag: 'Bank it or risk it', desc: 'Push-your-luck dice to 10,000. One bad roll and the turn is gone.', meta: '2–4 players · vs bots', save: 'farkle.save.v1' },
+  { id: 'mahj', name: 'Mahj', bg: 'linear-gradient(90deg,#1c5a34,#0f3f22)', cover: 'radial-gradient(circle at 50% 35%,#2f8a52,#0d3a26 75%)', band: '#f2e6c9', players: '1 + 3 bots', fs: '21px',
+    tag: 'American mahjong', desc: 'American-style mahjong against three bots, with the Charleston, jokers and a card of hands.', meta: '1 player vs 3 bots', save: 'mahj-scores' },
+  { id: 'doomlings', name: 'Doomlings', dev: true, bg: 'linear-gradient(90deg,#2a2440,#131219)', cover: 'radial-gradient(circle at 50% 35%,#4a3f78,#131219 75%)', band: '#9be15d', players: '2–6',
+    tag: 'In development', desc: 'Evolve traits before three catastrophes end the world. Base game, every card scripted.', meta: '2–6 players · pass-and-play', save: null },
+  { id: 'paydirt', name: 'Paydirt', dev: true, bg: 'linear-gradient(90deg,#2f6b34,#1f3d24)', cover: 'repeating-linear-gradient(90deg,#2f6b34 0 12%,#2a6130 12% 24%)', band: '#e0a526', players: '1–2',
+    tag: 'In development', desc: 'Classic dice-and-chart pro football. Call plays against real 2025 team charts.', meta: '1–2 players · vs bot or pass-and-play', save: 'paydirt.save.v1' },
+];
+const TALLY = { id: 'tally', name: 'Tally', bg: 'linear-gradient(90deg,#e9d98a,#d9c46a)', ink: '#3a2a10', cover: 'repeating-linear-gradient(#fff6a8 0 22px,#9cc3e8 22px 23px)', tag: 'Scorekeeper',
+  desc: 'Keep score for real-life game night — any game, any players, who starts each round.', meta: 'Scorekeeper · saved players and rounds', save: null, play: 'Open Tally' };
+const CUBBIES = [ // what sits in each cube of the bookcase, bottom of the stack last
+  { label: 'Cards', items: ['tap4', 'flip7'] },
+  { label: 'Dice', items: ['farkle', 'yahtzee'] },
+  { label: 'Tiles', items: ['mahj', 'pad'] },
+  { label: 'Workshop', items: ['carton'] },
+];
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const byId = id => id === 'tally' ? TALLY : GAMES.find(g => g.id === id);
+const hasSave = g => { try { return !!(g.save && localStorage.getItem(g.save)); } catch (e) { return false; } };
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const rnd = (seed) => { let x = Math.sin(seed * 999) * 10000; return x - Math.floor(x); };
+
+function spineHtml(g, k) {
+  const h = 46 + Math.round(rnd(k + 1) * 16);                                   // boxes come in different thicknesses
+  const x = Math.round((rnd(k + 7) - 0.5) * 14), r = ((rnd(k + 3) - 0.5) * 1.6).toFixed(2);
+  return `<button class="spine" data-id="${g.id}" aria-label="${esc(g.name)}" style="height:${h}px;--bg:${g.bg};--band:${g.band};--x:${x}px;--r:${r}deg;${g.fs ? '--fs:' + g.fs + ';' : ''}${g.ink ? '--ink:' + g.ink : ''}">
+    ${hasSave(g) ? '<span class="saved">IN PROGRESS</span>' : ''}<img src="icons/${g.id}-192.png" alt=""><span class="t">${esc(g.name)}</span><span class="band"></span><span class="p">${esc(g.players || '')}</span></button>`;
+}
+function renderShelf() {
+  let k = 0;
+  $('#case').innerHTML = CUBBIES.map(c => `<div class="cubby"><span class="lbl">${c.label}</span>${c.items.map(id => {
+    k++;
+    if (id === 'pad') return `<button class="pad" data-id="tally" aria-label="Tally scorekeeper"><b>Tally</b><small>score pad</small></button>`;
+    if (id === 'carton') return `<button class="carton" id="carton" aria-label="In development games"><span class="m">IN DEVELOPMENT<small>${GAMES.filter(g => g.dev).length} games inside · handle with care</small></span><span class="stk">FRAGILE ↑</span></button>`;
+    return spineHtml(byId(id), k);
+  }).join('')}</div>`).join('');
+  document.querySelectorAll('#case .spine, #case .pad').forEach(b => b.onclick = () => pullOut(byId(b.dataset.id), b));
+  $('#carton').onclick = openCarton;
+}
+
+// ---------- pull a box off the shelf ----------
+let open = null;
+function pullOut(g, fromEl) {
+  if (open) return;
+  const r = fromEl.getBoundingClientRect();
+  const vw = innerWidth, vh = innerHeight;
+  const W = Math.min(340, vw - 48), D = Math.round(W * 0.8);          // lid is W x D
+  const sx = r.width / W, H = Math.max(36, Math.round(r.height / sx));  // spine face is W x H, scaled to match
+  const saved = hasSave(g), dev = !!g.dev;
+  const st = document.createElement('div'); st.className = 'stage';
+  st.innerHTML = `<div class="box3d" style="width:${W}px;height:${H}px;--bg:${g.bg};--cover:${g.cover || g.bg};${g.ink ? '--ink:' + g.ink : ''}">
+      <div class="face front" style="width:${W}px;height:${H}px;transform:translateZ(${D / 2}px)"><img src="icons/${g.id}-192.png" alt=""><span class="t">${esc(g.name)}</span></div>
+      <div class="face top" style="width:${W}px;height:${D}px;transform:translateY(${(H - D) / 2}px) rotateX(90deg) translateZ(${H / 2}px)">
+        ${saved ? '<span class="ribbon">IN PROGRESS</span>' : dev ? '<span class="ribbon">TESTING</span>' : ''}
+        <img src="icons/${g.id}-512.png" alt=""><h3>${esc(g.name)}</h3><div class="tag">${esc(g.tag)}</div></div>
+      <div class="face under" style="width:${W}px;height:${D}px;transform:translateY(${(H - D) / 2}px) rotateX(-90deg) translateZ(${H / 2}px)"></div>
+      <div class="face side" style="width:${D}px;height:${H}px;transform:translateX(${(W - D) / 2}px) rotateY(90deg) translateZ(${W / 2}px)"></div>
+      <div class="face side" style="width:${D}px;height:${H}px;transform:translateX(${(W - D) / 2}px) rotateY(-90deg) translateZ(${W / 2}px)"></div>
+    </div>
+    <div class="details"><p>${esc(g.desc)}</p><div class="meta">${esc(g.meta)}</div>
+      ${saved ? '<div class="saved-note">● You have a game in progress</div>' : ''}
+      <div class="row"><button class="back">Put back</button><a class="play" href="${g.id}/index.html">${g.play || (saved ? 'Continue' : 'Play')}</a></div></div>`;
+  document.body.appendChild(st);
+  const box = st.querySelector('.box3d'), det = st.querySelector('.details');
+  // where the box ends up: centered, a little above middle so the details card fits under it
+  const detH = 190, totalH = D + 18 + detH;
+  const cx = (vw - W) / 2, cy = Math.max(16, (vh - totalH) / 2) + (D - H) / 2;
+  det.style.top = Math.max(16, (vh - totalH) / 2) + D + 18 + 'px';
+  // box3d's origin is its spine face; start exactly over the spine on the shelf
+  const start = `translate3d(${r.left + (r.width - W) / 2}px,${r.top + (r.height - H) / 2}px,${-D / 2}px) scale(${sx}) rotateX(0deg)`;
+  const pulled = `translate3d(${cx}px,${cy}px,${-D / 2 + 60}px) scale(1) rotateX(0deg)`;
+  const shown = `translate3d(${cx}px,${cy}px,${-D / 2}px) scale(1) rotateX(-90deg)`;
+  box.style.transform = shown;
+  fromEl.classList.add('out');
+  requestAnimationFrame(() => st.classList.add('on'));
+  const anim = box.animate([{ transform: start, offset: 0 }, { transform: pulled, offset: 0.45 }, { transform: shown, offset: 1 }],
+    { duration: reduce ? 1 : 900, easing: 'cubic-bezier(.3,.7,.25,1)' });
+  anim.onfinish = () => det.classList.add('on');
+  open = { st, box, fromEl, start, pulled, shown };
+  const close = () => putBack();
+  st.querySelector('.back').onclick = close;
+  st.onclick = e => { if (e.target === st) close(); };
+}
+function putBack() {
+  if (!open || open.closing) return;
+  const o = open; o.closing = true;
+  o.st.querySelector('.details').classList.remove('on');
+  o.st.classList.remove('on');
+  const a = o.box.animate([{ transform: o.shown }, { transform: o.pulled, offset: 0.5 }, { transform: o.start }], { duration: reduce ? 1 : 650, easing: 'cubic-bezier(.4,0,.3,1)', fill: 'forwards' });
+  a.onfinish = () => { o.fromEl.classList.remove('out'); o.st.remove(); open = null; };
+}
+addEventListener('keydown', e => { if (e.key === 'Escape') { if (open) putBack(); else closeCarton(); } });
+addEventListener('pageshow', e => { if (e.persisted && open) { open.fromEl.classList.remove('out'); open.st.remove(); open = null; } });
+
+// ---------- the In Development carton ----------
+let carton = null;
+function openCarton() {
+  const devs = GAMES.filter(g => g.dev);
+  const st = document.createElement('div'); st.className = 'stage';
+  st.innerHTML = `<div class="open-carton"><span class="flap l"></span><span class="flap r"></span><span class="flap t"></span><h3>In development</h3>
+    ${devs.map((g, i) => spineHtml(g, 40 + i)).join('')}<div class="hint">Unfinished games — bugs welcome on the board.</div></div>`;
+  document.body.appendChild(st);
+  requestAnimationFrame(() => { st.classList.add('on'); st.querySelector('.open-carton').classList.add('on'); });
+  st.querySelectorAll('.spine').forEach(b => b.onclick = () => pullOut(byId(b.dataset.id), b));
+  st.onclick = e => { if (e.target === st) closeCarton(); };
+  carton = st;
+}
+function closeCarton() { if (!carton || open) return; const c = carton; carton = null; c.classList.remove('on'); c.querySelector('.open-carton').classList.remove('on'); setTimeout(() => c.remove(), 300); }
+
+// ---------- bug board ----------
+const PINS = [['#c62d1f', '#ff8a7a'], ['#2c6ed1', '#8fb6ff'], ['#2f9a5a', '#8fe3b0'], ['#d99a1c', '#ffd77a'], ['#7a3fc6', '#c9a3ff']];
+function pinStyle(i) { const p = PINS[i % PINS.length]; return `--pin:${p[0]};--pin2:${p[1]};--r:${((rnd(i + 11) - 0.5) * 6).toFixed(1)}deg`; }
+function renderBoard(list, msg) {
+  const add = `<button class="note add" id="addBug" style="${pinStyle(0)}">Found a bug?<small>Pin a note for Austin</small></button>`;
+  let notes = '';
+  if (msg) notes = `<div class="note msg" style="--r:1.5deg"><b>${esc(msg)}</b></div>`;
+  else if (list) {
+    notes = list.slice(0, 9).map((i, k) => `<a class="note" href="${esc(i.url)}" target="_blank" rel="noopener" style="${pinStyle(k + 1)}"><b>${esc(i.title)}</b><span class="g">${esc(window.GNIssues ? GNIssues.gameName(i.game) : i.game)} · #${i.number}</span><span class="s" style="background:${i.status.color}">${esc(i.status.label)}</span></a>`).join('');
+    if (!list.length) notes = `<div class="note msg" style="--r:-1.5deg"><b>No open bugs right now. Nice.</b></div>`;
+  }
+  $('#pins').innerHTML = add + notes;
+  $('#addBug').onclick = () => window.GNReport ? GNReport.open() : alert('Bug reports aren\'t available on this copy of the site.');
+}
+
+renderShelf();
+renderBoard(null, 'Checking the board…');
+if (window.GNIssues) GNIssues.load().then(l => renderBoard(l)).catch(() => renderBoard(null, "Couldn't reach the board right now."));
+else renderBoard(null, 'Known issues show up here on the live site.');
+addEventListener('pageshow', () => renderShelf());   // refresh "in progress" tags after coming back from a game
+</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});</script>
+</body>
+</html>
