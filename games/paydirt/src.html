@@ -52,6 +52,7 @@ select{width:100%;font:inherit;font-size:16px;padding:11px;border-radius:10px;bo
 .los{position:absolute;top:0;bottom:0;width:3px;background:#5aa0ff;transform:translateX(-50%)}
 .fdl{position:absolute;top:0;bottom:0;width:3px;background:#ffd23a;transform:translateX(-50%)}
 .ball{position:absolute;top:50%;width:18px;height:11px;background:#7a3d17;border-radius:50%;transform:translate(-50%,-50%);border:1.5px solid #fff;transition:left 1.2s cubic-bezier(.35,.1,.25,1) .35s}
+.ball::after{position:absolute;top:50%;transform:translateY(-50%);font-size:9px;line-height:1;color:#fff;text-shadow:0 0 2px #000}.ball.r::after{content:'▶';left:100%;margin-left:2px}.ball.l::after{content:'◀';right:100%;margin-right:2px}
 .sit{color:var(--cream);text-align:center;font-weight:800;font-size:16px;margin:6px 0 2px}
 .sit .dd{color:var(--gold)}
 
@@ -249,8 +250,8 @@ function resolve() {
   // bots may call timeouts between plays
   for (const s of [0, 1]) if (!S.human[s] && PD.botTimeout(g, s)) { PD.timeout(g, s); S.last.notices.push(`Timeout ${PD.abbr(g, s)}`); }
   S.step = null; S.anim = true;
-  // the field always shows the offense driving right, so flip the old spot if possession changed
-  S.from = g.over ? null : was.poss === g.poss ? was.ball : 100 - was.ball;
+  // the field stays fixed (visitors drive right, home drives left), so the old spot is just its screen position
+  S.from = g.over ? null : PD.fieldX(was.poss, was.ball);
   flow();
 }
 
@@ -263,18 +264,20 @@ function scoreboard(g) {
   return `<div class="sb">${tm(0)}<div class="mid"><div class="clk">${g.over ? 'FINAL' : PD.clockText(g.clock)}</div><div class="q">${g.over ? (g.qtr >= 5 ? 'OT' : '') : qName(g.qtr) + (g.untimed ? ' · untimed down' : '')}</div></div>${tm(1, true)}</div>`;
 }
 function field(g) {
-  // offense always drives to the right
-  const off = g.poss, O = T(g.teams[off]), D = T(g.teams[1 - off]);
+  // fixed field like the scoreboard: side 0 (left) defends the left end zone and drives right, side 1 drives left
+  const L = T(g.teams[0]), R = T(g.teams[1]);
   const x = b => 8.333 + b * 0.83333;
+  const fx = y => PD.fieldX(g.poss, y);
   let marks = '';
   for (let y = 10; y < 100; y += 10) marks += `<div class="yl" style="left:${x(y)}%"></div><div class="yn" style="left:${x(y)}%">${y <= 50 ? y : 100 - y}</div>`;
   const kick = g.phase === 'kickoff', pat = g.phase === 'pat';
   const ball = kick ? (g.from || 35) : g.ball;
   const fd = !kick && !pat && !g.over ? Math.min(100, g.ball + g.togo) : null;
+  const dir = g.poss === 0 ? 'r' : 'l';
   return `<div class="fieldbox"><div class="field">
-    <div class="ez l" style="background:${O.color}">${O.name.toUpperCase()}</div><div class="ez r" style="background:${D.color}">${D.name.toUpperCase()}</div>
-    ${marks}${g.over ? '' : `<div class="los" style="left:${x(ball)}%"></div>`}${fd !== null && fd < 100 ? `<div class="fdl" style="left:${x(fd)}%"></div>` : ''}
-    ${g.over ? '' : `<div class="ball" data-to="${x(ball)}" style="left:${x(S.anim && S.from != null ? S.from : ball)}%"></div>`}
+    <div class="ez l" style="background:${L.color}">${L.name.toUpperCase()}</div><div class="ez r" style="background:${R.color}">${R.name.toUpperCase()}</div>
+    ${marks}${g.over ? '' : `<div class="los" style="left:${x(fx(ball))}%"></div>`}${fd !== null && fd < 100 ? `<div class="fdl" style="left:${x(fx(fd))}%"></div>` : ''}
+    ${g.over ? '' : `<div class="ball ${dir}" data-to="${x(fx(ball))}" style="left:${x(S.anim && S.from != null ? S.from : fx(ball))}%"></div>`}
   </div></div>`;
 }
 function situation(g) {

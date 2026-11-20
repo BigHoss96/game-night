@@ -31,6 +31,12 @@ assert.strictEqual(E.parse('INT 14').y, 14);
 assert.strictEqual(E.parse('F -2').y, -2);
 assert(E.parse('44†').dag && E.parse('7*').oob);
 
+// field orientation (#28): fixed field, visitors (side 0) drive right, home (side 1) drives left
+assert.strictEqual(E.fieldX(0, 25), 25);
+assert.strictEqual(E.fieldX(1, 25), 75);
+assert.strictEqual(E.fieldX(1, 0), 100, 'home goal line is on the right');
+let fxChecked = 0;
+
 // ---- simulation ----
 let seed = 7;
 const rng = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
@@ -47,7 +53,14 @@ for (let gi = 0; gi < N; gi++) {
     const call = E.botOffense(g, rng);
     assert(E.legalOff(g).indexOf(call) >= 0, `illegal call ${call} in ${g.phase}`);
     const form = E.needsDefense(g, call) ? E.botDefense(g, rng) : null;
+    const bf = { poss: g.poss, ball: g.ball, phase: g.phase };
     E.play(g, call, form, rng);
+    if (bf.phase === 'scrimmage' && g.phase === 'scrimmage' && g.poss === bf.poss && !g.over) {
+      // a gain of N moves the ball N yards toward the offense's goal: right for side 0, left for side 1
+      const d = E.fieldX(g.poss, g.ball) - E.fieldX(bf.poss, bf.ball);
+      assert(d === (g.ball - bf.ball) * (g.poss === 0 ? 1 : -1), 'field direction');
+      fxChecked++;
+    }
     if (g.phase === 'scrimmage') {
       assert(g.ball >= 1 && g.ball <= 99, `ball ${g.ball}`);
       assert(g.down >= 1 && g.down <= 4, `down ${g.down}`);
@@ -73,6 +86,7 @@ if (process.env.PD_TEAMS) {
   const rows = Object.entries(agg.byTeam).map(([t, v]) => [t, (v.pf / v.n).toFixed(1), (v.pa / v.n).toFixed(1), (v.w / v.n).toFixed(2), TEAMS[t].record]).sort((x, y) => y[3] - x[3]);
   for (const r of rows) console.log(r.join('\t'));
 }
+assert(fxChecked > 1000, 'field direction checked on many plays');
 // sanity bands around real NFL numbers
 assert(ppg > 15 && ppg < 32, `points per team ${ppg}`);
 assert(agg.rushY / agg.rush > 3.2 && agg.rushY / agg.rush < 5.6, 'yards per carry');

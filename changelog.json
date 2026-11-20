@@ -13,5 +13,6 @@
   { "date": "2026-11-19T13:22:17Z", "game": "paydirt", "issue": 22, "text": "Paydirt: the Home team picker now shows both team names, not \"Team 1\" for the first one." },
   { "date": "2026-11-19T13:22:25Z", "game": "paydirt", "issue": 23, "text": "Paydirt: the in-game menu buttons are readable now (they were pale text on a pale background)." },
   { "date": "2026-11-19T13:23:52Z", "game": "paydirt", "issue": 24, "text": "Paydirt: after each play the dice roll, the result fades in and the ball slides down the field, so you can follow what happened." },
-  { "date": "2026-11-19T15:29:22Z", "game": "paydirt", "issue": 25, "text": "Paydirt: calling a play now starts with Run, Pass or Kick, then shows those plays with their average yards." }
+  { "date": "2026-11-19T15:29:22Z", "game": "paydirt", "issue": 25, "text": "Paydirt: calling a play now starts with Run, Pass or Kick, then shows those plays with their average yards." },
+  { "date": "2026-11-20T03:16:29Z", "game": "paydirt", "issue": 28, "text": "Paydirt: the field now stays put like a TV broadcast, with each team defending its own end zone, so the ball moves left or right depending on who has it." }
 ]

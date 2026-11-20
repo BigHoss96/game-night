@@ -491,7 +491,12 @@ function botTimeout(g, side) {
   return false;
 }
 
-const api = { PLAYS, FORMS, SCRIM, OPROB, parse, newGame, setTeams, team, abbr, play, prepare, legalOff, needsDefense, canTimeout, timeout,
+// Screen spot measured from the LEFT goal line. The field is drawn fixed, matching the scoreboard:
+// side 0 (visitors, left) defends the left end zone and drives right; side 1 (home) drives left.
+// `yard` is counted from that side's own goal line, like g.ball.
+function fieldX(side, yard) { return side === 0 ? yard : 100 - yard; }
+
+const api = { PLAYS, fieldX, FORMS, SCRIM, OPROB, parse, newGame, setTeams, team, abbr, play, prepare, legalOff, needsDefense, canTimeout, timeout,
   botOffense, botDefense, botTimeout, spotText, downText, clockText, fgChance, rollOff, rollDef, value, colEV };
 if (typeof module !== 'undefined') module.exports = api; else root.PD = api;
 })(this);
