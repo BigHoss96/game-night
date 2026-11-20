@@ -21,6 +21,8 @@ const SAVE_KEYS = {
   tally: ['tally-v1'],
   doomlings: [],   // no saved games yet
   paydirt: ['paydirt.save.v1', 'paydirt.prefs.v1'],
+  yahtzee: ['yahtzee.save.v1', 'yahtzee.prefs.v1', 'yahtzee.best.v1'],
+  farkle: ['farkle.save.v1', 'farkle.prefs.v1'],
   site: [],
 };
 const reportTags = (game, prefix) =>
@@ -37,6 +39,8 @@ const GAMES = [
   { id: 'tally', name: 'Tally', color: '#f4efe6', bg: '#f4efe6', build: () => read('games/tally/index.html') },
   // testing: true → listed only on testing.html (not the home page), kept out of search engines
   { id: 'doomlings', name: 'Doomlings', testing: true, color: '#131219', bg: '#131219', build: () => read('games/doomlings/index.html') },
+  { id: 'yahtzee', name: 'Yahtzee', testing: true, color: '#14213d', bg: '#14213d', build: () => read('games/yahtzee/src.html').replace('/*DICE3D*/', () => read('shared/dice3d.js')).replace('/*ENGINE*/', () => read('games/yahtzee/engine.js')) },
+  { id: 'farkle', name: 'Farkle', testing: true, color: '#3b1d12', bg: '#3b1d12', build: () => read('games/farkle/src.html').replace('/*DICE3D*/', () => read('shared/dice3d.js')).replace('/*ENGINE*/', () => read('games/farkle/engine.js')) },
   { id: 'paydirt', name: 'Paydirt', testing: true, color: '#1f3d24', bg: '#1f3d24', build: () => read('games/paydirt/src.html').replace('/*TEAMS*/', () => read('games/paydirt/teams.js')).replace('/*ENGINE*/', () => read('games/paydirt/engine.js')) },
 ];
 const GAME_NAMES = Object.fromEntries(GAMES.map(g => [g.id, g.name]).concat([['site', 'Home page']]));

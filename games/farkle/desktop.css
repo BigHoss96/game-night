@@ -1,0 +1,6 @@
+/* Desktop: bigger tray, centered column */
+html.gn-desktop .wrap{max-width:760px;padding-top:18px}
+html.gn-desktop .wrap:has(.logo){max-width:520px}
+html.gn-desktop .btns .big{font-size:20px;padding:17px}
+html.gn-desktop .sheet{border-radius:18px;margin-bottom:5vh}
+html.gn-desktop .scrim{align-items:center}

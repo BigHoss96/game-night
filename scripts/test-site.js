@@ -8,7 +8,7 @@ const KI = require('../site/known-issues.js');
 
 // changelog.json must stay valid: the nightly fix run appends to it
 const log = JSON.parse(fs.readFileSync(path.join(root, 'changelog.json'), 'utf8'));
-const GAMES = ['flip7', 'tap4', 'mahj', 'tally', 'doomlings', 'paydirt', 'site'];
+const GAMES = ['flip7', 'tap4', 'mahj', 'tally', 'doomlings', 'paydirt', 'yahtzee', 'farkle', 'site'];
 assert(Array.isArray(log), 'changelog.json must be an array');
 log.forEach((c, i) => {
   const at = `changelog.json[${i}]`;

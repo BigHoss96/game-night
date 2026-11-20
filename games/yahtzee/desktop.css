@@ -1,0 +1,9 @@
+/* Desktop: dice tray on the left, scorecard on the right */
+html.gn-desktop .wrap{max-width:1040px;display:grid;grid-template-columns:1.1fr 1fr;column-gap:22px;align-items:start;padding-top:18px}
+html.gn-desktop .wrap>.top,html.gn-desktop .wrap>.players{grid-column:1/-1}
+html.gn-desktop .wrap>#tray,html.gn-desktop .wrap>.status,html.gn-desktop .wrap>.rollrow,html.gn-desktop .wrap>.pips{grid-column:1}
+html.gn-desktop .wrap>#card{grid-column:2;grid-row:3/span 4}
+html.gn-desktop .wrap>#card .sc{margin-top:0}
+html.gn-desktop .wrap:has(.logo){display:block;max-width:520px}
+html.gn-desktop .sheet{border-radius:18px;margin-bottom:5vh}
+html.gn-desktop .scrim{align-items:center}

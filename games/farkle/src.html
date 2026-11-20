@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#3b1d12">
+<title>Farkle</title>
+<style>
+:root{--bg:#3b1d12;--bg2:#52291a;--card:#fff9ee;--ink:#2a1a12;--mute:#8a7563;--line:#eadfcb;--gold:#f5b83d;--red:#d8432f;--green:#2f9a5a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:#fff;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;min-height:100%}
+body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);background:radial-gradient(ellipse at top,#5a2c1a,var(--bg) 60%) fixed}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+.wrap{max-width:520px;margin:0 auto;padding:10px 10px 30px}
+.logo{font-family:Georgia,serif;font-weight:900;font-size:56px;text-align:center;margin:22px 0 2px;color:var(--gold);text-shadow:0 4px 0 #7a2d14,0 10px 22px rgba(0,0,0,.5);letter-spacing:.02em}
+.tag{text-align:center;color:#e3c8ad;margin-bottom:18px}
+.panel{background:var(--card);color:var(--ink);border-radius:16px;padding:14px;margin:10px 0}
+.panel h3{margin:0 0 8px}
+label.f{display:block;font-size:12px;font-weight:800;color:var(--mute);text-transform:uppercase;letter-spacing:.06em;margin:12px 0 6px}
+input[type=text]{width:100%;font:inherit;font-size:16px;padding:11px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+.seg{display:flex;background:#f1e6d3;border-radius:10px;padding:3px;gap:3px}
+.seg button{flex:1;padding:10px 4px;border-radius:8px;font-weight:800;color:var(--mute)}
+.seg button.on{background:var(--ink);color:#fff}
+.tog{display:flex;justify-content:space-between;align-items:center;padding:10px 2px;border-bottom:1px solid var(--line);gap:10px}
+.tog:last-child{border-bottom:0}
+.tog b{display:block}.tog small{color:var(--mute)}
+.sw{width:50px;height:30px;border-radius:15px;background:#d8ccb7;position:relative;flex:none;transition:background .2s}
+.sw:after{content:'';position:absolute;left:3px;top:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.sw.on{background:var(--green)}.sw.on:after{left:23px}
+.big{display:block;width:100%;padding:15px 8px;border-radius:14px;background:var(--red);color:#fff;font-weight:900;font-size:18px;box-shadow:0 4px 0 #8f2a1c;margin-top:12px}
+.big:active{transform:translateY(2px);box-shadow:0 2px 0 #8f2a1c}
+.big:disabled{opacity:.4}
+.big.bank{background:var(--green);box-shadow:0 4px 0 #1d6b3c}
+.ghost{display:block;width:100%;padding:12px;border-radius:12px;background:rgba(255,255,255,.1);color:#fff;font-weight:800;margin-top:8px}
+.panel .ghost{background:#f1e6d3;color:var(--ink)}
+.small{font-size:13px;color:var(--mute)}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.top b{font-family:Georgia,serif;font-weight:900;font-size:24px;color:var(--gold)}
+.top button{font-size:24px;font-weight:900;padding:0 10px}
+.players{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:6px;margin-bottom:8px}
+.pl{background:var(--bg2);border-radius:12px;padding:7px 9px;border:2px solid transparent;transition:border-color .2s}
+.pl.on{border-color:var(--gold)}
+.pl .n{font-size:12px;font-weight:800;color:#e3c8ad;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl .s{font-size:21px;font-weight:900}
+.pl .bar{height:5px;border-radius:3px;background:rgba(255,255,255,.12);margin-top:4px;overflow:hidden}.pl .bar i{display:block;height:100%;background:var(--gold);transition:width .6s}
+.pl .x{font-size:11px;color:#e3c8ad}
+.turn{display:flex;justify-content:space-between;align-items:baseline;margin:10px 4px 0}
+.turn .lbl{font-size:12px;font-weight:800;color:#e3c8ad;text-transform:uppercase;letter-spacing:.08em}
+.turn .pts{font-size:34px;font-weight:900;color:#fff}
+.sel{min-height:22px;text-align:center;font-weight:800;color:var(--gold);margin:4px 0}
+.sel.bad{color:#ffb4a8}
+.btns{display:flex;gap:8px}.btns .big{margin-top:6px}
+.status{text-align:center;color:#e3c8ad;font-weight:700;min-height:20px;margin-top:8px}
+.final{background:var(--gold);color:var(--ink);text-align:center;font-weight:900;border-radius:10px;padding:6px;margin-bottom:8px}
+.banner{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%);z-index:50;font-family:Georgia,serif;font-weight:900;font-size:68px;color:var(--gold);text-shadow:0 5px 0 #7a2d14,0 12px 30px rgba(0,0,0,.7);opacity:0;pointer-events:none;white-space:nowrap}
+.banner.bad{color:#ff6b55}
+.banner.show{animation:ban 1.6s ease forwards}
+@keyframes ban{0%{opacity:0;transform:translate(-50%,-50%) scale(.4) rotate(-6deg)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.15) rotate(3deg)}25%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-65%)}}
+.shake{animation:shake .5s}
+@keyframes shake{20%{transform:translateX(-10px) rotate(-1deg)}40%{transform:translateX(9px) rotate(1deg)}60%{transform:translateX(-6px)}80%{transform:translateX(4px)}}
+.confetti{position:fixed;top:-12px;width:9px;height:14px;z-index:49;pointer-events:none}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;z-index:40}
+.sheet{background:var(--card);color:var(--ink);width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom))}
+.sheet h2{margin:0 0 12px}
+.sheet .x{float:right;font-size:26px;font-weight:900}
+.rank{display:flex;justify-content:space-between;padding:10px 4px;border-bottom:1px solid var(--line);font-size:18px;font-weight:800}
+.rank:first-of-type{color:var(--green)}
+table.pts{width:100%;border-collapse:collapse;font-size:15px}table.pts td{padding:6px 4px;border-bottom:1px solid var(--line)}table.pts td:last-child{text-align:right;font-weight:800}
+.rules p,.rules li{line-height:1.5;font-size:15px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-weight:800;z-index:60}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div class="banner" id="banner"></div>
+<script>
+/*DICE3D*/
+</script>
+<script>
+/*ENGINE*/
+</script>
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const fmt = n => n.toLocaleString('en-US');
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+};
+const SAVE = 'farkle.save.v1', PREFS = 'farkle.prefs.v1';
+const BOT_NAMES = ['Big Mike', 'Granny', 'The Dealer'];
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+let prefs = Object.assign({ name: '', bots: 1, skill: 'sharp', sound: true, target: 10000, entry: true, final: true, hot: false, three: false }, store.get(PREFS, {}));
+Dice3D.sound = prefs.sound;
+let G = null, tray = null, sel = [], busy = false;
+
+function toast(t) { const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 2200); }
+function save() { if (G && !G.over && !busy) store.set(SAVE, G); }
+
+// ---------------- setup ----------------
+function setup() {
+  G = null; tray = null;
+  const saved = store.get(SAVE, null);
+  const tog = (k, t, d) => `<div class="tog"><div><b>${t}</b><small>${d}</small></div><button class="sw ${prefs[k] ? 'on' : ''}" data-t="${k}" aria-label="${t}"></button></div>`;
+  $('#app').innerHTML = `
+    <div class="logo">FARKLE</div><div class="tag">Push your luck. Don't get greedy.</div>
+    ${saved && !saved.over ? `<div class="panel"><h3>Game in progress</h3><div class="small">${saved.players.map(p => esc(p.name) + ' ' + fmt(p.score)).join(' · ')}</div><button class="big bank" id="resume">Continue</button></div>` : ''}
+    <div class="panel">
+      <h3>New game</h3>
+      <label class="f">Your name</label><input type="text" id="nm" placeholder="You" maxlength="14" value="${esc(prefs.name)}">
+      <label class="f">Bots</label><div class="seg" id="bots"><button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button></div>
+      <label class="f">Bot skill</label><div class="seg" id="skill"><button data-v="casual">Casual</button><button data-v="sharp">Sharp</button></div>
+      <label class="f">Play to</label><div class="seg" id="target"><button data-v="5000">5,000</button><button data-v="10000">10,000</button></div>
+      <label class="f">House rules</label>
+      ${tog('entry', '500 to get on the board', 'Your first bank must be at least 500')}
+      ${tog('final', 'Final round', 'When someone hits the target, everyone else gets one last turn')}
+      ${tog('hot', 'Hot dice', 'Score all six dice and you may roll all six again')}
+      ${tog('three', 'Three farkles = −1,000', 'Three farkles in a row costs 1,000')}
+      ${tog('sound', 'Sound', 'Dice clacks')}
+      <button class="big" id="go">Play</button>
+    </div>
+    <div class="ghost" style="display:flex;gap:8px;background:none;padding:0"><button class="ghost" id="rules">How to play</button><button class="ghost" id="chart">Scoring</button></div>
+    ${window.GNReport ? '<button class="ghost" onclick="GNReport.open()">⚑ Report a bug</button>' : ''}`;
+  const seg = (id, key) => { const el = $('#' + id); const sync = () => el.querySelectorAll('button').forEach(b => b.classList.toggle('on', String(prefs[key]) === b.dataset.v)); el.onclick = e => { const b = e.target.closest('button'); if (!b) return; prefs[key] = isNaN(+b.dataset.v) ? b.dataset.v : +b.dataset.v; sync(); store.set(PREFS, prefs); }; sync(); };
+  seg('bots', 'bots'); seg('skill', 'skill'); seg('target', 'target');
+  document.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { const k = b.dataset.t; prefs[k] = !prefs[k]; b.classList.toggle('on', prefs[k]); store.set(PREFS, prefs); Dice3D.sound = prefs.sound; });
+  $('#nm').oninput = e => { prefs.name = e.target.value.trim(); store.set(PREFS, prefs); };
+  $('#go').onclick = () => {
+    const ps = [{ name: prefs.name || 'You' }];
+    for (let i = 0; i < prefs.bots; i++) ps.push({ name: BOT_NAMES[i], bot: true, skill: prefs.skill });
+    G = FK.newGame(ps, { target: prefs.target, entry: prefs.entry ? 500 : 0, final: prefs.final, hot: prefs.hot, three: prefs.three });
+    store.set(SAVE, G); startGame();
+  };
+  if ($('#resume')) $('#resume').onclick = () => { G = saved; FK.startTurn(G); startGame(); };
+  $('#rules').onclick = rules; $('#chart').onclick = chart;
+}
+
+// ---------------- game ----------------
+const cur = () => G.players[G.turn];
+const human = () => G && !G.over && !cur().bot;
+function startGame() {
+  $('#app').innerHTML = `<div class="top"><b>Farkle</b><button id="menu" aria-label="Menu">⋯</button></div>
+    <div id="fin"></div><div class="players" id="players"></div>
+    <div id="tray"></div>
+    <div class="turn"><span class="lbl" id="who"></span><span class="pts" id="tp">0</span></div>
+    <div class="sel" id="sel"></div>
+    <div class="btns"><button class="big" id="roll">Roll</button><button class="big bank" id="bank">Bank</button></div>
+    <div class="status" id="status"></div>`;
+  tray = Dice3D.create($('#tray'), { count: 6, railLabel: 'set aside' });
+  tray.onTap = tap;
+  sel = [];
+  syncTray(false);
+  $('#menu').onclick = menu; $('#roll').onclick = onRoll; $('#bank').onclick = onBank;
+  render();
+  if (cur().bot) botTurn();
+}
+function syncTray(anim) {
+  if (!G.rolled) { tray.lineup([1, 2, 3, 4, 5, 6], Array(6).fill('free')); tray.setFrozen(true); return; }
+  for (let i = 0; i < 6; i++) { tray.setValue(i, G.dice[i]); tray.setState(i, G.state[i] === 'locked' ? 'locked' : sel.indexOf(i) >= 0 ? 'held' : 'free', anim); }
+}
+const selScore = () => sel.length ? FK.scoreOf(sel.map(i => G.dice[i])) : 0;
+function render() {
+  if (!G) return;
+  const p = cur();
+  $('#players').innerHTML = G.players.map((q, i) => `<div class="pl ${i === G.turn && !G.over ? 'on' : ''}"><div class="n">${esc(q.name)}</div><div class="s">${fmt(q.score)}</div><div class="bar"><i style="width:${Math.max(0, Math.min(100, q.score / G.opts.target * 100))}%"></i></div>${G.opts.entry && !q.on ? '<div class="x">not on board</div>' : q.farkles && G.opts.three ? `<div class="x">${q.farkles} farkle${q.farkles > 1 ? 's' : ''}</div>` : ''}</div>`).join('');
+  $('#fin').innerHTML = G.finalRound && !G.over ? `<div class="final">Final round! ${esc(G.players[G.finalRound.by].name)} hit ${fmt(G.opts.target)}. Beat ${fmt(Math.max(...G.players.map(q => q.score)))}.</div>` : '';
+  $('#who').textContent = p.bot ? `${p.name}'s turn` : 'Your turn';
+  const ss = selScore();
+  $('#tp').textContent = fmt(G.turnPts + ss);
+  const selEl = $('#sel');
+  if (sel.length && !ss) { selEl.textContent = "Those dice don't all score"; selEl.className = 'sel bad'; }
+  else if (ss) { selEl.textContent = `${FK.describe(sel.map(i => G.dice[i]))} = ${fmt(ss)}`; selEl.className = 'sel'; }
+  else selEl.textContent = '';
+  const rb = $('#roll'), bb = $('#bank');
+  if (!human()) { rb.disabled = bb.disabled = true; rb.textContent = 'Roll'; bb.textContent = 'Bank'; return; }
+  const free = FK.freeIdx(G).length - sel.length;
+  if (!G.rolled) { rb.textContent = 'Roll 6 dice'; rb.disabled = busy; bb.textContent = 'Bank'; bb.disabled = true; }
+  else {
+    const n = free > 0 ? free : 6;
+    const hotBlocked = free === 0 && !G.opts.hot && (p.on || G.turnPts + ss >= G.opts.entry);
+    rb.textContent = free === 0 ? (hotBlocked ? 'Hot dice off' : 'Hot dice! Roll 6') : `Roll ${n} dice`;
+    rb.disabled = busy || !ss || hotBlocked;
+    const tt = G.turnPts + ss;
+    const canB = ss > 0 && (p.on || tt >= G.opts.entry);
+    bb.textContent = canB ? `Bank ${fmt(tt)}` : !p.on && ss ? `Need ${fmt(G.opts.entry)}` : 'Bank';
+    bb.disabled = busy || !canB;
+  }
+  let st = '';
+  if (!G.rolled) st = G.turnPts ? '' : 'Roll to start your turn';
+  else if (!sel.length) st = 'Tap scoring dice to set them aside';
+  $('#status').textContent = st;
+}
+function tap(i) {
+  if (!human() || busy || !G.rolled || G.state[i] === 'locked') return;
+  const k = sel.indexOf(i);
+  if (k >= 0) sel.splice(k, 1); else sel.push(i);
+  tray.setState(i, k >= 0 ? 'free' : 'held');
+  render();
+}
+async function onRoll() {
+  if (!human() || busy) return;
+  if (G.rolled) {
+    if (!selScore()) { toast('Set aside scoring dice first'); return; }
+    FK.keep(G, sel.slice()); sel = [];
+  }
+  await doRoll();
+}
+async function doRoll() {
+  busy = true; render();
+  const hot = G.rolled && FK.freeIdx(G).length === 0;
+  if (hot) { banner('HOT DICE!'); await sleep(500); }
+  for (let i = 0; i < 6; i++) if (G.state[i] === 'locked') tray.setState(i, 'locked');
+  const idx = FK.roll(G);
+  tray.setFrozen(false);
+  await tray.roll(idx, idx.map(i => G.dice[i]));
+  busy = false;
+  if (G.farkled) { await farkled(); return; }
+  save(); render();
+}
+async function farkled() {
+  busy = true;
+  const p = cur(), lost = G.turnPts;
+  banner('FARKLE!', true);
+  $('#tray').classList.remove('shake'); void $('#tray').offsetWidth; $('#tray').classList.add('shake');
+  render();
+  const ev = FK.farkle(G);
+  $('#status').textContent = `${p.bot ? p.name : 'You'} farkled${lost ? `, losing ${fmt(lost)}` : ''}${ev.penalty ? ' — third farkle, −1,000!' : ''}`;
+  await sleep(1700);
+  busy = false;
+  nextTurn();
+}
+async function onBank() {
+  if (!human() || busy) return;
+  if (sel.length) { if (!selScore()) return; FK.keep(G, sel.slice()); sel = []; }
+  if (!FK.canBank(G)) return;
+  banked(FK.bank(G));
+}
+async function banked(ev) {
+  const p = G.players[ev.player];
+  busy = true;
+  for (let i = 0; i < 6; i++) tray.setState(i, G.dice && G.state && G.state[i] === 'locked' ? 'locked' : 'free');
+  if (Dice3D.sound) Dice3D.clack(0.6);
+  render();
+  $('#status').textContent = `${p.bot ? p.name : 'You'} banked ${fmt(ev.pts)}${ev.final ? ` and hit ${fmt(G.opts.target)}! Final round.` : ''}`;
+  if (ev.final) banner('FINAL ROUND');
+  await sleep(ev.final ? 1500 : 900);
+  busy = false;
+  nextTurn();
+}
+function nextTurn() {
+  if (G.over) { finish(); return; }
+  sel = [];
+  syncTray(false);
+  save(); render();
+  if (cur().bot) botTurn();
+}
+
+async function botTurn() {
+  const p = cur();
+  busy = true; render();
+  await sleep(700);
+  while (!G.over && G.turn === G.players.indexOf(p)) {
+    busy = false; await doRoll();
+    if (G.over || G.players[G.turn] !== p || !G.rolled) return;   // farkled: farkled() already moved on to the next player
+    busy = true;
+    await sleep(650);
+    const pick = FK.botPick(G, p.skill);
+    for (const i of pick.idx) { sel.push(i); tray.setState(i, 'held'); render(); await sleep(260); }
+    await sleep(600);
+    FK.keep(G, pick.idx); sel = [];
+    if ((pick.bank && FK.canBank(G)) || (!FK.canRollAgain(G) && FK.canBank(G))) { busy = false; banked(FK.bank(G)); return; }
+    render();
+    await sleep(350);
+  }
+}
+
+function banner(t, bad) { const b = $('#banner'); b.textContent = t; b.className = 'banner' + (bad ? ' bad' : ''); void b.offsetWidth; b.classList.add('show'); }
+function confetti() {
+  const colors = ['#f5b83d', '#d8432f', '#2f9a5a', '#ffffff', '#ff9a3c'];
+  for (let i = 0; i < 70; i++) {
+    const c = document.createElement('div'); c.className = 'confetti'; c.style.left = Math.random() * 100 + 'vw'; c.style.background = colors[i % 5]; document.body.appendChild(c);
+    const a = c.animate([{ transform: 'translateY(0)' }, { transform: `translate(${(Math.random() - .5) * 160}px,${innerHeight + 40}px) rotate(${Math.random() * 900}deg)` }], { duration: 1600 + Math.random() * 1400, delay: Math.random() * 300 });
+    a.onfinish = () => c.remove();
+  }
+}
+function finish() {
+  store.del(SAVE); render();
+  const ranks = G.players.map(p => ({ name: p.name, bot: p.bot, s: p.score })).sort((a, b) => b.s - a.s);
+  const w = G.players[G.winner];
+  const youWon = !w.bot;
+  banner(youWon ? 'YOU WIN!' : `${w.name.toUpperCase()} WINS`); if (youWon) confetti();
+  setTimeout(() => sheet(`<h2>${youWon ? 'You win!' : esc(w.name) + ' wins'}</h2>${ranks.map((r, i) => `<div class="rank"><span>${i + 1}. ${esc(r.name)}</span><span>${fmt(r.s)}</span></div>`).join('')}
+    <button class="big" id="again">Play again</button><button class="ghost" id="home">Main menu</button>`, s => {
+    s.querySelector('#again').onclick = () => { s.remove(); G = FK.newGame(G.players.map(p => ({ name: p.name, bot: p.bot, skill: p.skill })), G.opts); store.set(SAVE, G); startGame(); };
+    s.querySelector('#home').onclick = () => { s.remove(); setup(); };
+  }), 1400);
+}
+
+// ---------------- sheets ----------------
+function sheet(html, onOpen) {
+  const s = document.createElement('div'); s.className = 'scrim';
+  s.innerHTML = `<div class="sheet"><button class="x" aria-label="Close">×</button>${html}</div>`;
+  s.onclick = e => { if (e.target === s || e.target.classList.contains('x')) s.remove(); };
+  document.body.appendChild(s); onOpen && onOpen(s); return s;
+}
+function menu() {
+  sheet(`<h2>Menu</h2>
+    <button class="ghost" id="mChart">Scoring chart</button>
+    <button class="ghost" id="mSound">Sound: ${Dice3D.sound ? 'on' : 'off'}</button>
+    <button class="ghost" id="mRules">How to play</button>
+    ${window.GNReport ? '<button class="ghost" id="mBug">⚑ Report a bug</button>' : ''}
+    <button class="ghost" id="mQuit">Save &amp; quit to menu</button>`, s => {
+    s.querySelector('#mChart').onclick = () => { s.remove(); chart(); };
+    s.querySelector('#mSound').onclick = () => { prefs.sound = !Dice3D.sound; Dice3D.sound = prefs.sound; store.set(PREFS, prefs); s.querySelector('#mSound').textContent = 'Sound: ' + (prefs.sound ? 'on' : 'off'); };
+    s.querySelector('#mRules').onclick = () => { s.remove(); rules(); };
+    if (s.querySelector('#mBug')) s.querySelector('#mBug').onclick = () => { s.remove(); GNReport.open(); };
+    s.querySelector('#mQuit').onclick = () => { s.remove(); if (busy) { toast('Wait for the dice to land'); return; } store.set(SAVE, G); setup(); };
+  });
+}
+function chart() {
+  const rows = [['Each 1', '100'], ['Each 5', '50'], ['Three 1s', '1,000'], ['Three 2s / 3s / 4s / 5s / 6s', '200 / 300 / 400 / 500 / 600'], ['Four of a kind', '1,000'], ['Five of a kind', '2,000'], ['Six of a kind', '3,000'], ['Straight 1–6', '1,500'], ['Three pairs', '1,500'], ['Two triplets', '2,500']];
+  sheet(`<h2>Scoring</h2><table class="pts">${rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}</table><p class="small">Combos only count within a single roll. Four of a kind plus a pair counts as three pairs.</p>`);
+}
+function rules() {
+  const o = G ? G.opts : { target: prefs.target, entry: prefs.entry ? 500 : 0, final: prefs.final, hot: prefs.hot, three: prefs.three };
+  sheet(`<h2>How to play</h2><div class="rules">
+    <p>Roll six dice. After each roll, <b>set aside at least one scoring die</b> (tap it; it slides to the rail). Then either <b>roll the rest</b> to build your turn total, or <b>bank</b> it to your score.</p>
+    <p>If a roll has nothing that scores, that's a <b>FARKLE</b>: you lose everything from this turn.</p>
+    <ul>
+      ${o.entry ? `<li>You need at least <b>${fmt(o.entry)}</b> in one turn to get on the board.</li>` : ''}
+      ${o.hot ? '<li><b>Hot dice:</b> if all six dice score, you may roll all six again and keep building.</li>' : '<li>If all six dice score, bank your turn (hot dice is off). If you\'re not on the board yet, you roll all six again.</li>'}
+      ${o.three ? '<li>Three farkles in a row costs <b>1,000</b> points.</li>' : ''}
+      <li>First to <b>${fmt(o.target)}</b> ${o.final ? 'triggers the <b>final round</b>: everyone else gets one more turn to beat the leader' : 'wins'}.</li>
+    </ul></div>`);
+}
+
+window.addEventListener('beforeunload', save);
+setup();
+</script>
+</body>
+</html>
