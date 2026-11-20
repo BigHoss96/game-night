@@ -17,7 +17,7 @@ const changelog = JSON.parse(read('changelog.json'));
 const SAVE_KEYS = {
   flip7: ['flip7.save.v1', 'flip7.prefs.v1'],
   tap4: ['tap4.save.v1', 'tap4.prefs.v1'],
-  mahj: ['mahj-settings', 'mahj-scores', 'mahj-dealer'],
+  mahj: ['mahj-settings', 'mahj-scores', 'mahj-dealer', 'mahj-names'],
   tally: ['tally-v1'],
   doomlings: [],   // no saved games yet
   paydirt: ['paydirt.save.v1', 'paydirt.prefs.v1'],
@@ -39,15 +39,16 @@ const GAMES = [
   { id: 'tally', name: 'Tally', color: '#f4efe6', bg: '#f4efe6', build: () => read('games/tally/index.html') },
   // testing: true → listed only on testing.html (not the home page), kept out of search engines
   { id: 'doomlings', name: 'Doomlings', testing: true, color: '#131219', bg: '#131219', build: () => read('games/doomlings/index.html') },
-  { id: 'yahtzee', name: 'Yahtzee', testing: true, color: '#14213d', bg: '#14213d', build: () => read('games/yahtzee/src.html').replace('/*DICE3D*/', () => read('shared/dice3d.js')).replace('/*ENGINE*/', () => read('games/yahtzee/engine.js')) },
-  { id: 'farkle', name: 'Farkle', testing: true, color: '#3b1d12', bg: '#3b1d12', build: () => read('games/farkle/src.html').replace('/*DICE3D*/', () => read('shared/dice3d.js')).replace('/*ENGINE*/', () => read('games/farkle/engine.js')) },
+  { id: 'yahtzee', name: 'Yahtzee', color: '#14213d', bg: '#14213d', build: () => read('games/yahtzee/src.html').replace('/*DICE3D*/', () => read('shared/dice3d.js')).replace('/*ENGINE*/', () => read('games/yahtzee/engine.js')) },
+  { id: 'farkle', name: 'Farkle', color: '#3b1d12', bg: '#3b1d12', build: () => read('games/farkle/src.html').replace('/*DICE3D*/', () => read('shared/dice3d.js')).replace('/*ENGINE*/', () => read('games/farkle/engine.js')) },
   { id: 'paydirt', name: 'Paydirt', testing: true, color: '#1f3d24', bg: '#1f3d24', build: () => read('games/paydirt/src.html').replace('/*TEAMS*/', () => read('games/paydirt/teams.js')).replace('/*ENGINE*/', () => read('games/paydirt/engine.js')) },
 ];
 const GAME_NAMES = Object.fromEntries(GAMES.map(g => [g.id, g.name]).concat([['site', 'Home page']]));
 const NOINDEX = '<meta name="robots" content="noindex">\n';
 // Desktop/mobile switch (shared/layout.js) + each game's games/<id>/desktop.css, inlined so there's no flash
 const LAYOUT_JS = read('shared/layout.js');
-const layoutTags = g => `<script>window.GN_FIT=${JSON.stringify(g.fit || null)};\n${LAYOUT_JS}</script>\n`;
+const BOTNAMES_JS = read('shared/botnames.js');
+const layoutTags = g => `<script>window.GN_FIT=${JSON.stringify(g.fit || null)};\n${LAYOUT_JS}</script>\n<script>${BOTNAMES_JS}</script>\n`;
 const desktopCss = g => { const f = `games/${g.id}/desktop.css`; return fs.existsSync(path.join(root, f)) ? `<style>\n${read(f)}</style>\n` : ''; };
 
 fs.rmSync(out, { recursive: true, force: true });

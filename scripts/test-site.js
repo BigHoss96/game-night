@@ -46,3 +46,15 @@ assert.strictEqual(s[1].status.label, 'Reported');
 assert(KI.similarity('the winner screen says you is the winner when I win', raw[0]) >= 2, 'similar report should match');
 assert(KI.similarity('the bots take forever', raw[0]) < 2, 'unrelated report should not match');
 console.log('site checks passed (' + log.length + ' changelog entries)');
+
+// shared bot names: unique, never a human's name, short enough for every game's name spots
+{
+  const BN = require('../shared/botnames.js');
+  for (let k = 0; k < 200; k++) {
+    const names = BN.pick(7, ['Rosie', 'Austin']);
+    assert.strictEqual(names.length, 7);
+    assert.strictEqual(new Set(names.map(n => n.toLowerCase())).size, 7, 'bot names repeat within a game');
+    assert(!names.some(n => /^(rosie|austin)$/i.test(n)), 'bot took a human name');
+    assert(names.every(n => n.length <= 12), 'bot name too long: ' + names);
+  }
+}

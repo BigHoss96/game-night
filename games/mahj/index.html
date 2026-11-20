@@ -489,7 +489,9 @@ function botSwaps(S,seat){
 if(typeof module!=='undefined')module.exports={loadCard,CARDS,T_J,T_F,INSTS,HANDS,CARD,makeTiles,shuffle,countsOf,distFor,bestDist,potential,layoutInst,liveFor,findWin,chooseWorst,botPassChoice,exposureSizes,botCallOption,makeExposure,swapOptions,doSwap,botSwaps};
 
 // ===== UI / game flow =====
-const NAMES=['You','Bev','Dot','Ruth'];
+// Bots get fresh random names for each new game (shared/botnames.js); kept for the hands of that game
+const mahjNames=()=>['You',...(window.GNBotNames?GNBotNames.pick(3,['You']):['Bev','Dot','Ruth'])];
+let NAMES=null;
 const POS=['','right','across','left'];
 const WINDS=['E','S','W','N'];
 const SVC={a:'sa',b:'sb',c:'sc'};
@@ -501,6 +503,7 @@ if(!['felt','velvet','walnut','slate'].includes(settings.table))settings.table='
 if(!CARDS[settings.card])settings.card='classic';
 loadCard(settings.card);
 let scores=load('mahj-scores',[0,0,0,0]);
+NAMES=load('mahj-names',null)||mahjNames();save('mahj-names',NAMES);
 let dealer=load('mahj-dealer',0);
 let S=null;let gameToken=0;
 const $=id=>document.getElementById(id);
@@ -841,7 +844,7 @@ ${Object.entries(CARDS).map(([id,c])=>`<button class="cardpick ${settings.card==
 <button class="wide" onclick="goFull()">Full screen</button>
 <button class="wide" onclick="showRules()">How to play</button>${(location.protocol.startsWith('http') && !window.Capacitor)?'<a class="wide" href="../index.html" style="display:flex;align-items:center;justify-content:center;text-decoration:none">← All games</a>':''}${window.GNReport?'<button class="wide" onclick="closeModal&&closeModal();GNReport.open()">⚑ Report a bug</button>':''}
 <button class="wide" onclick="closeModal();playHand()">Redeal this hand</button>
-<button class="wide danger" onclick="scores=[0,0,0,0];save('mahj-scores',scores);dealer=0;save('mahj-dealer',0);closeModal();playHand()">New game (reset scores)</button>`);}
+<button class="wide danger" onclick="scores=[0,0,0,0];save('mahj-scores',scores);dealer=0;save('mahj-dealer',0);NAMES=mahjNames();save('mahj-names',NAMES);closeModal();playHand()">New game (reset scores)</button>`);}
 
 document.addEventListener('DOMContentLoaded',()=>{
   $('hand').addEventListener('click',e=>{const t=e.target.closest('.tile');if(t&&t.dataset.id)onHandTap(+t.dataset.id);});

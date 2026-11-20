@@ -1,6 +1,6 @@
 // Offline support: serve from cache instantly, refresh the cache in the background.
-const CACHE = 'gamenight-v3';
-const CORE = ['./', './index.html', './flip7/', './tap4/', './mahj/', './tally/', './report.js', './known-issues.js', './update.js', './issues.html'];
+const CACHE = 'gamenight-v4';
+const CORE = ['./', './index.html', './flip7/', './tap4/', './mahj/', './yahtzee/', './farkle/', './tally/', './report.js', './known-issues.js', './update.js', './issues.html'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting()).catch(() => {}));

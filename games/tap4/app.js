@@ -57,7 +57,7 @@ function renderSetup() {
       <div class="seats">
         ${prefs.seats.map((s, i) => `
           <div class="seat">
-            <label class="nm"><input value="${esc(s.kind === 'human' && s.name === 'You' ? '' : s.name)}" maxlength="12" data-name="${i}" aria-label="Player name" placeholder="${s.kind === 'bot' ? 'Bot name' : i === prefs.seats.findIndex(x => x.kind === 'human') ? 'Your name' : 'Player name'}" autocomplete="off" enterkeyhint="done"><span class="pen" aria-hidden="true">✎</span></label>
+            <label class="nm"><input value="${esc(s.kind === 'bot' || (s.kind === 'human' && s.name === 'You') ? '' : s.name)}" ${s.kind === 'bot' ? 'disabled' : ''} maxlength="12" data-name="${i}" aria-label="Player name" placeholder="${s.kind === 'bot' ? 'Random name each game' : i === prefs.seats.findIndex(x => x.kind === 'human') ? 'Your name' : 'Player name'}" autocomplete="off" enterkeyhint="done">${s.kind === 'bot' ? '' : '<span class="pen" aria-hidden="true">✎</span>'}</label>
             ${seg('kind', [['human', 'Human'], ['bot', 'Bot']], s.kind, i)}
             <button class="x" data-del="${i}" ${prefs.seats.length <= 2 ? 'disabled style="opacity:.25"' : ''} aria-label="Remove">✕</button>
             ${s.kind === 'bot' ? `<div class="lvl">${seg('level', [['easy', 'Easy'], ['normal', 'Normal'], ['hard', 'Hard']], s.level || 'normal', i)}</div>` : ''}
@@ -88,8 +88,8 @@ function renderSetup() {
     const key = sg.dataset.seg, i = sg.dataset.i, v = b.dataset.v;
     if (i != null) {
       const s = prefs.seats[+i]; s[key] = v;
-      if (key === 'kind' && v === 'bot') { s.level = s.level || 'normal'; if (s.name === 'You' || !s.name) s.name = pickBotName(); }
-      if (key === 'kind' && v === 'human' && BOT_NAMES.includes(s.name)) s.name = 'Player ' + (+i + 1);
+      if (key === 'kind' && v === 'bot') { s.level = s.level || 'normal'; s.name = ''; }
+      if (key === 'kind' && v === 'human' && (!s.name || BOT_NAMES.includes(s.name))) s.name = '';
     } else prefs[key] = key === 'target' ? +v : v;
     savePrefs(); renderSetup();
   }));
@@ -99,12 +99,19 @@ function renderSetup() {
   $('#rulesBtn').onclick = () => showRules();
   const rb = $('#resumeBtn'); if (rb) rb.onclick = () => resumeGame(save);
 }
-function pickBotName() { const used = new Set(prefs.seats.map(s => s.name)); return BOT_NAMES.find(n => !used.has(n)) || 'Bot ' + (prefs.seats.length + 1); }
+function pickBotName() { return ''; }   // bots are named fresh at the start of each game
+// Bots get fresh random names every game (shared/botnames.js, added to every page by the site build)
+const freshBots = seats => {
+  const n = seats.filter(s => s.kind === 'bot').length, humans = seats.filter(s => s.kind !== 'bot').map(s => s.name);
+  const names = window.GNBotNames ? GNBotNames.pick(n, humans) : Array.from({ length: n }, (_, i) => 'Bot ' + (i + 1));
+  let k = 0; return seats.map(s => s.kind === 'bot' ? Object.assign({}, s, { name: names[k++] }) : s);
+};
+
 
 /* ================= GAME FLOW ================= */
 function seatsForGame() {
   const names = Tap4.seatNames(prefs.seats);
-  return prefs.seats.map((s, i) => ({ name: names[i], kind: s.kind, level: s.level || 'normal' }));
+  return freshBots(prefs.seats.map((s, i) => ({ name: names[i], kind: s.kind, level: s.level || 'normal' })));
 }
 function makeEmit(myRun) {
   return async (type, e) => {
@@ -553,7 +560,7 @@ function gameOver(ws) {
       <div class="rows">${sorted.map((p, i) => `<div class="row ${ws.includes(p) ? 'lead' : ''}"><div class="pn">${i + 1}. ${esc(p.name)}</div><span></span><div class="tot">${p.total}</div></div>`).join('')}</div>
       <button class="big" id="againB" style="background:linear-gradient(180deg,#5aa0ff,#2f6cf0)">Rematch</button>
       <div class="btnrow"><button class="ghost" id="setupB">Change players</button></div>`, false);
-    $('#againB').onclick = () => { closeSheet(); done(); startGame(G.players.map(p => ({ name: p.name, kind: p.kind, level: p.level }))); };
+    $('#againB').onclick = () => { closeSheet(); done(); startGame(freshBots(G.players.map(p => ({ name: p.name, kind: p.kind, level: p.level })))); };
     $('#setupB').onclick = () => { done(); quitToSetup(); };
   });
 }

@@ -96,7 +96,9 @@ const store = {
   del(k) { try { localStorage.removeItem(k); } catch (e) {} },
 };
 const SAVE = 'yahtzee.save.v1', PREFS = 'yahtzee.prefs.v1', BEST = 'yahtzee.best.v1';
-const BOT_NAMES = ['Dot', 'Lucky', 'Snake Eyes'];
+// Fresh bot names every game (shared/botnames.js, added to every page by the site build)
+const botNames = (n, avoid) => window.GNBotNames ? GNBotNames.pick(n, avoid) : Array.from({ length: n }, (_, i) => 'Bot ' + (i + 1));
+const freshBots = ps => { const names = botNames(ps.filter(p => p.bot).length, ps.filter(p => !p.bot).map(p => p.name)); let k = 0; return ps.map(p => p.bot ? Object.assign({}, p, { name: names[k++] }) : p); };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 let prefs = Object.assign({ name: '', bots: 1, skill: 'sharp', sound: true, fast: false }, store.get(PREFS, {}));
 Dice3D.sound = prefs.sound;
@@ -128,7 +130,8 @@ function setup() {
   $('#nm').oninput = e => { prefs.name = e.target.value.trim(); store.set(PREFS, prefs); };
   $('#go').onclick = () => {
     const ps = [{ name: prefs.name || 'You' }];
-    for (let i = 0; i < prefs.bots; i++) ps.push({ name: BOT_NAMES[i], bot: true, skill: prefs.skill });
+    for (let i = 0; i < prefs.bots; i++) ps.push({ bot: true, skill: prefs.skill });
+    const named = freshBots(ps); ps.splice(0, ps.length, ...named);
     G = YZ.newGame(ps); save(); startGame();
   };
   if ($('#resume')) $('#resume').onclick = () => { G = saved; startGame(); };
@@ -297,7 +300,7 @@ function finish() {
   setTimeout(() => sheet(`<h2>Final score</h2>${ranks.map((r, i) => `<div class="rank"><span>${i + 1}. ${esc(r.name)}</span><span>${r.t}</span></div>`).join('')}
     ${newBest ? `<p style="font-weight:800;color:var(--green)">New personal best!</p>` : best ? `<p class="small">Your best: ${Math.max(best, me ? me.t : 0)}</p>` : ''}
     <button class="big" id="again">Play again</button><button class="ghost" id="home">Main menu</button>`, s => {
-    s.querySelector('#again').onclick = () => { s.remove(); const ps = G.players.map(p => ({ name: p.name, bot: p.bot, skill: p.skill })); G = YZ.newGame(ps); save(); startGame(); };
+    s.querySelector('#again').onclick = () => { s.remove(); const ps = freshBots(G.players.map(p => ({ name: p.name, bot: p.bot, skill: p.skill }))); G = YZ.newGame(ps); save(); startGame(); };
     s.querySelector('#home').onclick = () => { s.remove(); setup(); };
   }), won ? 1500 : 500);
 }
