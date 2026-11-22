@@ -21,6 +21,9 @@ const SAVE_KEYS = {
   tally: ['tally-v1'],
   doomlings: [],   // no saved games yet
   paydirt: ['paydirt.save.v1', 'paydirt.prefs.v1'],
+  uno: ['uno.save.v1', 'uno.prefs.v1'],
+  phase10: ['phase10.save.v1', 'phase10.prefs.v1'],
+  skipbo: ['skipbo.save.v1', 'skipbo.prefs.v1'],
   yahtzee: ['yahtzee.save.v1', 'yahtzee.prefs.v1', 'yahtzee.best.v1'],
   farkle: ['farkle.save.v1', 'farkle.prefs.v1'],
   site: [],
@@ -41,6 +44,9 @@ const GAMES = [
   { id: 'doomlings', name: 'Doomlings', testing: true, color: '#131219', bg: '#131219', build: () => read('games/doomlings/index.html') },
   { id: 'yahtzee', name: 'Yahtzee', color: '#14213d', bg: '#14213d', build: () => read('games/yahtzee/src.html').replace('/*DICE3D*/', () => read('shared/dice3d.js')).replace('/*ENGINE*/', () => read('games/yahtzee/engine.js')) },
   { id: 'farkle', name: 'Farkle', color: '#3b1d12', bg: '#3b1d12', build: () => read('games/farkle/src.html').replace('/*DICE3D*/', () => read('shared/dice3d.js')).replace('/*ENGINE*/', () => read('games/farkle/engine.js')) },
+  { id: 'uno', name: 'Uno', testing: true, color: '#7a1010', bg: '#7a1010', build: () => read('games/uno/src.html').replace('/*TABLEKIT*/', () => read('shared/tablekit.js')).replace('/*ENGINE*/', () => read('games/uno/engine.js')) },
+  { id: 'phase10', name: 'Phase 10', testing: true, color: '#13275e', bg: '#13275e', build: () => read('games/phase10/src.html').replace('/*TABLEKIT*/', () => read('shared/tablekit.js')).replace('/*ENGINE*/', () => read('games/phase10/engine.js')) },
+  { id: 'skipbo', name: 'Skip-Bo', testing: true, color: '#0b4a52', bg: '#0b4a52', build: () => read('games/skipbo/src.html').replace('/*TABLEKIT*/', () => read('shared/tablekit.js')).replace('/*ENGINE*/', () => read('games/skipbo/engine.js')) },
   { id: 'paydirt', name: 'Paydirt', testing: true, color: '#1f3d24', bg: '#1f3d24', build: () => read('games/paydirt/src.html').replace('/*TEAMS*/', () => read('games/paydirt/teams.js')).replace('/*ENGINE*/', () => read('games/paydirt/engine.js')) },
 ];
 const GAME_NAMES = Object.fromEntries(GAMES.map(g => [g.id, g.name]).concat([['site', 'Home page']]));

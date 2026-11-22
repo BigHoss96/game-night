@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b4a52">
+<title>Skip-Bo</title>
+<style>
+:root{--tk-bg:#0b4a52;--tk-panel:#f5fbfb;--tk-ink:#10282b;--tk-mute:#5f7f83;--tk-line:#d5e6e8;--tk-accent:#f28c28;--tk-accent-ink:#fff;
+  --c1:#2e6fd8;--c2:#2fa35a;--c3:#e23b2e;--sb:#f28c28;--cw:48px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#fff;background:radial-gradient(ellipse at 50% 25%,#16808a,#08363c 75%) fixed}
+body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+.tk-logo{color:#fff;text-shadow:0 4px 0 #f28c28,0 10px 20px rgba(0,0,0,.4);font-style:italic}
+.tk-tag{color:#cfeef0!important}
+#game{max-width:640px;margin:0 auto;padding:8px 8px 0;min-height:100vh;display:flex;flex-direction:column}
+.top{display:flex;justify-content:space-between;align-items:center;font-weight:800}.top .r{color:#cfeef0;font-size:13px}.top button{font-size:24px;padding:0 10px;font-weight:900}
+.opps{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:6px 0}
+.opp{flex:1 1 140px;max-width:200px;background:rgba(0,0,0,.25);border-radius:12px;padding:6px;border:2px solid transparent;--cw:26px}
+.opp.on{border-color:#ffd23a}
+.opp .nm{font-weight:800;font-size:13px;display:flex;justify-content:space-between;gap:4px}.opp .nm small{color:#cfeef0;font-weight:700}
+.opp .row{display:flex;gap:4px;align-items:flex-end;margin-top:4px}
+.opp .stk{position:relative;--cw:34px;margin-right:4px}
+.opp .stk b{position:absolute;right:-6px;bottom:-6px;background:#ffd23a;color:#10282b;font-size:11px;border-radius:999px;padding:1px 5px}
+.builds{display:flex;gap:10px;justify-content:center;margin:12px 0 4px;--cw:58px}
+.bp{position:relative;text-align:center}
+.bp .nx{font-size:11px;font-weight:800;color:#cfeef0;margin-top:4px}
+.bp.can .card,.bp.can .empty{box-shadow:0 0 0 3px #ffd23a,0 0 14px #ffd23a}
+.empty{width:var(--cw);height:calc(var(--cw) * 1.4);border-radius:calc(var(--cw) * .14);border:2px dashed rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-weight:900;color:rgba(255,255,255,.4)}
+.status{min-height:20px;text-align:center;font-weight:800;color:#e9fbfc;margin:8px 6px}
+.mine{background:rgba(0,0,0,.25);border-radius:18px 18px 0 0;margin:auto -8px 0;padding:10px 8px calc(12px + env(safe-area-inset-bottom))}
+.mlbl{text-align:center;font-size:12px;font-weight:800;color:#cfeef0;margin-bottom:6px}
+.area{display:flex;gap:10px;align-items:flex-start;justify-content:center}
+.mstock{position:relative;--cw:58px;text-align:center}
+.mstock .cnt{position:absolute;right:-8px;top:-8px;background:#ffd23a;color:#10282b;font-weight:900;font-size:13px;border-radius:999px;padding:2px 7px}
+.lbl{font-size:10px;font-weight:800;color:#cfeef0;text-align:center;margin-top:4px;text-transform:uppercase;letter-spacing:.06em}
+.dps{display:flex;gap:6px}
+.dp{position:relative;width:var(--cw);min-height:calc(var(--cw) * 1.4)}
+.dp .card{position:absolute;left:0}
+.dp.can{outline:3px dashed #ffd23a;outline-offset:3px;border-radius:8px}
+.dp .empty{position:absolute;left:0;top:0}
+.hand{display:flex;justify-content:center;gap:6px;margin-top:12px;--cw:56px}
+.card{position:relative;width:var(--cw);height:calc(var(--cw) * 1.4);border-radius:calc(var(--cw) * .14);background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:calc(var(--cw) * .55);color:var(--cc);user-select:none;cursor:pointer;flex:none}
+.card .k{position:absolute;left:calc(var(--cw) * .1);top:calc(var(--cw) * .06);font-size:calc(var(--cw) * .2)}
+.card.SB{background:var(--sb);color:#fff;font-size:calc(var(--cw) * .32);font-style:italic}
+.card.SB small{position:absolute;bottom:calc(var(--cw) * .06);font-size:calc(var(--cw) * .2);font-style:normal}
+.card.back{background:repeating-linear-gradient(45deg,#0f6670 0 6px,#0b4a52 6px 12px);border:2px solid #fff;color:#ffd23a;font-size:calc(var(--cw) * .22)}
+.card.sel{transform:translateY(-8px);box-shadow:0 0 0 3px #ffd23a,0 6px 12px rgba(0,0,0,.45)}
+.acts{display:flex;justify-content:center;gap:8px;margin-top:8px}
+.btn{padding:9px 16px;border-radius:12px;font-weight:900;background:#fff;color:#0b4a52;box-shadow:0 3px 0 rgba(0,0,0,.35)}
+html.gn-desktop #game{max-width:980px}html.gn-desktop .builds{--cw:78px}html.gn-desktop .hand{--cw:72px}html.gn-desktop .mstock{--cw:72px}html.gn-desktop{--cw:60px}
+</style>
+</head>
+<body>
+<div id="setup"></div>
+<div id="game" hidden></div>
+<script>
+/*TABLEKIT*/
+</script>
+<script>
+/*ENGINE*/
+</script>
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const { esc, sleep, store } = TK;
+const SAVE = 'skipbo.save.v1', PREFS = 'skipbo.prefs.v1';
+let G = null, busy = false, viewer = 0, lastShown = -1, picked = null, speed = 1;
+
+const ccol = v => v <= 4 ? 'var(--c1)' : v <= 8 ? 'var(--c2)' : 'var(--c3)';
+function cardHtml(c, cls, attrs) {
+  if (!c) return `<div class="card back ${cls || ''}" ${attrs || ''}>SB</div>`;
+  if (SB.isSB(c)) return `<div class="card SB ${cls || ''}" ${attrs || ''}>SB${c.as ? `<small>= ${c.as}</small>` : ''}</div>`;
+  return `<div class="card ${cls || ''}" style="--cc:${ccol(c.v)}" ${attrs || ''}><span class="k">${c.v}</span>${c.v}</div>`;
+}
+
+// ---------- setup ----------
+function setup() {
+  G = null; $('#game').hidden = true; $('#setup').hidden = false;
+  const saved = store.get(SAVE, null);
+  TK.setup({
+    el: $('#setup'), title: 'Skip-Bo', tagline: 'Play your stockpile down to nothing. Build piles count from 1 to 12.',
+    prefsKey: PREFS, minP: 2, maxP: 6, defaults: { quick: false, speed: 'normal' },
+    options: [
+      { key: 'quick', label: 'Quick game', desc: 'Shorter stockpiles (15 cards, or 10 with 5–6 players)', type: 'toggle' },
+      { key: 'speed', label: 'Bot speed', type: 'seg', choices: [['slow', 'Slow'], ['normal', 'Normal'], ['fast', 'Fast']] },
+    ],
+    resume: saved && !saved.over ? { text: saved.players.map(p => `${p.name} ${p.stock.length} left`).join(' · '), onResume: () => { G = saved; start(); } } : null,
+    onStart: (ps, prefs) => { G = SB.newGame(ps, { quick: prefs.quick }); G.speed = prefs.speed; start(); },
+    rules,
+  });
+}
+const humans = () => G.players.map((p, i) => p.bot ? -1 : i).filter(i => i >= 0);
+const pnp = () => humans().length > 1;
+function save() { if (G && !G.over) store.set(SAVE, G); else store.del(SAVE); }
+function start() {
+  $('#setup').hidden = true; $('#game').hidden = false;
+  speed = { slow: 1.6, normal: 1, fast: 0.5 }[G.speed || 'normal'];
+  viewer = humans()[0]; lastShown = pnp() ? -1 : viewer; picked = null;
+  render(); step();
+}
+
+// ---------- render ----------
+const nameOf = i => G.players[i].bot || pnp() ? G.players[i].name : 'You';
+function render(msg) {
+  const g = G, me = viewer, p = g.players[me];
+  const myTurn = g.turn === me && !p.bot && !g.over;
+  const showHand = !pnp() || lastShown === me;
+  const pc = picked ? SB.cardAt(g, me, picked) : null;
+  const top = pile => pile[pile.length - 1];
+  $('#game').innerHTML = `
+    <div class="top"><span>Skip-Bo</span><span class="r">${g.deck.length} in deck</span><button id="menu" aria-label="Menu">⋯</button></div>
+    <div class="opps">${g.players.map((q, i) => i === me ? '' : `<div class="opp ${g.turn === i ? 'on' : ''}" data-seat="${i}">
+      <div class="nm"><span>${esc(q.name)}</span><small>${q.hand.length} in hand</small></div>
+      <div class="row"><div class="stk">${cardHtml(SB.stockTop(q))}<b>${q.stock.length}</b></div>${q.discards.map(d => d.length ? cardHtml(top(d)) : '<div class="empty"></div>').join('')}</div></div>`).join('')}</div>
+    <div class="builds">${g.build.map((b, k) => `<div class="bp ${pc && myTurn && SB.fits(g, pc, k) ? 'can' : ''}" data-b="${k}">${b.length ? cardHtml(top(b)) : '<div class="empty">1</div>'}<div class="nx">${b.length < 12 ? 'next ' + (b.length + 1) : ''}</div></div>`).join('')}</div>
+    <div class="status">${msg || statusText()}</div>
+    <div class="mine"><div class="mlbl">${esc(nameOf(me))} · ${p.stock.length} left in stock</div>
+      <div class="area">
+        <div class="mstock">${cardHtml(SB.stockTop(p), picked && picked.from === 'stock' ? 'sel' : '', 'data-src="stock"')}<span class="cnt">${p.stock.length}</span><div class="lbl">stock</div></div>
+        <div><div class="dps">${p.discards.map((d, k) => `<div class="dp ${pc && myTurn && picked.from === 'hand' ? 'can' : ''}" data-dp="${k}" style="height:calc(var(--cw) * 1.4 + ${Math.max(0, Math.min(d.length, 6) - 1) * 14}px)">${d.length ? d.slice(-6).map((c, j, arr) => cardHtml(c, j === arr.length - 1 && picked && picked.from === 'discard' && picked.k === k ? 'sel' : '', `style="top:${j * 14}px" ${j === arr.length - 1 ? `data-src="d${k}"` : ''}`)).join('') : '<div class="empty"></div>'}</div>`).join('')}</div><div class="lbl">your discard piles</div></div>
+      </div>
+      <div class="hand" id="hand">${showHand ? p.hand.map(c => cardHtml(c, picked && picked.from === 'hand' && picked.id === c.id ? 'sel' : '', `data-src="h${c.id}"`)).join('') : p.hand.map(() => cardHtml(null)).join('')}</div>
+      ${myTurn && !p.hand.length ? '<div class="acts"><button class="btn" id="pass">Pass</button></div>' : ''}
+    </div>`;
+  $('#menu').onclick = menu;
+  if (!myTurn || busy) return;
+  document.querySelectorAll('[data-src]').forEach(el => el.onclick = e => {
+    e.stopPropagation();
+    const s = el.dataset.src;
+    const src = s === 'stock' ? { from: 'stock' } : s[0] === 'd' ? { from: 'discard', k: +s.slice(1) } : { from: 'hand', id: +s.slice(1) };
+    if (s[0] !== 'h' && !showHand) return;
+    picked = picked && JSON.stringify(picked) === JSON.stringify(src) ? null : src; render();
+  });
+  document.querySelectorAll('.bp').forEach(el => el.onclick = () => { if (!picked) return render('Pick a card first — stock, a discard pile top, or your hand'); humanPlay(+el.dataset.b); });
+  document.querySelectorAll('.dp').forEach(el => el.onclick = () => { if (picked && picked.from === 'hand') humanDiscard(+el.dataset.dp); });
+  if ($('#pass')) $('#pass').onclick = () => { SB.pass(G, me); after(); };
+}
+function statusText() {
+  const g = G, p = g.players[g.turn];
+  if (g.over) return `${g.players[g.winner].name} wins!`;
+  if (p.bot) return `${p.name} is playing…`;
+  const who = pnp() ? p.name + ': ' : '';
+  return who + (picked ? (picked.from === 'hand' ? 'tap a build pile to play it — or one of your discard piles to end your turn' : 'tap a build pile to play it') : 'play onto the build piles, then discard a hand card to end your turn');
+}
+async function humanPlay(b) {
+  if (busy) return;
+  const me = viewer;
+  if (!SB.canPlay(G, me, picked, b)) { TK.toast(`That pile needs a ${SB.need(G, b)}`); return; }
+  busy = true;
+  const card = SB.cardAt(G, me, picked);
+  const from = picked.from === 'stock' ? document.querySelector('[data-src="stock"]') : picked.from === 'discard' ? document.querySelector(`[data-src="d${picked.k}"]`) : document.querySelector(`[data-src="h${picked.id}"]`);
+  await TK.fly(from, document.querySelector(`.bp[data-b="${b}"] .card, .bp[data-b="${b}"] .empty`), cardHtml(card), 280 * speed);
+  const ev = SB.play(G, me, picked, b); picked = null; busy = false;
+  if (ev.cleared) TK.toast('Pile complete — cleared!');
+  if (ev.refilled) TK.toast('Empty hand — draw five more');
+  if (ev.from === 'stock') TK.banner(G.over ? 'SKIP-BO!' : `${G.players[me].stock.length} LEFT`);
+  after();
+}
+async function humanDiscard(k) {
+  if (busy) return;
+  busy = true;
+  const card = SB.cardAt(G, viewer, picked);
+  await TK.fly(document.querySelector(`[data-src="h${picked.id}"]`), document.querySelector(`.dp[data-dp="${k}"]`), cardHtml(card), 260 * speed);
+  SB.discard(G, viewer, picked.id, k); picked = null; busy = false;
+  after();
+}
+function after() { save(); render(); setTimeout(step, 150); }
+
+// ---------- loop ----------
+let stepping = false, again = false;
+async function step() { if (stepping) { again = true; return; } stepping = true; try { await stepOnce(); } finally { stepping = false; if (again) { again = false; setTimeout(step, 60); } } }
+async function stepOnce() {
+  if (busy || !G) return;
+  const g = G;
+  if (g.over) return gameOver();
+  const pi = g.turn, p = g.players[pi];
+  if (!p.bot) {
+    if (pnp() && lastShown !== pi) { viewer = pi; picked = null; render(); await TK.handoff(p.name); lastShown = pi; }
+    viewer = pi; render(); return;
+  }
+  if (pnp()) lastShown = -1;
+  busy = true; render();
+  await sleep(500 * speed);
+  for (let guard = 0; guard < 60 && !g.over && g.turn === pi; guard++) {
+    const m = SB.botMove(g, pi);
+    const chip = document.querySelector(`.opp[data-seat="${pi}"]`);
+    if (m.a === 'play') {
+      const card = SB.cardAt(g, pi, m.src);
+      await TK.fly(chip, document.querySelector(`.bp[data-b="${m.b}"] .card, .bp[data-b="${m.b}"] .empty`), cardHtml(card), 300 * speed);
+      const ev = SB.play(g, pi, m.src, m.b);
+      render(ev.from === 'stock' ? `${p.name} plays from their stock — ${p.stock.length} left` : `${p.name} plays a ${SB.isSB(card) ? 'wild' : card.v}`);
+      await sleep(320 * speed);
+    } else if (m.a === 'discard') { SB.discard(g, pi, m.id, m.k); break; }
+    else { SB.pass(g, pi); break; }
+  }
+  busy = false;
+  after();
+}
+function gameOver() {
+  const g = G, w = g.winner;
+  store.del(SAVE); render();
+  TK.banner(g.players[w].bot || pnp() ? `${g.players[w].name} WINS` : 'SKIP-BO!');
+  setTimeout(() => TK.sheet(`<h2>${esc(g.players[w].name)} ${g.players[w].bot || pnp() ? 'wins' : '— you win'}!</h2>
+    ${g.players.map(p => p).sort((a, b) => a.stock.length - b.stock.length).map(p => `<div class="tk-rank"><span>${esc(p.name)}</span><span>${p.stock.length} left</span></div>`).join('')}
+    <button class="tk-big" id="nx">Play again</button><button class="tk-ghost" id="home">Main menu</button>`, s => {
+    s.querySelector('.tk-x').remove(); s.onclick = null;
+    s.querySelector('#nx').onclick = () => { s.remove(); const ps = TK.nameBots(g.players.map(p => ({ name: p.name, bot: p.bot, level: p.level }))); G = SB.newGame(ps, g.opts); G.speed = g.speed; start(); };
+    s.querySelector('#home').onclick = () => { s.remove(); setup(); };
+  }), 1300);
+}
+function menu() {
+  TK.sheet(`<h2>Menu</h2><button class="tk-ghost" id="mRules">How to play</button>${window.GNReport ? '<button class="tk-ghost" id="mBug">⚑ Report a bug</button>' : ''}<button class="tk-ghost" id="mQuit">Save &amp; quit to menu</button>`, s => {
+    s.querySelector('#mRules').onclick = () => { s.remove(); rules(); };
+    if (s.querySelector('#mBug')) s.querySelector('#mBug').onclick = () => { s.remove(); GNReport.open(); };
+    s.querySelector('#mQuit').onclick = () => { s.remove(); if (busy) return TK.toast('One moment…'); save(); setup(); };
+  });
+}
+function rules() {
+  TK.sheet(`<h2>How to play</h2>
+    <p>Be the first to play every card in your <b>stockpile</b>. Only its top card is in play.</p>
+    <ul><li>The four <b>build piles</b> in the middle are shared. Each starts with a 1 and counts up to 12; a finished pile is cleared away.</li>
+    <li>On your turn, draw up to five cards, then play onto build piles from your <b>stock</b>, your <b>hand</b>, or the top of your <b>discard piles</b>. Play as much as you like.</li>
+    <li><b>SB</b> cards are wild — they become whatever number a pile needs.</li>
+    <li>If you play out your whole hand, draw five more and keep going.</li>
+    <li>End your turn by putting one hand card on one of your four discard piles. Tip: stack them high-to-low so they're easy to play back later.</li></ul>
+    <p>To play: tap a card (stock, a discard top, or your hand), then tap where it goes.</p>`);
+}
+addEventListener('beforeunload', () => { if (!busy) save(); });
+setup();
+</script>
+</body>
+</html>

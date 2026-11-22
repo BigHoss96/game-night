@@ -165,6 +165,38 @@ for row, (name, n) in enumerate([('AJ', 7), ('Mom', 5), ('Sam', 9)]):
 b += '</g><g transform="translate(300,250) rotate(-35)"><rect x="-90" y="-9" width="170" height="18" fill="#f5b83d"/><rect x="80" y="-9" width="18" height="18" fill="#e8a0a0"/><rect x="74" y="-9" width="8" height="18" fill="#c0c0c0"/><path d="M-90,-9 L-112,0 L-90,9 Z" fill="#e9c896"/><path d="M-104,-3 L-112,0 L-104,3 Z" fill="#333"/></g>'
 covers['tally'] = svg(b)
 
+# ---- Uno: a red card slapped down over a fan, color wheel behind
+b = '<rect width="400" height="320" fill="url(#bg)"/>' + burst(200, 150, 24, 420, '#ffffff', .07)
+def ucard(x, y, rot, fill, num):
+    return (f'<g transform="translate({x},{y}) rotate({rot})"><rect x="-47" y="-67" width="100" height="140" rx="12" fill="#000" opacity=".3"/>'
+            f'<rect x="-50" y="-70" width="100" height="140" rx="12" fill="#fff"/><rect x="-43" y="-63" width="86" height="126" rx="9" fill="{fill}"/>'
+            f'<circle r="34" fill="#fff"/><text y="17" text-anchor="middle" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="46" fill="{fill}">{num}</text></g>')
+b += ucard(120, 170, -24, '#2e6fd8', '4') + ucard(280, 170, 22, '#2fa35a', '+2') + ucard(160, 150, -8, '#f5c021', '9') + ucard(225, 145, 6, '#e23b2e', '7')
+covers['uno'] = svg(b, '<radialGradient id="bg" cx="50%" cy="40%" r="75%"><stop offset="0" stop-color="#d8342a"/><stop offset="1" stop-color="#5c0b0b"/></radialGradient>')
+
+# ---- Phase 10: a staircase of numbered cards climbing to 10
+b = '<rect width="400" height="320" fill="url(#bg)"/>'
+for i in range(10):
+    x, y = 30 + i * 36, 230 - i * 16
+    col = ['#e23b2e', '#2e6fd8', '#2fa35a', '#e9a810'][i % 4]
+    b += (f'<g transform="translate({x},{y})"><rect x="3" y="4" width="46" height="66" rx="7" fill="#000" opacity=".3"/><rect width="46" height="66" rx="7" fill="#fff"/>'
+          f'<rect x="4" y="4" width="38" height="58" rx="5" fill="{col}"/><text x="23" y="44" text-anchor="middle" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="{26 if i < 9 else 22}" fill="#fff">{i + 1}</text></g>')
+covers['phase10'] = svg(b, '<radialGradient id="bg" cx="50%" cy="30%" r="85%"><stop offset="0" stop-color="#2a4bb0"/><stop offset="1" stop-color="#0f1f4d"/></radialGradient>')
+
+# ---- Skip-Bo: four build piles counting up, a wild on top
+b = '<rect width="400" height="320" fill="url(#bg)"/>'
+def scard(x, y, rot, v):
+    if v == 'SB':
+        inner = '<rect x="4" y="4" width="62" height="88" rx="7" fill="#f28c28"/><text x="35" y="58" text-anchor="middle" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-style="italic" font-size="28" fill="#fff">SB</text>'
+    else:
+        col = '#2e6fd8' if v <= 4 else '#2fa35a' if v <= 8 else '#e23b2e'
+        inner = f'<text x="35" y="64" text-anchor="middle" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="44" fill="{col}">{v}</text><text x="9" y="20" font-family="Arial,sans-serif" font-weight="700" font-size="13" fill="{col}">{v}</text>'
+    return f'<g transform="translate({x},{y}) rotate({rot} 35 48)"><rect x="3" y="5" width="70" height="96" rx="9" fill="#000" opacity=".3"/><rect width="70" height="96" rx="9" fill="#fff"/>{inner}</g>'
+for col, vals in enumerate([[1, 2, 3], [5, 6, 7, 8], [9, 10, 'SB', 12], [2, 3, 4]]):
+    for k, v in enumerate(vals):
+        b += scard(30 + col * 88, 90 + k * 26, (k - 1) * 3, v)
+covers['skipbo'] = svg(b, '<radialGradient id="bg" cx="50%" cy="30%" r="85%"><stop offset="0" stop-color="#16808a"/><stop offset="1" stop-color="#08363c"/></radialGradient>')
+
 for k, v in covers.items():
     with open(os.path.join(OUT, f'cover-{k}.svg'), 'w') as f: f.write(v)
 print('wrote', ', '.join(covers))
