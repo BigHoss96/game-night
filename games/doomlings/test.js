@@ -351,3 +351,49 @@ console.log('Doomlings: Lonely Age also blocks plays from the discard pile');
   assert.strictEqual(index(), null, 'a swipe on a later sheet jumped back to a stale card');
   console.log('Doomlings: card viewer swipe keeps one listener and stops after the viewer closes');
 }
+
+// ---------------------------------------------------------------------------
+// Bots: full games where every seat is a bot (engine/bots.js), mixed levels.
+// ---------------------------------------------------------------------------
+{
+  const botDriver = `
+var __botRun = function (cards, seed, levels) {
+  resetUids();
+  const g = dealGame(cards, { names: levels.map((l, i) => l + i), seed, bots: levels.map(() => true) });
+  const lv = (id) => levels[id];
+  const pump = () => { let k = 0; while (g.pending) { if (k++ > 500) throw new Error('runaway pending'); const r = g.pending.request; const who = r.playerId != null ? r.playerId : g.activeSeat; answer(g, botAnswer(g, r, who, lv(who))); } };
+  const drive = (gen) => { let r = gen.next(), k = 0; while (!r.done) { if (k++ > 500) throw new Error('runaway effect'); const who = r.value.playerId != null ? r.value.playerId : g.activeSeat; r = gen.next(botAnswer(g, r.value, who, lv(who))); } };
+  let steps = 0, fails = 0;
+  while (g.phase !== 'over') {
+    if (steps++ > 4000) throw new Error('bot game did not finish');
+    if (g.phase === 'age') { flipAge(g, EFFECTS); pump(); drive(resolveAgeReveal(g, EFFECTS)); if (g.phase === 'worldsEnd') { drive(resolveWorldsEnd(g, EFFECTS)); drive(scoreGame(g, EFFECTS)); } continue; }
+    const p = seatOf(g);
+    if (g.playsLeft > 0 && !g.stabilizeWaived) {
+      const uid = fails < 3 ? botChoosePlay(g, EFFECTS, lv(p.id)) : null;
+      if (uid) { playTrait(g, uid, EFFECTS); pump(); if (g.playsLeft > 0) fails++; } else { cantPlay(g); fails = 0; }
+      continue;
+    }
+    fails = 0;
+    const t = targetHand(g, p);
+    while (p.hand.length < t && drawCard(g, p));
+    if (!activeRestrict(topAge(g)).stabilizeOptional) for (const uid of botStabilizeDiscards(g, p, t)) discardFromHand(g, p, uid);
+    const r = beginEndTurn(g, EFFECTS); pump();
+    if (r.ok === false && !r.request) throw new Error('bot could not end turn');
+  }
+  return g;
+};`;
+  vm.runInContext(botDriver, ctx, { filename: 'doomlings-bots' });
+  const botRun = vm.runInContext('__botRun', ctx);
+  const wins = { easy: 0, normal: 0, hard: 0 };
+  const N = +(process.env.DOOM_BOT_GAMES || 40);
+  for (let seed = 1; seed <= N; seed++) {
+    const n = 2 + (seed % 3);
+    const levels = Array.from({ length: n }, (_, i) => ['easy', 'normal', 'hard'][(i + seed) % 3]);
+    const g = botRun(cards, seed, levels);
+    assert.strictEqual(g.phase, 'over', `bot seed ${seed}: no score`);
+    const top = g.scores[0].total;
+    for (const s of g.scores) if (s.total === top) wins[levels[s.id]]++;
+  }
+  console.log(`Doomlings bots: ${N} games, wins by level ${JSON.stringify(wins)}`);
+  assert(wins.normal + wins.hard > wins.easy, 'smarter bots should win more');
+}
