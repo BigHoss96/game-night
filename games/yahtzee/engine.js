@@ -135,7 +135,8 @@ function bestHold(card, dice, left, skill) {
   let best = { kk: sd.join(''), ev: finalValue(card, sd).v };
   for (const kk of keeps(sd)) {
     let e = E(kk, left - 1);
-    if (skill === 'casual') e += (Math.random() - 0.5) * 8;
+    if (skill === 'casual' || skill === 'easy') e += (Math.random() - 0.5) * 8;
+    else if (skill === 'normal') e += (Math.random() - 0.5) * 3;
     if (e > best.ev + 1e-9) best = { kk, ev: e };
   }
   // map the kept values back onto dice positions
@@ -151,7 +152,7 @@ function keeps(d) {     // distinct sub-multisets of sorted dice, as strings
   r = [...set]; KEEPS.set(k, r); return r;
 }
 function botChoose(card, dice, skill) {
-  if (skill === 'casual') {
+  if (skill === 'casual' || skill === 'easy' || (skill === 'normal' && Math.random() < 0.2)) {
     const opts = legal(card, dice).map(k => ({ k, s: score(card, k, dice) - AVG[k] + Math.random() * 6 }));
     opts.sort((a, b) => b.s - a.s); return opts[0].k;
   }

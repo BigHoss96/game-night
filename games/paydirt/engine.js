@@ -447,6 +447,7 @@ function botOffense(g, rng) {
 // base play mix is roughly the NFL's; a team leans toward the columns its chart is best at
 const MIX = { 1: 0.15, 2: 0.11, 3: 0.11, 4: 0.06, 5: 0.11, 6: 0.24, 7: 0.10, 8: 0.06, 9: 0.06 };
 function pickPlay(g, T, togo, hurry, rng) {
+  if (g.botLevel === 'easy') return SCRIM[Math.floor(rng() * SCRIM.length)];   // easy: no game plan
   const ev = {}; let run = 0, pas = 0;
   for (const c of SCRIM) { ev[c] = Math.max(0.5, colEV(T, c)); if (+c >= 5) pas += ev[c] * MIX[c]; else run += ev[c] * MIX[c]; }
   const runAvg = run / 0.43, passAvg = pas / 0.57;
@@ -468,6 +469,7 @@ function pickPlay(g, T, togo, hurry, rng) {
 
 function botDefense(g, rng) {
   rng = rng || Math.random;
+  if (g.botLevel === 'easy') return 'ABCDEF'[Math.floor(rng() * 6)];
   const oppDiff = g.score[g.poss] - g.score[1 - g.poss];
   let w;
   if (g.phase === 'pat' || g.ball >= 95) w = { A: 3, B: 5, F: 2, D: 1 };

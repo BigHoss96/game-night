@@ -13,6 +13,15 @@ const defaults = {
   target: 150, speed: 'normal',
 };
 let prefs = Object.assign({}, defaults, store.get(PREFS_KEY, {}));
+// Setup is Mode + Players + one bot difficulty; older saved prefs had one row per seat.
+if (!prefs.mode) {
+  const seats = prefs.seats || [], humans = seats.filter(x => x.kind === 'human'), bots = seats.filter(x => x.kind === 'bot');
+  prefs.mode = humans.length > 1 && !bots.length ? 'pnp' : 'bots';
+  prefs.count = Math.max(2, Math.min(6, seats.length || 4));
+  prefs.level = (bots[0] && bots[0].level) || 'normal';
+  prefs.names = humans.map(x => x.name === 'You' ? '' : x.name);
+}
+prefs.names = prefs.names || [];
 const savePrefs = () => store.set(PREFS_KEY, prefs);
 const SPEED = { slow: 1.6, normal: 1, fast: 0.45 };
 const T = ms => ms * SPEED[prefs.speed];
@@ -54,18 +63,16 @@ function renderSetup() {
     ${save && !save.over ? `<button class="big resume" id="resumeBtn">Resume game · Round ${save.phase === 'between' ? save.round + 1 : save.round}</button>` : ''}
     <div>
       <div class="h">Players</div>
-      <div class="seats">
-        ${prefs.seats.map((s, i) => `
-          <div class="seat">
-            <label class="nm"><input value="${esc(s.kind === 'bot' || (s.kind === 'human' && s.name === 'You') ? '' : s.name)}" ${s.kind === 'bot' ? 'disabled' : ''} maxlength="12" data-name="${i}" aria-label="Player name" placeholder="${s.kind === 'bot' ? 'Random name each game' : i === prefs.seats.findIndex(x => x.kind === 'human') ? 'Your name' : 'Player name'}" autocomplete="off" enterkeyhint="done">${s.kind === 'bot' ? '' : '<span class="pen" aria-hidden="true">✎</span>'}</label>
-            ${seg('kind', [['human', 'Human'], ['bot', 'Bot']], s.kind, i)}
-            <button class="x" data-del="${i}" ${prefs.seats.length <= 2 ? 'disabled style="opacity:.25"' : ''} aria-label="Remove">✕</button>
-            ${s.kind === 'bot' ? `<div class="lvl">${seg('level', [['easy', 'Easy'], ['normal', 'Normal'], ['hard', 'Hard']], s.level || 'normal', i)}</div>` : ''}
-          </div>`).join('')}
-        ${prefs.seats.length < 6 ? `<button class="addseat" id="addSeat">+ Add player</button>` : ''}
+      <div class="panel">
+        <div class="opt"><label>Mode</label>${seg('mode', [['bots', 'Vs bots'], ['pnp', 'Pass &amp; play']], prefs.mode)}</div>
+        <div class="opt"><label>Players</label>${seg('count', Array.from({ length: 5 }, (_, k) => [k + 2, String(k + 2)]), prefs.count)}</div>
+        ${prefs.mode === 'bots' ? `<div class="opt"><label>Bot difficulty<small>${prefs.count - 1} bot${prefs.count > 2 ? 's' : ''}, named fresh each game</small></label>${seg('level', [['easy', 'Easy'], ['normal', 'Normal'], ['hard', 'Hard']], prefs.level)}</div>` : ''}
       </div>
-      ${prefs.seats.length === 2 ? `<p class="note" style="margin-top:8px">Two players: 27 cards each, piles two deep, and Tap Out can only skip your own turn.</p>` : ''}
-      ${prefs.seats.filter(s => s.kind === 'human').length > 1 ? `<p class="note" style="margin-top:8px">Pass-and-play: hands stay hidden and you'll pass the phone between human turns.</p>` : ''}
+      <div class="seats" style="margin-top:8px">
+        ${(prefs.mode === 'bots' ? [0] : Array.from({ length: prefs.count }, (_, k) => k)).map(i => `
+          <div class="seat" style="grid-template-columns:1fr"><label class="nm"><input value="${esc(prefs.names[i] || '')}" maxlength="12" data-name="${i}" aria-label="Player name" placeholder="${prefs.mode === 'bots' ? 'Your name' : 'Player ' + (i + 1)}" autocomplete="off" enterkeyhint="done"><span class="pen" aria-hidden="true">✎</span></label></div>`).join('')}
+      </div>
+      ${prefs.count === 2 ? `<p class="note" style="margin-top:8px">Two players: 27 cards each, piles two deep, and Tap Out can only skip your own turn.</p>` : ''}${prefs.mode === 'pnp' ? `<p class="note" style="margin-top:8px">Pass-and-play: hands stay hidden and you'll pass the phone between turns.</p>` : ''}
     </div>
     <div>
       <div class="h">Options</div>
@@ -80,7 +87,7 @@ function renderSetup() {
     ${window.GNReport ? '<button class="ghost" onclick="GNReport.open()">⚑ Report a bug</button>' : ''}`;
   const root = $('#setup');
   root.querySelectorAll('[data-name]').forEach(inp => {
-    inp.oninput = () => { prefs.seats[+inp.dataset.name].name = inp.value; savePrefs(); };
+    inp.oninput = () => { prefs.names[+inp.dataset.name] = inp.value; savePrefs(); };
     inp.onfocus = () => inp.select(); // typing replaces the old name
     inp.onkeydown = ev => { if (ev.key === 'Enter') inp.blur(); };
   });
@@ -90,7 +97,7 @@ function renderSetup() {
       const s = prefs.seats[+i]; s[key] = v;
       if (key === 'kind' && v === 'bot') { s.level = s.level || 'normal'; s.name = ''; }
       if (key === 'kind' && v === 'human' && (!s.name || BOT_NAMES.includes(s.name))) s.name = '';
-    } else prefs[key] = key === 'target' ? +v : v;
+    } else prefs[key] = (key === 'target' || key === 'count') ? +v : v;
     savePrefs(); renderSetup();
   }));
   root.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { if (prefs.seats.length > 2) { prefs.seats.splice(+b.dataset.del, 1); savePrefs(); renderSetup(); } });
@@ -110,8 +117,11 @@ const freshBots = seats => {
 
 /* ================= GAME FLOW ================= */
 function seatsForGame() {
-  const names = Tap4.seatNames(prefs.seats);
-  return freshBots(prefs.seats.map((s, i) => ({ name: names[i], kind: s.kind, level: s.level || 'normal' })));
+  const nm = i => String(prefs.names[i] || '').trim();
+  const seats = prefs.mode === 'bots'
+    ? [{ name: nm(0) || 'You', kind: 'human' }].concat(Array.from({ length: prefs.count - 1 }, () => ({ name: '', kind: 'bot', level: prefs.level })))
+    : Array.from({ length: prefs.count }, (_, i) => ({ name: nm(i) || 'Player ' + (i + 1), kind: 'human' }));
+  return freshBots(seats);
 }
 function makeEmit(myRun) {
   return async (type, e) => {

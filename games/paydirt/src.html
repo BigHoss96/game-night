@@ -171,7 +171,7 @@ const fullName = id => `${T(id).city} ${T(id).name}`;
 const textOn = hex => { const n = parseInt(hex.slice(1), 16); const l = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)); return l > 150 ? '#111' : '#fff'; };
 
 let S = null;   // { g, mode:'bot'|'pnp', human:[bool,bool], step, offCall, holder, last, busy }
-let prefs = Object.assign({ mode: 'bot', mine: 'CHI', opp: 'GB', home: 1, qlen: 900 }, store.get(PREFS, {}));
+let prefs = Object.assign({ mode: 'bot', mine: 'CHI', opp: 'GB', home: 1, qlen: 900, level: 'normal' }, store.get(PREFS, {}));
 
 function toast(t) { const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; $('#toasts').appendChild(d); setTimeout(() => d.remove(), 2200); }
 
@@ -189,6 +189,7 @@ function setup() {
       <div class="seg" id="mode"><button data-v="bot">Vs bot</button><button data-v="pnp">Pass &amp; play</button></div>
       <label class="f" id="l1">${prefs.mode === 'bot' ? 'Your team' : 'Team 1'}</label><select id="mine">${opts(prefs.mine)}</select>
       <label class="f" id="l2">${prefs.mode === 'bot' ? 'Bot team' : 'Team 2'}</label><select id="opp">${opts(prefs.opp)}</select>
+      <div id="lvlRow"${prefs.mode === 'bot' ? '' : ' style="display:none"'}><label class="f">Bot difficulty</label><div class="seg" id="lvl"><button data-v="easy">Easy</button><button data-v="normal">Normal</button></div></div>
       <label class="f">Home team</label><div class="seg" id="home"><button data-v="0">Team 1</button><button data-v="1">Team 2</button></div>
       <label class="f">Quarter length</label><div class="seg" id="ql"><button data-v="900">15 min</button><button data-v="600">10 min</button><button data-v="300">5 min</button></div>
       <button class="big" id="go">Kick off</button>
@@ -197,8 +198,8 @@ function setup() {
     ${window.GNReport ? '<button class="ghost" onclick="GNReport.open()">⚑ Report a bug</button>' : ''}
     <p class="small" style="color:#9fbf98;text-align:center;margin-top:16px">Team charts built from real ${T('CHI').season} NFL play-by-play (nflverse).<br>Fan-made, not affiliated with the publishers of the original game.</p>`;
   const seg = (id, key, cb) => { const el = $('#' + id); const sync = () => el.querySelectorAll('button').forEach(b => b.classList.toggle('on', String(prefs[key]) === b.dataset.v)); el.onclick = e => { const b = e.target.closest('button'); if (!b) return; prefs[key] = isNaN(+b.dataset.v) ? b.dataset.v : +b.dataset.v; sync(); store.set(PREFS, prefs); cb && cb(); }; sync(); };
-  seg('mode', 'mode', () => { $('#l1').textContent = prefs.mode === 'bot' ? 'Your team' : 'Team 1'; $('#l2').textContent = prefs.mode === 'bot' ? 'Bot team' : 'Team 2'; });
-  seg('home', 'home'); seg('ql', 'qlen');
+  seg('mode', 'mode', () => { $('#lvlRow').style.display = prefs.mode === 'bot' ? '' : 'none'; $('#l1').textContent = prefs.mode === 'bot' ? 'Your team' : 'Team 1'; $('#l2').textContent = prefs.mode === 'bot' ? 'Bot team' : 'Team 2'; });
+  seg('home', 'home'); seg('ql', 'qlen'); seg('lvl', 'level');
   const homeLabels = () => { const bs = $('#home').querySelectorAll('button'); bs[0].textContent = T(prefs.mine).name; bs[1].textContent = T(prefs.opp).name; };
   homeLabels();
   $('#mine').onchange = e => { prefs.mine = e.target.value; store.set(PREFS, prefs); homeLabels(); };
@@ -208,6 +209,7 @@ function setup() {
     // side 0 = visitors, side 1 = home
     const home = prefs.home === 0 ? prefs.mine : prefs.opp, away = prefs.home === 0 ? prefs.opp : prefs.mine;
     const g = PD.newGame({ teams: [away, home], qlen: prefs.qlen });
+    g.botLevel = prefs.level;
     const mineSide = away === prefs.mine ? 0 : 1;
     S = { g, mode: prefs.mode, human: prefs.mode === 'pnp' ? [true, true] : [mineSide === 0, mineSide === 1], step: null, holder: null, last: null };
     const rec = 1 - g.poss;

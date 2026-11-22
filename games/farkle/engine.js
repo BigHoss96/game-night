@@ -191,6 +191,8 @@ function table(opts) {
   return (tables[key] = { V, R, val, canB });
 }
 const BANK_AT = [0, 250, 300, 350, 600, 1500, 1e9];
+// easy = rough rules of thumb, hard = exact expected value, normal = exact most of the time
+const rough = skill => skill === 'casual' || skill === 'easy' || (skill === 'normal' && Math.random() < 0.3);
 function shouldBank(g, tt, rem, skill) {
   const p = g.players[g.turn];
   if (!p.on && tt < g.opts.entry) return false;
@@ -200,7 +202,7 @@ function shouldBank(g, tt, rem, skill) {
   const lead = others.length ? Math.max(...others) : 0;
   if (g.finalRound) return p.score + tt > lead;
   if (p.score + tt >= g.opts.target) return true;
-  if (skill === 'casual') return tt >= BANK_AT[n];
+  if (rough(skill)) return tt >= BANK_AT[n];
   const tb = table(g.opts);
   if (tt >= CAP) return true;
   let roll = tb.R[p.on ? 1 : 0][n][Math.round(tt / STEP)];
@@ -218,7 +220,7 @@ function botPick(g, skill) {
   for (const o of opts) {
     const tt = g.turnPts + o.pts, rem = free.length - o.idx.length;
     const bank = shouldBank(g, tt, rem, skill);
-    let v = skill === 'casual' ? o.pts + rem * 40 + Math.random() * 80 : bank ? tt : tb.val(p.on ? 1 : 0, rem, tt);
+    let v = rough(skill) ? o.pts + rem * 40 + Math.random() * 80 : bank ? tt : tb.val(p.on ? 1 : 0, rem, tt);
     v += 1e-6 * o.pts;
     if (v > bestV) { bestV = v; bestO = { idx: o.idx, bank }; }
   }

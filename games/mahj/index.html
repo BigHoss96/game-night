@@ -433,12 +433,16 @@ function findWin(S,seat,extraT){
   for(const i of INSTS)if(distFor(i,c,j,S.exps[seat])===0)return i;
   return null;
 }
+// Bot difficulty (menu → Play): 'easy' bots sometimes let go of a useful tile and call less often.
+const botLevel=()=>(typeof settings!=='undefined'&&settings.level)||'normal';
 function chooseWorst(hand,exps,live){
-  const {c,j}=countsOf(hand);let best=null;const seen=new Set();
+  const {c,j}=countsOf(hand);const opts=[];const seen=new Set();
   for(const tile of hand){if(tile.t===T_J||seen.has(tile.t))continue;seen.add(tile.t);
-    c[tile.t]--;const p=potential(c,j,exps,live)+Math.random()*1e-9;c[tile.t]++;
-    if(!best||p>best.p)best={p,tile};}
-  return best?best.tile:hand[0];
+    c[tile.t]--;const p=potential(c,j,exps,live)+Math.random()*1e-9;c[tile.t]++;opts.push({p,tile});}
+  if(!opts.length)return hand[0];
+  opts.sort((a,b)=>b.p-a.p);
+  if(botLevel()==='easy'&&opts.length>2&&Math.random()<0.35)return opts[1+Math.floor(Math.random()*2)].tile;
+  return opts[0].tile;
 }
 function botPassChoice(S,seat,n){
   const copy=S.hands[seat].slice();const out=[];const live=liveFor(S,seat);
@@ -457,7 +461,7 @@ function exposureSizes(S,seat,t,live,needHelp){
 function botCallOption(S,seat,t){
   const live=liveFor(S,seat);const {res}=exposureSizes(S,seat,t,live,true);
   if(!res.length)return null;res.sort((a,b)=>a.d-b.d);
-  if(res[0].d>6)return null;return res[0];
+  if(res[0].d>(botLevel()==='easy'?3:6))return null;return res[0];
 }
 function makeExposure(S,seat,tile,size,from){
   const hand=S.hands[seat];const tiles=[tile];
@@ -841,6 +845,7 @@ ${Object.entries(CARDS).map(([id,c])=>`<button class="cardpick ${settings.card==
 <label class="row"><input type="checkbox" ${settings.onlyTargets?'checked':''} onchange="settings.onlyTargets=this.checked;save('mahj-settings',settings)"> Only offer calls that fit the hands I picked (when I’ve picked some)</label>
 <label class="row"><input type="checkbox" ${settings.helper?'checked':''} onchange="settings.helper=this.checked;save('mahj-settings',settings);if(S)renderTarget()"> Helper: star the best-fitting hands on the card and tell me when to switch</label>
 <label class="row"><input type="checkbox" ${settings.fast?'checked':''} onchange="settings.fast=this.checked;save('mahj-settings',settings)"> Fast bots</label>
+<div class="row" style="gap:8px;align-items:center">Bot difficulty: ${['easy','normal'].map(l=>`<button class="cardpick ${(settings.level||'normal')===l?'on':''}" style="width:auto;padding:6px 14px;margin:0" onclick="settings.level='${l}';save('mahj-settings',settings);showMenu()">${l==='easy'?'Easy':'Normal'}</button>`).join('')}</div>
 <button class="wide" onclick="goFull()">Full screen</button>
 <button class="wide" onclick="showRules()">How to play</button>${(location.protocol.startsWith('http') && !window.Capacitor)?'<a class="wide" href="../index.html" style="display:flex;align-items:center;justify-content:center;text-decoration:none">← All games</a>':''}${window.GNReport?'<button class="wide" onclick="closeModal&&closeModal();GNReport.open()">⚑ Report a bug</button>':''}
 <button class="wide" onclick="closeModal();playHand()">Redeal this hand</button>
