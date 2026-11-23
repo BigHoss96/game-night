@@ -22,5 +22,6 @@
   {"date": "2026-11-20T13:13:03Z", "game": "yahtzee", "issue": 30, "text": "Yahtzee: the in-game menu is readable now (it was white text on a cream background)."},
   {"date": "2026-11-20T13:13:03Z", "game": "yahtzee", "issue": 31, "text": "Yahtzee: new layout. The dice sit in one row and spin in place, held dice light up and slide to the left, and the scorecard shows Upper and Lower side by side so it all fits on screen."},
   {"date": "2026-11-23T03:17:15Z", "game": "skipbo", "issue": 34, "text": "Skip-Bo: you can now discard onto a pile that already has cards. Tap a hand card, then tap the pile to stack it there and end your turn."},
-  {"date": "2026-11-23T03:30:02Z", "game": "site", "text": "Uno, Phase 10, Skip-Bo and Doomlings are out of testing and on the main shelf."}
+  {"date": "2026-11-23T03:30:02Z", "game": "site", "text": "Uno, Phase 10, Skip-Bo and Doomlings are out of testing and on the main shelf."},
+  {"date": "2026-11-23T03:30:02Z", "game": "site", "text": "Picking a game you're in the middle of now gives you a choice: Continue jumps straight back in, or New game (tap twice) erases it and starts fresh."}
 ]

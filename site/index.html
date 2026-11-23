@@ -36,8 +36,9 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 /* ---------- bookcase (cube shelving) ---------- */
 .case{min-width:0;background:linear-gradient(#f0e6d6,#e3d5bf);padding:12px;border-radius:6px;
   box-shadow:0 18px 40px rgba(0,0,0,.55),inset 0 0 0 1px rgba(0,0,0,.08);display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.cubby{position:relative;min-width:0;min-height:190px;border-radius:2px;padding:10px 10px 0;display:flex;flex-direction:column;justify-content:flex-end;
+.cubby{position:relative;min-width:0;min-height:190px;border-radius:2px;padding:22px 10px 0;display:flex;flex-direction:column;justify-content:flex-end;
   background:linear-gradient(#2c1d14,#3d2a1d 30%,#4a3424);box-shadow:inset 0 10px 18px rgba(0,0,0,.55),inset 8px 0 14px rgba(0,0,0,.35),inset -8px 0 14px rgba(0,0,0,.35)}
+.cubby.wide{grid-column:1 / -1;min-height:150px}
 .cubby .lbl{position:absolute;left:8px;top:6px;font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,235,205,.35)}
 
 /* box spines (boxes lie flat, stacked; you read the long side) */
@@ -119,6 +120,8 @@ footer a{color:#ffe6a6;font-weight:700;text-decoration:none}
 .details .row{display:flex;gap:8px;margin-top:12px}
 .play{flex:1;display:block;text-align:center;text-decoration:none;font-weight:800;font-size:19px;padding:14px;border-radius:12px;background:#d9482f;color:#fff;box-shadow:0 4px 0 #8f2a1c}
 .play:active{transform:translateY(2px);box-shadow:0 2px 0 #8f2a1c}
+.fresh{padding:14px 14px;border-radius:12px;background:#fff;border:2px solid #d9482f;font-weight:800;color:#b23a24}
+.fresh.sure{background:#b23a24;color:#fff;border-color:#b23a24}
 .back{padding:14px 16px;border-radius:12px;background:#eadcc4;font-weight:800;color:#2a1a10}
 .saved-note{font-size:13px;font-weight:800;color:#1f7a45;margin-top:8px}
 
@@ -157,22 +160,23 @@ const GAMES = [
   { id: 'farkle', name: 'Farkle', bg: 'linear-gradient(90deg,#6b2f17,#3b1d12)', cover: 'radial-gradient(circle at 50% 35%,#8e3d1c,#2e150c 75%)', band: '#f5b83d', players: '2–4',
     tag: 'Bank it or risk it', desc: 'Push-your-luck dice to 10,000. One bad roll and the turn is gone.', meta: '2–4 players · vs bots', save: 'farkle.save.v1' },
   { id: 'mahj', name: 'Mahj', bg: 'linear-gradient(90deg,#1c5a34,#0f3f22)', cover: 'radial-gradient(circle at 50% 35%,#2f8a52,#0d3a26 75%)', band: '#f2e6c9', players: '1 + 3 bots', fs: '21px',
-    tag: 'American mahjong', desc: 'American-style mahjong against three bots, with the Charleston, jokers and a card of hands.', meta: '1 player vs 3 bots', save: 'mahj-scores' },
-  { id: 'doomlings', name: 'Doomlings', dev: true, bg: 'linear-gradient(90deg,#2a2440,#131219)', cover: 'radial-gradient(circle at 50% 35%,#4a3f78,#131219 75%)', band: '#9be15d', players: '2–6',
-    tag: 'In development', desc: 'Evolve traits before three catastrophes end the world. Base game, every card scripted.', meta: '2–6 players · bots or pass-and-play', save: null },
-  { id: 'uno', name: 'Uno', dev: true, bg: 'linear-gradient(90deg,#b31d1d,#7a1010)', band: '#f5c021', players: '2–6',
-    tag: 'In development', desc: 'Match colors and numbers, and shout UNO with one card left. House rules: stacking, draw until you play, 7-0, jump-in.', meta: '2–6 players · bots or pass-and-play', save: 'uno.save.v1' },
-  { id: 'phase10', name: 'Phase 10', dev: true, bg: 'linear-gradient(90deg,#2a4bb0,#13275e)', band: '#ffd23a', players: '2–6',
-    tag: 'In development', desc: 'Ten phases of sets, runs and colors. Lay yours down, hit on others, and finish Phase 10 first.', meta: '2–6 players · bots or pass-and-play', save: 'phase10.save.v1' },
-  { id: 'skipbo', name: 'Skip-Bo', dev: true, bg: 'linear-gradient(90deg,#16808a,#0b4a52)', band: '#f28c28', players: '2–6',
-    tag: 'In development', desc: 'Build piles from 1 to 12 and be first to empty your stockpile.', meta: '2–6 players · bots or pass-and-play', save: 'skipbo.save.v1' },
+    tag: 'American mahjong', desc: 'American-style mahjong against three bots, with the Charleston, jokers and a card of hands.', meta: '1 player vs 3 bots', save: 'mahj-scores', clear: ['mahj-scores', 'mahj-dealer'] },
+  { id: 'doomlings', name: 'Doomlings', bg: 'linear-gradient(90deg,#2a2440,#131219)', cover: 'radial-gradient(circle at 50% 35%,#4a3f78,#131219 75%)', band: '#9be15d', players: '2–6',
+    tag: 'Evolve or die', desc: 'Evolve traits before three catastrophes end the world. Base game, every card scripted.', meta: '2–6 players · bots or pass-and-play', save: null },
+  { id: 'uno', name: 'Uno', bg: 'linear-gradient(90deg,#b31d1d,#7a1010)', band: '#f5c021', players: '2–6',
+    tag: 'Match & shout', desc: 'Match colors and numbers, and shout UNO with one card left. House rules: stacking, draw until you play, 7-0, jump-in.', meta: '2–6 players · bots or pass-and-play', save: 'uno.save.v1' },
+  { id: 'phase10', name: 'Phase 10', bg: 'linear-gradient(90deg,#2a4bb0,#13275e)', band: '#ffd23a', players: '2–6',
+    tag: 'Ten phases', desc: 'Ten phases of sets, runs and colors. Lay yours down, hit on others, and finish Phase 10 first.', meta: '2–6 players · bots or pass-and-play', save: 'phase10.save.v1' },
+  { id: 'skipbo', name: 'Skip-Bo', bg: 'linear-gradient(90deg,#16808a,#0b4a52)', band: '#f28c28', players: '2–6',
+    tag: 'Count up to 12', desc: 'Build piles from 1 to 12 and be first to empty your stockpile.', meta: '2–6 players · bots or pass-and-play', save: 'skipbo.save.v1' },
   { id: 'paydirt', name: 'Paydirt', dev: true, bg: 'linear-gradient(90deg,#2f6b34,#1f3d24)', cover: 'repeating-linear-gradient(90deg,#2f6b34 0 12%,#2a6130 12% 24%)', band: '#e0a526', players: '1–2',
     tag: 'In development', desc: 'Classic dice-and-chart pro football. Call plays against real 2025 team charts.', meta: '1–2 players · vs bot or pass-and-play', save: 'paydirt.save.v1' },
 ];
 const TALLY = { id: 'tally', name: 'Tally', bg: 'linear-gradient(90deg,#e9d98a,#d9c46a)', ink: '#3a2a10', cover: 'repeating-linear-gradient(#fff6a8 0 22px,#9cc3e8 22px 23px)', tag: 'Scorekeeper',
   desc: 'Keep score for real-life game night — any game, any players, who starts each round.', meta: 'Scorekeeper · saved players and rounds', save: null, play: 'Open Tally' };
-const CUBBIES = [ // what sits in each cube of the bookcase, bottom of the stack last
-  { label: 'Cards', items: ['tap4', 'flip7'] },
+const CUBBIES = [ // what sits in each cube of the bookcase, bottom of the stack last (an odd last cube spans the full width)
+  { label: 'Cards', items: ['uno', 'tap4', 'flip7'] },
+  { label: 'More cards', items: ['doomlings', 'skipbo', 'phase10'] },
   { label: 'Dice', items: ['farkle', 'yahtzee'] },
   { label: 'Tiles', items: ['mahj', 'pad'] },
   { label: 'Workshop', items: ['carton'] },
@@ -192,10 +196,10 @@ function spineHtml(g, k) {
 }
 function renderShelf() {
   let k = 0;
-  $('#case').innerHTML = CUBBIES.map(c => `<div class="cubby"><span class="lbl">${c.label}</span>${c.items.map(id => {
+  $('#case').innerHTML = CUBBIES.map((c, ci) => `<div class="cubby${CUBBIES.length % 2 && ci === CUBBIES.length - 1 ? ' wide' : ''}"><span class="lbl">${c.label}</span>${c.items.map(id => {
     k++;
     if (id === 'pad') return `<button class="pad" data-id="tally" aria-label="Tally scorekeeper"><b>Tally</b><small>score pad</small></button>`;
-    if (id === 'carton') return `<button class="carton" id="carton" aria-label="In development games"><span class="m">IN DEVELOPMENT<small>${GAMES.filter(g => g.dev).length} games inside · handle with care</small></span><span class="stk">FRAGILE ↑</span></button>`;
+    if (id === 'carton') return `<button class="carton" id="carton" aria-label="In development games"><span class="m">IN DEVELOPMENT<small>${((n) => n + (n === 1 ? ' game' : ' games'))(GAMES.filter(g => g.dev).length)} inside · handle with care</small></span><span class="stk">FRAGILE ↑</span></button>`;
     return spineHtml(byId(id), k);
   }).join('')}</div>`).join('');
   document.querySelectorAll('#case .spine, #case .pad').forEach(b => b.onclick = () => pullOut(byId(b.dataset.id), b));
@@ -223,7 +227,7 @@ function pullOut(g, fromEl) {
     </div>
     <div class="details"><p>${esc(g.desc)}</p><div class="meta">${esc(g.meta)}</div>
       ${saved ? '<div class="saved-note">● You have a game in progress</div>' : ''}
-      <div class="row"><button class="back">Put back</button><a class="play" href="${g.id}/index.html">${g.play || (saved ? 'Continue' : 'Play')}</a></div></div>`;
+      <div class="row"><button class="back">Put back</button>${saved && !g.play ? '<button class="fresh">New game</button>' : ''}<a class="play" href="${g.id}/index.html${saved && !g.play ? '#continue' : ''}">${g.play || (saved ? 'Continue' : 'Play')}</a></div></div>`;
   document.body.appendChild(st);
   const box = st.querySelector('.box3d'), det = st.querySelector('.details');
   // where the box ends up: centered, a little above middle so the details card fits under it
@@ -243,6 +247,13 @@ function pullOut(g, fromEl) {
   open = { st, box, fromEl, start, pulled, shown };
   const close = () => putBack();
   st.querySelector('.back').onclick = close;
+  // New game: a second tap erases the saved game and opens the game's setup screen
+  const fresh = st.querySelector('.fresh');
+  if (fresh) fresh.onclick = () => {
+    if (!fresh.classList.contains('sure')) { fresh.classList.add('sure'); fresh.textContent = 'Erase it?'; setTimeout(() => { fresh.classList.remove('sure'); fresh.textContent = 'New game'; }, 3500); return; }
+    try { (g.clear || [g.save]).forEach(k => localStorage.removeItem(k)); } catch (e) {}
+    location.href = g.id + '/index.html';
+  };
   st.onclick = e => { if (e.target === st) close(); };
 }
 function putBack() {
