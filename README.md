@@ -8,7 +8,7 @@ Free card and tile games that run entirely in the browser. No accounts, no serve
 | `games/tap4/` | Tap 4: rules engine, UI (`app.js`, `src.html`), simulation tests |
 | `games/mahj/` | Mahj: American-style mahjong vs 3 bots (single file) |
 | `games/tally/` | Tally: scorekeeper for real-life games (single file) |
-| `games/doomlings/` | Doomlings (testing): bundled phone build + smoke test |
+| `games/doomlings/` | Doomlings: bundled phone build + smoke test |
 | `games/paydirt/` | Paydirt (testing): rules engine (`engine.js`), team charts (`teams.js`, built by `tools/make_charts.py` from nflverse play-by-play), UI (`src.html`), simulation tests (`test.js`) |
 | `site/` | Home page, testing area (`testing.html`) and offline support (`sw.js`) |
 | `icons/` | App icons for each game |

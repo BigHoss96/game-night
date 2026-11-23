@@ -41,12 +41,12 @@ const GAMES = [
   { id: 'mahj', name: 'Mahj', fit: { w: 1100, h: 680, max: 1.6 }, color: '#0f3f22', bg: '#0d3a26', build: () => read('games/mahj/index.html') },
   { id: 'tally', name: 'Tally', color: '#f4efe6', bg: '#f4efe6', build: () => read('games/tally/index.html') },
   // testing: true → listed only on testing.html (not the home page), kept out of search engines
-  { id: 'doomlings', name: 'Doomlings', testing: true, color: '#131219', bg: '#131219', build: () => read('games/doomlings/index.html') },
+  { id: 'doomlings', name: 'Doomlings', color: '#131219', bg: '#131219', build: () => read('games/doomlings/index.html') },
   { id: 'yahtzee', name: 'Yahtzee', color: '#14213d', bg: '#14213d', build: () => read('games/yahtzee/src.html').replace('/*DICE3D*/', () => read('shared/dice3d.js')).replace('/*ENGINE*/', () => read('games/yahtzee/engine.js')) },
   { id: 'farkle', name: 'Farkle', color: '#3b1d12', bg: '#3b1d12', build: () => read('games/farkle/src.html').replace('/*DICE3D*/', () => read('shared/dice3d.js')).replace('/*ENGINE*/', () => read('games/farkle/engine.js')) },
-  { id: 'uno', name: 'Uno', testing: true, color: '#7a1010', bg: '#7a1010', build: () => read('games/uno/src.html').replace('/*TABLEKIT*/', () => read('shared/tablekit.js')).replace('/*ENGINE*/', () => read('games/uno/engine.js')) },
-  { id: 'phase10', name: 'Phase 10', testing: true, color: '#13275e', bg: '#13275e', build: () => read('games/phase10/src.html').replace('/*TABLEKIT*/', () => read('shared/tablekit.js')).replace('/*ENGINE*/', () => read('games/phase10/engine.js')) },
-  { id: 'skipbo', name: 'Skip-Bo', testing: true, color: '#0b4a52', bg: '#0b4a52', build: () => read('games/skipbo/src.html').replace('/*TABLEKIT*/', () => read('shared/tablekit.js')).replace('/*ENGINE*/', () => read('games/skipbo/engine.js')) },
+  { id: 'uno', name: 'Uno', color: '#7a1010', bg: '#7a1010', build: () => read('games/uno/src.html').replace('/*TABLEKIT*/', () => read('shared/tablekit.js')).replace('/*ENGINE*/', () => read('games/uno/engine.js')) },
+  { id: 'phase10', name: 'Phase 10', color: '#13275e', bg: '#13275e', build: () => read('games/phase10/src.html').replace('/*TABLEKIT*/', () => read('shared/tablekit.js')).replace('/*ENGINE*/', () => read('games/phase10/engine.js')) },
+  { id: 'skipbo', name: 'Skip-Bo', color: '#0b4a52', bg: '#0b4a52', build: () => read('games/skipbo/src.html').replace('/*TABLEKIT*/', () => read('shared/tablekit.js')).replace('/*ENGINE*/', () => read('games/skipbo/engine.js')) },
   { id: 'paydirt', name: 'Paydirt', testing: true, color: '#1f3d24', bg: '#1f3d24', build: () => read('games/paydirt/src.html').replace('/*TEAMS*/', () => read('games/paydirt/teams.js')).replace('/*ENGINE*/', () => read('games/paydirt/engine.js')) },
 ];
 const GAME_NAMES = Object.fromEntries(GAMES.map(g => [g.id, g.name]).concat([['site', 'Home page']]));
@@ -76,7 +76,9 @@ for (const g of GAMES) {
   const head = (g.testing ? NOINDEX : '') + layoutTags(g) + reportTags(g.id, '../') + `<link rel="manifest" href="manifest.webmanifest">\n<link rel="icon" href="../icons/${g.id}-192.png">\n<link rel="apple-touch-icon" href="../icons/${g.id}-180.png">\n`;
   html = html.replace(/<\/title>/i, m => m + '\n' + head);
   html = html.replace(/<\/head>/i, m => desktopCss(g) + m);   // after the game's own styles so desktop rules win
-  const sw = `<script>if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('../sw.js',{scope:'../'}).catch(()=>{});</script>\n`;
+  // "Continue" on the home page links to <game>/index.html#continue: press the game's own resume button
+  const cont = `<script>(function(){if(location.hash!=='#continue')return;history.replaceState(null,'',location.pathname+location.search);var n=0;(function go(){var b=document.querySelector('#tkResume,#resume,#resumeBtn');if(b)b.click();else if(++n<40)setTimeout(go,50);})();})();</script>\n`;
+  const sw = cont + `<script>if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('../sw.js',{scope:'../'}).catch(()=>{});</script>\n`;
   const i = html.lastIndexOf('</body>');
   html = html.slice(0, i) + sw + html.slice(i);
   fs.writeFileSync(path.join(dir, 'index.html'), html);
