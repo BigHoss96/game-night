@@ -22,6 +22,11 @@ p.hand.push({ id: 905, v: 12 }); S.play(g, me, { from: 'hand', id: 905 }, 1); as
 g = S.newGame(P(2), {}, rng); const q = g.players[g.turn]; q.hand = [{ id: 950, v: 1 }];
 S.play(g, g.turn, { from: 'hand', id: 950 }, 0); assert.strictEqual(q.hand.length, 5);
 
+// discarding onto a pile that already has cards stacks on top (#34)
+g = S.newGame(P(2), {}, rng); { const pi = g.turn, d = g.players[pi];
+  d.discards[1] = [{ id: 960, v: 9 }]; const id = d.hand[0].id;
+  S.discard(g, pi, id, 1); assert.strictEqual(d.discards[1].length, 2); assert.strictEqual(d.discards[1][1].id, id); }
+
 // self-play
 const N = +(process.env.SB_GAMES || 150);
 const wins = { easy: 0, normal: 0, hard: 0 }; let turns = 0;

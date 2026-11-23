@@ -131,6 +131,8 @@ function render(msg) {
     const s = el.dataset.src;
     const src = s === 'stock' ? { from: 'stock' } : s[0] === 'd' ? { from: 'discard', k: +s.slice(1) } : { from: 'hand', id: +s.slice(1) };
     if (s[0] !== 'h' && !showHand) return;
+    // with a hand card picked, tapping a discard pile's top card stacks onto that pile (ends the turn)
+    if (src.from === 'discard' && picked && picked.from === 'hand') return humanDiscard(src.k);
     picked = picked && JSON.stringify(picked) === JSON.stringify(src) ? null : src; render();
   });
   document.querySelectorAll('.bp').forEach(el => el.onclick = () => { if (!picked) return render('Pick a card first — stock, a discard pile top, or your hand'); humanPlay(+el.dataset.b); });
