@@ -38,6 +38,11 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .dps{display:flex;gap:6px}
 .dp{position:relative;width:var(--cw);min-height:calc(var(--cw) * 1.4)}
 .dp .card{position:absolute;left:0}
+.dp .cnt,.opp .dpo b{position:absolute;z-index:8;background:#ffd23a;color:#10282b;font-weight:900;border-radius:999px;pointer-events:none}
+.dp .cnt{right:-8px;top:-8px;font-size:12px;padding:1px 6px}
+.dp .more{position:absolute;left:0;top:0;width:var(--cw);height:14px;border-radius:6px 6px 0 0;background:rgba(255,255,255,.22);font-size:9px;font-weight:900;line-height:14px;text-align:center;color:#fff}
+.opp .dpo{position:relative}
+.opp .dpo b{right:-5px;top:-6px;font-size:10px;padding:0 4px}
 .dp.can{outline:3px dashed #ffd23a;outline-offset:3px;border-radius:8px}
 .dp .empty{position:absolute;left:0;top:0}
 .hand{display:flex;justify-content:center;gap:6px;margin-top:12px;--cw:56px}
@@ -69,10 +74,24 @@ const SAVE = 'skipbo.save.v1', PREFS = 'skipbo.prefs.v1';
 let G = null, busy = false, viewer = 0, lastShown = -1, picked = null, speed = 1;
 
 const ccol = v => v <= 4 ? 'var(--c1)' : v <= 8 ? 'var(--c2)' : 'var(--c3)';
-function cardHtml(c, cls, attrs) {
-  if (!c) return `<div class="card back ${cls || ''}" ${attrs || ''}>SB</div>`;
-  if (SB.isSB(c)) return `<div class="card SB ${cls || ''}" ${attrs || ''}>SB${c.as ? `<small>= ${c.as}</small>` : ''}</div>`;
-  return `<div class="card ${cls || ''}" style="--cc:${ccol(c.v)}" ${attrs || ''}><span class="k">${c.v}</span>${c.v}</div>`;
+// extra `style` is merged into the card's single style attribute (a second style="" would be ignored by the browser)
+function cardHtml(c, cls, attrs, style) {
+  const st = s => s ? ` style="${s}"` : '';
+  if (!c) return `<div class="card back ${cls || ''}"${st(style)} ${attrs || ''}>SB</div>`;
+  if (SB.isSB(c)) return `<div class="card SB ${cls || ''}"${st(style)} ${attrs || ''}>SB${c.as ? `<small>= ${c.as}</small>` : ''}</div>`;
+  return `<div class="card ${cls || ''}"${st(`--cc:${ccol(c.v)}` + (style ? ';' + style : ''))} ${attrs || ''}><span class="k">${c.v}</span>${c.v}</div>`;
+}
+// your discard pile: fan the last FAN cards so each corner number shows, "+N more" for deeper piles, count badge at 2+
+const FAN = 6, STEP = 'var(--cw) * .32', MORE = 16;
+function dpHtml(d, k, cls, selTop) {
+  const shown = d.slice(-FAN), hidden = d.length - shown.length, off = hidden ? MORE : 0;
+  const h = `calc(var(--cw) * 1.4 + ${Math.max(0, shown.length - 1)} * ${STEP} + ${off}px)`;
+  const cards = shown.map((c, j, arr) => cardHtml(c, j === arr.length - 1 && selTop ? 'sel' : '', j === arr.length - 1 ? `data-src="d${k}"` : '', `top:calc(${j} * ${STEP} + ${off}px)`)).join('');
+  return `<div class="dp ${cls || ''}" data-dp="${k}" style="height:${h}">${d.length ? cards : '<div class="empty"></div>'}${hidden ? `<div class="more">+${hidden} more</div>` : ''}${d.length > 1 ? `<span class="cnt">${d.length}</span>` : ''}</div>`;
+}
+// an opponent's discard pile: top card plus a count badge at 2+
+function oppDpHtml(d) {
+  return d.length ? `<div class="dpo">${cardHtml(d[d.length - 1])}${d.length > 1 ? `<b>${d.length}</b>` : ''}</div>` : '<div class="empty"></div>';
 }
 
 // ---------- setup ----------
@@ -113,13 +132,13 @@ function render(msg) {
     <div class="top"><span>Skip-Bo</span><span class="r">${g.deck.length} in deck</span><button id="menu" aria-label="Menu">⋯</button></div>
     <div class="opps">${g.players.map((q, i) => i === me ? '' : `<div class="opp ${g.turn === i ? 'on' : ''}" data-seat="${i}">
       <div class="nm"><span>${esc(q.name)}</span><small>${q.hand.length} in hand</small></div>
-      <div class="row"><div class="stk">${cardHtml(SB.stockTop(q))}<b>${q.stock.length}</b></div>${q.discards.map(d => d.length ? cardHtml(top(d)) : '<div class="empty"></div>').join('')}</div></div>`).join('')}</div>
+      <div class="row"><div class="stk">${cardHtml(SB.stockTop(q))}<b>${q.stock.length}</b></div>${q.discards.map(oppDpHtml).join('')}</div></div>`).join('')}</div>
     <div class="builds">${g.build.map((b, k) => `<div class="bp ${pc && myTurn && SB.fits(g, pc, k) ? 'can' : ''}" data-b="${k}">${b.length ? cardHtml(top(b)) : '<div class="empty">1</div>'}<div class="nx">${b.length < 12 ? 'next ' + (b.length + 1) : ''}</div></div>`).join('')}</div>
     <div class="status">${msg || statusText()}</div>
     <div class="mine"><div class="mlbl">${esc(nameOf(me))} · ${p.stock.length} left in stock</div>
       <div class="area">
         <div class="mstock">${cardHtml(SB.stockTop(p), picked && picked.from === 'stock' ? 'sel' : '', 'data-src="stock"')}<span class="cnt">${p.stock.length}</span><div class="lbl">stock</div></div>
-        <div><div class="dps">${p.discards.map((d, k) => `<div class="dp ${pc && myTurn && picked.from === 'hand' ? 'can' : ''}" data-dp="${k}" style="height:calc(var(--cw) * 1.4 + ${Math.max(0, Math.min(d.length, 6) - 1) * 14}px)">${d.length ? d.slice(-6).map((c, j, arr) => cardHtml(c, j === arr.length - 1 && picked && picked.from === 'discard' && picked.k === k ? 'sel' : '', `style="top:${j * 14}px" ${j === arr.length - 1 ? `data-src="d${k}"` : ''}`)).join('') : '<div class="empty"></div>'}</div>`).join('')}</div><div class="lbl">your discard piles</div></div>
+        <div><div class="dps">${p.discards.map((d, k) => dpHtml(d, k, pc && myTurn && picked.from === 'hand' ? 'can' : '', picked && picked.from === 'discard' && picked.k === k)).join('')}</div><div class="lbl">your discard piles</div></div>
       </div>
       <div class="hand" id="hand">${showHand ? p.hand.map(c => cardHtml(c, picked && picked.from === 'hand' && picked.id === c.id ? 'sel' : '', `data-src="h${c.id}"`)).join('') : p.hand.map(() => cardHtml(null)).join('')}</div>
       ${myTurn && !p.hand.length ? '<div class="acts"><button class="btn" id="pass">Pass</button></div>' : ''}
