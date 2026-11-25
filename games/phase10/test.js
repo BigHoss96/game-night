@@ -52,3 +52,19 @@ for (let n = 0; n < N; n++) {
 }
 console.log(`phase10: ${N} games, ${(rounds / N + 1).toFixed(1)} rounds/game, wins by level ${JSON.stringify(wins)}`);
 assert(wins.hard + wins.normal > wins.easy * 1.5, 'smarter bots should win more');
+
+// #36: the table fits the phone screen — #game is locked to the visible height (dvh), never min-height:100vh,
+// and the scrolling areas can shrink (min-height:0) instead of pushing the page taller. Same for Uno and Skip-Bo.
+{
+  const fs = require('fs'), path = require('path');
+  for (const id of ['phase10', 'uno', 'skipbo']) {
+    const css = fs.readFileSync(path.join(__dirname, '..', id, 'src.html'), 'utf8').split('</style>')[0];
+    const rule = (css.match(/(^|\n)#game\{[^}]*\}/) || [''])[0];
+    assert(/height:100dvh/.test(rule) && !/min-height:100vh/.test(rule), `${id}: #game must be locked to 100dvh`);
+    assert(/#game\[hidden\][^{]*\{display:none\}/.test(css), `${id}: hidden #game must not sit under the setup screen`);
+    assert(!/(^|\n)body\{padding:env\(safe-area/.test(css), `${id}: safe-area padding belongs inside #game, not on body`);
+  }
+  const p10 = fs.readFileSync(path.join(__dirname, 'src.html'), 'utf8');
+  assert(/#game>\.board\{[^}]*min-height:0[^}]*overflow-y:auto/.test(p10), 'phase10: laid phases scroll inside the board');
+}
+console.log('phase10: layout checks ok');

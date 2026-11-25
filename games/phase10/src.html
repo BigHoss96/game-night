@@ -10,26 +10,30 @@
   --R:#e23b2e;--B:#2e6fd8;--G:#2fa35a;--Y:#e9a810;--cw:50px}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#fff;background:radial-gradient(ellipse at 50% 20%,#2a4bb0,#0f1f4d 75%) fixed}
-body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+#setup{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
 button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .tk-logo{color:#ffd23a;text-shadow:0 4px 0 #0b1636,0 10px 20px rgba(0,0,0,.4)}
 .tk-tag{color:#c9d4ff!important}
-#game{max-width:680px;margin:0 auto;padding:8px 8px 0;min-height:100vh;display:flex;flex-direction:column}
+/* the table is locked to the screen (dvh = the visible height on phones, address bar included); only the board scrolls (the page never does) */
+#game{max-width:680px;margin:0 auto;padding:calc(8px + env(safe-area-inset-top)) 8px 0;height:100vh;height:100dvh;overflow-x:hidden;overflow-y:auto;display:flex;flex-direction:column}
+#game[hidden],#setup[hidden]{display:none}
+#game>*{flex:none}
 .top{display:flex;justify-content:space-between;align-items:center;font-weight:800}
 .top .r{color:#c9d4ff;font-size:13px}.top button{font-size:24px;padding:0 10px;font-weight:900}
 .myphase{background:#ffd23a;color:#141a33;border-radius:12px;padding:6px 10px;margin:6px 0;font-weight:900;font-size:14px;display:flex;justify-content:space-between;gap:8px}
 .myphase small{font-weight:700;opacity:.75}
 .opps{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:4px 0}
-.opp{min-width:84px;flex:0 1 120px;background:rgba(0,0,0,.25);border-radius:12px;padding:5px 8px;text-align:center;border:2px solid transparent}
+.opp{min-width:84px;flex:0 1 104px;background:rgba(0,0,0,.25);border-radius:12px;padding:5px 8px;text-align:center;border:2px solid transparent}
 .opp.on{border-color:#ffd23a}
 .opp .nm{font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .opp .ph{font-size:12px;color:#ffd23a;font-weight:800}.opp .ct{font-size:11px;color:#c9d4ff}
 .opp .sk{font-size:10px;background:#e23b2e;border-radius:999px;padding:1px 6px;font-weight:800}
-.board{flex:1;display:flex;flex-direction:column;gap:6px;margin:6px 0;overflow:auto}
+#game>.board{flex:1 1 0;min-height:0;display:flex;flex-direction:column;gap:6px;margin:6px 0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.board>*{flex:none}
 .lrow{background:rgba(255,255,255,.07);border-radius:12px;padding:6px}
 .lrow .who{font-size:12px;font-weight:800;color:#c9d4ff;margin-bottom:4px}
 .groups{display:flex;gap:8px;flex-wrap:wrap}
-.grp{display:flex;align-items:center;gap:0;padding:4px 6px 4px 4px;border-radius:10px;background:rgba(0,0,0,.22);border:2px dashed transparent;--cw:30px}
+.grp{display:flex;align-items:center;gap:0;padding:4px 6px 4px 4px;border-radius:10px;background:rgba(0,0,0,.22);border:2px dashed transparent;--cw:26px}
 .grp.can{border-color:#ffd23a;cursor:pointer;background:rgba(255,210,58,.15)}
 .grp .card{margin-left:-14px}.grp .card:first-child{margin-left:0}
 .grp .gl{font-size:11px;font-weight:800;margin-left:6px;color:#c9d4ff;white-space:nowrap}
@@ -43,7 +47,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.35)}
 .handwrap{padding:10px 4px calc(12px + env(safe-area-inset-bottom));background:rgba(0,0,0,.25);border-radius:18px 18px 0 0;margin:0 -8px}
 .handlbl{text-align:center;font-size:12px;font-weight:800;color:#c9d4ff}
-.hand{display:flex;flex-wrap:wrap;justify-content:center;gap:5px;padding:12px 6px 0}
+.hand{display:flex;flex-wrap:wrap;justify-content:center;gap:5px;padding:12px 6px 0;--cw:min(50px,calc((100vw - 40px) / 7))}
 .hand .card{transition:transform .12s}
 .hand .card.sel{transform:translateY(-12px);box-shadow:0 0 0 3px #ffd23a,0 6px 12px rgba(0,0,0,.45)}
 /* cards */
@@ -54,10 +58,11 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .card.S .f{background:#141a33;font-size:calc(var(--cw) * .22);letter-spacing:.04em}
 .card.back{background:#141a33;border:2px solid #fff}.card.back .f{background:repeating-linear-gradient(45deg,#203a8a 0 6px,#13275e 6px 12px);font-size:calc(var(--cw) * .2);color:#ffd23a}
 .card.big{--cw:66px}
+@media (max-height:700px){.card.big{--cw:54px}.myphase{margin:4px 0}.acts{margin:2px 0}.status{margin-top:16px}}
 .pick{display:block;width:100%;text-align:left;padding:12px;border-radius:12px;background:rgba(0,0,0,.06);margin-bottom:6px;font-weight:800}
 .scores{width:100%;border-collapse:collapse;font-size:15px}.scores td,.scores th{padding:6px 4px;border-bottom:1px solid var(--tk-line);text-align:left}.scores td:last-child,.scores th:last-child{text-align:right}
 .phases li{margin:2px 0}
-html.gn-desktop{--cw:62px}html.gn-desktop #game{max-width:1000px}html.gn-desktop .grp{--cw:38px}html.gn-desktop .card.big{--cw:84px}
+html.gn-desktop{--cw:62px}html.gn-desktop .hand{--cw:62px}html.gn-desktop #game{max-width:1000px}html.gn-desktop .grp{--cw:38px}html.gn-desktop .card.big{--cw:84px}
 </style>
 </head>
 <body>

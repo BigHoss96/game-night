@@ -24,5 +24,8 @@
   {"date": "2026-11-23T03:17:15Z", "game": "skipbo", "issue": 34, "text": "Skip-Bo: you can now discard onto a pile that already has cards. Tap a hand card, then tap the pile to stack it there and end your turn."},
   {"date": "2026-11-23T03:30:02Z", "game": "site", "text": "Uno, Phase 10, Skip-Bo and Doomlings are out of testing and on the main shelf."},
   {"date": "2026-11-23T03:30:02Z", "game": "site", "text": "Picking a game you're in the middle of now gives you a choice: Continue jumps straight back in, or New game (tap twice) erases it and starts fresh."},
-  {"date": "2026-11-24T03:15:25Z", "game": "skipbo", "issue": 35, "text": "Skip-Bo: your discard piles now fan out so you can see the cards underneath, and every discard pile shows how many cards it holds."}
+  {"date": "2026-11-24T03:15:25Z", "game": "skipbo", "issue": 35, "text": "Skip-Bo: your discard piles now fan out so you can see the cards underneath, and every discard pile shows how many cards it holds."},
+  {"date": "2026-11-25T03:17:26Z", "game": "phase10", "issue": 36, "text": "Phase 10: the table now fits your phone screen without scrolling. Laid-down phases scroll in their own area and your hand always stays in view."},
+  {"date": "2026-11-25T03:17:26Z", "game": "uno", "issue": 36, "text": "Uno: the table now stays fitted to your phone screen, with no extra scrolling below the game."},
+  {"date": "2026-11-25T03:17:26Z", "game": "skipbo", "issue": 36, "text": "Skip-Bo: the table now fits smaller phone screens without scrolling, so your hand is always in view."}
 ]
