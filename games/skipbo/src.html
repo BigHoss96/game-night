@@ -234,7 +234,7 @@ function gameOver() {
     ${g.players.map(p => p).sort((a, b) => a.stock.length - b.stock.length).map(p => `<div class="tk-rank"><span>${esc(p.name)}</span><span>${p.stock.length} left</span></div>`).join('')}
     <button class="tk-big" id="nx">Play again</button><button class="tk-ghost" id="home">Main menu</button>`, s => {
     s.querySelector('.tk-x').remove(); s.onclick = null;
-    s.querySelector('#nx').onclick = () => { s.remove(); const ps = TK.nameBots(g.players.map(p => ({ name: p.name, bot: p.bot, level: p.level }))); G = SB.newGame(ps, g.opts); G.speed = g.speed; start(); };
+    s.querySelector('#nx').onclick = () => { s.remove(); const ps = g.players.map(p => ({ name: p.name, bot: p.bot, level: p.level })); /* same table, same bot names */ G = SB.newGame(ps, g.opts); G.speed = g.speed; start(); };
     s.querySelector('#home').onclick = () => { s.remove(); setup(); };
   }), 1300);
 }

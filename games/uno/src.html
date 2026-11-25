@@ -323,7 +323,7 @@ function roundOver() {
     s.querySelector('.tk-x').remove(); s.onclick = null;
     s.querySelector('#nx').onclick = () => {
       s.remove();
-      if (g.over) { const ps = TK.nameBots(g.players.map(p => ({ name: p.name, bot: p.bot, level: p.level }))); G = UNO.newGame(ps, g.opts); G.speed = g.speed; return start(); }
+      if (g.over) { const ps = g.players.map(p => ({ name: p.name, bot: p.bot, level: p.level })); /* same table, same bot names */ G = UNO.newGame(ps, g.opts); G.speed = g.speed; return start(); }
       UNO.nextRound(g); lastShown = pnp() ? -1 : viewer; after();
     };
     if (s.querySelector('#home')) s.querySelector('#home').onclick = () => { s.remove(); store.del(SAVE); setup(); };

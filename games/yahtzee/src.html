@@ -324,7 +324,7 @@ function finish() {
   setTimeout(() => sheet(`<h2>Final score</h2>${ranks.map((r, i) => `<div class="rank"><span>${i + 1}. ${esc(r.name)}</span><span>${r.t}</span></div>`).join('')}
     ${newBest ? `<p style="font-weight:800;color:var(--green)">New personal best!</p>` : best ? `<p class="small">Your best: ${Math.max(best, me ? me.t : 0)}</p>` : ''}
     <button class="big" id="again">Play again</button><button class="ghost" id="home">Main menu</button>`, s => {
-    s.querySelector('#again').onclick = () => { s.remove(); const ps = freshBots(G.players.map(p => ({ name: p.name, bot: p.bot, skill: p.skill }))); G = YZ.newGame(ps); save(); startGame(); };
+    s.querySelector('#again').onclick = () => { s.remove(); const ps = G.players.map(p => ({ name: p.name, bot: p.bot, skill: p.skill })); /* same table, same bot names */ G = YZ.newGame(ps); save(); startGame(); };
     s.querySelector('#home').onclick = () => { s.remove(); setup(); };
   }), won ? 1500 : 500);
 }

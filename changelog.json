@@ -27,5 +27,6 @@
   {"date": "2026-11-24T03:15:25Z", "game": "skipbo", "issue": 35, "text": "Skip-Bo: your discard piles now fan out so you can see the cards underneath, and every discard pile shows how many cards it holds."},
   {"date": "2026-11-25T03:17:26Z", "game": "phase10", "issue": 36, "text": "Phase 10: the table now fits your phone screen without scrolling. Laid-down phases scroll in their own area and your hand always stays in view."},
   {"date": "2026-11-25T03:17:26Z", "game": "uno", "issue": 36, "text": "Uno: the table now stays fitted to your phone screen, with no extra scrolling below the game."},
-  {"date": "2026-11-25T03:17:26Z", "game": "skipbo", "issue": 36, "text": "Skip-Bo: the table now fits smaller phone screens without scrolling, so your hand is always in view."}
+  {"date": "2026-11-25T03:17:26Z", "game": "skipbo", "issue": 36, "text": "Skip-Bo: the table now fits smaller phone screens without scrolling, so your hand is always in view."},
+  {"date": "2026-11-25T03:18:12Z", "game": "flip7", "issue": 37, "text": "Flip 7: Rematch keeps the same bot opponents instead of giving them new names. (Play again in Yahtzee, Farkle, Uno, Phase 10 and Skip-Bo works the same way now.)"}
 ]

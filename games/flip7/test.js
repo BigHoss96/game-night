@@ -88,3 +88,19 @@ const stats = { games: 0, rounds: 0, flip7: 0, busts: 0, saves: 0, freezes: 0, f
   assert.deepStrictEqual(n([{ name: ' Rob ', kind: 'human' }, { name: '', kind: 'bot' }]), ['Rob', 'Bot 2']);
   assert.deepStrictEqual(n([{ name: '', kind: 'human' }, { name: '', kind: 'human' }]), ['Player 1', 'Player 2']);
 }
+
+// #37: Rematch keeps the same table — bot names, kinds and levels don't change
+{
+  const seats = [{ name: 'Rob', kind: 'human' }, { name: 'Iris', kind: 'bot', level: 'normal' }, { name: 'Mabel', kind: 'bot', level: 'hard' }];
+  const g = new F.Game(seats, { target: 50 });
+  const again = F.rematchSeats(g.players);
+  assert.deepStrictEqual(again, [{ name: 'Rob', kind: 'human', level: 'normal' }, { name: 'Iris', kind: 'bot', level: 'normal' }, { name: 'Mabel', kind: 'bot', level: 'hard' }]);
+  assert.deepStrictEqual(new F.Game(again, { target: 50 }).players.map(p => p.name), ['Rob', 'Iris', 'Mabel']);
+  // the Rematch / Play again buttons in every game must not re-roll bot names
+  const fs = require('fs'), path = require('path');
+  const src = id => fs.readFileSync(path.join(__dirname, '..', id, 'src.html'), 'utf8');
+  assert(/#againB'\)\.onclick = \(\) => \{[^\n]*Flip7\.rematchSeats\(G\.players\)/.test(src('flip7')) && !/#againB[^\n]*freshBots/.test(src('flip7')), 'flip7 rematch keeps names');
+  for (const id of ['yahtzee', 'farkle']) assert(!/#again'\)\.onclick[^\n]*freshBots/.test(src(id)), `${id}: Play again keeps bot names`);
+  for (const id of ['uno', 'phase10', 'skipbo']) assert(!/g\.over[^\n]*nameBots|#nx[^\n]*nameBots/.test(src(id)), `${id}: Play again keeps bot names`);
+  console.log('flip7: rematch keeps bot names');
+}

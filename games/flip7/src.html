@@ -361,7 +361,7 @@ function renderSetup() {
   const rb = $('#resumeBtn'); if (rb) rb.onclick = () => resumeGame(save);
 }
 function pickBotName() { return ''; }   // bots are named fresh at the start of each game
-// Bots get fresh random names every game (shared/botnames.js, added to every page by the site build)
+// Bots get fresh random names for each new game from setup (shared/botnames.js, added to every page by the site build). Rematch keeps them.
 const freshBots = seats => {
   const n = seats.filter(s => s.kind === 'bot').length, humans = seats.filter(s => s.kind !== 'bot').map(s => s.name);
   const names = window.GNBotNames ? GNBotNames.pick(n, humans) : Array.from({ length: n }, (_, i) => 'Bot ' + (i + 1));
@@ -491,7 +491,7 @@ function gameOver(w) {
       <div class="rows">${sorted.map((p, i) => `<div class="row ${i === 0 ? 'lead' : ''}"><div class="pn">${i + 1}. ${esc(p.name)}</div><span></span><div class="tot">${p.total}</div></div>`).join('')}</div>
       <button class="big" id="againB">Rematch</button>
       <div class="btnrow"><button class="ghost" id="setupB">Change players</button></div>`, false);
-    $('#againB').onclick = () => { closeSheet(); done(); const seats = freshBots(G.players.map(p => ({ name: p.name, kind: p.kind, level: p.level }))); startGame(seats); };
+    $('#againB').onclick = () => { closeSheet(); done(); startGame(Flip7.rematchSeats(G.players)); /* same table, same bot names */ };
     $('#setupB').onclick = () => { done(); quitToSetup(); };
   });
 }

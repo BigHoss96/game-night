@@ -336,6 +336,12 @@ const Flip7 = (() => {
       (s.kind === 'bot' ? 'Bot ' + (i + 1) : i === first && humans === 1 ? 'You' : 'Player ' + (i + 1)));
   }
 
-  return { Game, Bot, buildDeck, seatNames, roundScore, bustOdds, cardCount, NUM, MOD, ACT };
+  // Seats for a Rematch: the same table plays again, so every player keeps their name, kind and bot level.
+  // (Bots only get fresh names for a brand-new game from the setup screen.)
+  function rematchSeats(players) {
+    return players.map(p => ({ name: p.name, kind: p.kind, level: p.level }));
+  }
+
+  return { Game, Bot, buildDeck, seatNames, rematchSeats, roundScore, bustOdds, cardCount, NUM, MOD, ACT };
 })();
 if (typeof module !== 'undefined') module.exports = Flip7;
