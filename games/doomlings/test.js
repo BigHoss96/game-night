@@ -171,6 +171,51 @@ const peaceCheck = vm.runInContext(`(function (cards, ageName) {
 console.log('Doomlings: Age of Peace ignores actions and offers no stop-the-action reactions');
 
 // ---------------------------------------------------------------------------
+// Regression (#41): reactions are for other people's plays. A plays a trait;
+// whatever A holds must not pop up a "respond?" for A's own card (Leaves is the
+// exception: it is played *with* your own green trait).
+// ---------------------------------------------------------------------------
+const reactCheck = vm.runInContext(`(function (cards, played, aHand, bHand) {
+  resetUids();
+  const g = dealGame(cards, { names: ['A', 'B'], seed: 5 });
+  const take = (name) => {
+    const all = [g.traitDeck, g.discard, ...g.players.map((p) => p.hand)];
+    for (const pile of all) {
+      const i = pile.findIndex((c) => c.name === name);
+      if (i >= 0) return pile.splice(i, 1)[0];
+    }
+    throw new Error('card not found: ' + name);
+  };
+  g.eras[0].push(g.ageDeck.find((c) => c.name.toLowerCase() === 'flourish') ||
+    { ...cards.find((c) => c.name.toLowerCase() === 'flourish'), uid: 'forced-age' });
+  g.phase = 'turn'; g.activeSeat = 0; g.playsLeft = 1;
+  const [a, b] = g.players;
+  a.hand = [take(played), ...aHand.map(take)];
+  b.hand = bHand.map(take);
+  const card = a.hand[0];
+  const asked = [];
+  let r = playTrait(g, card.uid, EFFECTS);
+  while (!r.done) { asked.push(r.request); r = answer(g, r.request.kind === 'reaction' ? null : undefined); }
+  const re = asked.filter((q) => q.kind === 'reaction');
+  return JSON.stringify({ playedUid: card.uid, reactions: re.map((q) => ({ to: q.playerId, opts: q.options.map((o) => o.name), cardUid: q.event.cardUid })) });
+})`, ctx);
+const reactRun = (...a) => JSON.parse(reactCheck(...a));
+{
+  const own = reactRun(cards, 'INTROSPECTIVE', ['AUTOMIMICRY', 'CHROMATOPHORES', 'SELF-AWARENESS'], []);
+  assert.deepStrictEqual(own.reactions, [], 'A was asked to react to their own action');
+  const opp = reactRun(cards, 'INTROSPECTIVE', [], ['AUTOMIMICRY', 'SELF-AWARENESS']);
+  assert.strictEqual(opp.reactions.length, 1, 'control: B should be offered a reaction to A\'s action');
+  assert.strictEqual(opp.reactions[0].to, 1);
+  assert.deepStrictEqual(opp.reactions[0].opts.sort(), ['AUTOMIMICRY', 'SELF-AWARENESS']);
+  // Leaves still answers your own green trait (pick one with no on-play effect)
+  const green = cards.find((c) => c.card_type === 'Trait' && /green/i.test(c.color || '') && c.name !== 'LEAVES' &&
+    !/play when|action/i.test(c.subtype || '') && !vm.runInContext(`(EFFECTS[norm(${JSON.stringify(c.name)})] || {}).onPlay`, ctx));
+  const leaves = reactRun(cards, green.name, ['LEAVES', 'AUTOMIMICRY'], []);
+  assert.deepStrictEqual(leaves.reactions.map((q) => [q.to, q.opts]), [[0, ['LEAVES']]], `Leaves should still be offered on your own green trait (${green.name})`);
+}
+console.log('Doomlings: no reaction prompts on your own plays (Leaves still works)');
+
+// ---------------------------------------------------------------------------
 // Regression (#7): Venomous is "Play 1 more trait. THEN move Venomous". It
 // moves only after that extra trait is played, and Lonely Age ("Cannot play
 // more than 1 trait on your turn") blocks the extra play, so it stays put.

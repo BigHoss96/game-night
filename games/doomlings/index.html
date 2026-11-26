@@ -2882,14 +2882,16 @@ const EFFECTS = {
   "automimicry": {
     reactive: {
       window: "traitPlayed",
-      eligible: (g, holder, ev) => Boolean(ev.isAction),
+      // Only someone else's action: you're never asked to stop your own (#41).
+      eligible: (g, holder, ev) => Boolean(ev.isAction) && Boolean(ev.actor) && ev.actor.id !== holder.id,
       *respond(ctx, ev) { ev.cancelled = true; },
     },
   },
   "chromatophores": {
     reactive: {
       window: "traitPlayed",
-      eligible: (g, holder, ev) => Boolean(ev.isAction),
+      // Only someone else's action: you're never asked to stop your own (#41).
+      eligible: (g, holder, ev) => Boolean(ev.isAction) && Boolean(ev.actor) && ev.actor.id !== holder.id,
       *respond(ctx, ev) { ev.cancelled = true; },
     },
   },
@@ -2915,6 +2917,10 @@ const EFFECTS = {
   "self-awareness": {
     reactive: {
       window: ["traitPlayed", "afterStabilize"],
+      // No pop-up on every card you play yourself (#41): on your own turn you
+      // still get it in the afterStabilize window, at the end of the turn.
+      eligible: (g, holder, ev) =>
+        ev.type !== "traitPlayed" || (Boolean(ev.actor) && ev.actor.id !== holder.id),
       intoAnyPile: true,
     },
   },
