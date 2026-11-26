@@ -114,6 +114,7 @@
         <label for="gnr-name">Your name <span style="text-transform:none;letter-spacing:0;font-weight:500">(optional)</span></label>
         <input type="text" id="gnr-name" maxlength="40" autocomplete="nickname" placeholder="So we know who to thank">
         <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+        ${GN.turnstile ? '<div class="gnr-ts" style="margin-top:14px;min-height:65px"></div>' : ''}
         ${hasGame ? `<div class="chk"><input type="checkbox" id="gnr-snap" checked><label for="gnr-snap" style="all:unset">Include my current game so it can be replayed (player names included)</label></div>` : ''}
         <div class="note">Reports are posted on this site's public GitHub page, so please don't include private info. Your device and browser type are included automatically.</div>
         <div class="msg" hidden></div>
@@ -127,6 +128,12 @@
     f.querySelector('.no').onclick = close;
     setTimeout(() => what.focus(), 250);
     showKnown(f, what);
+    // Optional Cloudflare Turnstile bot check (report.config.json → turnstileSiteKey)
+    let tsToken = '', tsId = null;
+    if (GN.turnstile) loadTurnstile().then(ts => {
+      const el = f.querySelector('.gnr-ts'); if (!el || !scrim) return;
+      tsId = ts.render(el, { sitekey: GN.turnstile, callback: t => { tsToken = t; }, 'expired-callback': () => { tsToken = ''; }, 'error-callback': () => { tsToken = ''; } });
+    }).catch(() => {});
 
     const show = (kind, html) => { msg.hidden = false; msg.className = 'msg ' + kind; msg.innerHTML = html; };
     f.onsubmit = async e => {
@@ -136,6 +143,10 @@
       try { localStorage.setItem('gn.reporter', nm.value.trim()); } catch (_) {}
       const snapBox = f.querySelector('#gnr-snap');
       const payload = { ...details(snapBox ? snapBox.checked : false), what: text, name: nm.value.trim(), website: f.website.value };
+      if (GN.turnstile) {
+        if (!tsToken) { show('bad', 'One moment — finishing the quick robot check above, then tap Send again.'); return; }
+        payload.turnstile = tsToken;
+      }
       if (!GN.endpoint) { show('bad', 'Bug reports aren’t switched on for this site yet. Please tell the person who sent you the link.'); return; }
       go.disabled = true; go.textContent = 'Sending…';
       try {
@@ -147,9 +158,22 @@
         f.querySelector('.go').onclick = close;
       } catch (err) {
         go.disabled = false; go.textContent = 'Try again';
+        if (tsId !== null && window.turnstile) { tsToken = ''; try { window.turnstile.reset(tsId); } catch (_) {} } // tokens are single-use
         show('bad', `Couldn't send that (${String(err.message || err).replace(/[<>]/g, '')}). Check your connection and try again.`);
       }
     };
+  }
+
+  let tsLoading = null;
+  function loadTurnstile() {
+    if (window.turnstile) return Promise.resolve(window.turnstile);
+    if (!tsLoading) tsLoading = new Promise((ok, fail) => {
+      const sc = document.createElement('script');
+      sc.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      sc.async = true; sc.onload = () => (window.turnstile ? ok(window.turnstile) : fail()); sc.onerror = () => { tsLoading = null; fail(); };
+      document.head.appendChild(sc);
+    });
+    return tsLoading;
   }
 
   // --- "Already on our list": open reports for this game, so people don't file duplicates ---

@@ -29,7 +29,7 @@ const SAVE_KEYS = {
   site: [],
 };
 const reportTags = (game, prefix) =>
-  `<script>window.GN=${JSON.stringify({ game, version, built, base: prefix, repo: 'BigHoss96/game-night', games: GAME_NAMES, keys: SAVE_KEYS[game] || [], endpoint: reportCfg.endpoint || '' })};</script>\n` +
+  `<script>window.GN=${JSON.stringify({ game, version, built, base: prefix, repo: 'BigHoss96/game-night', games: GAME_NAMES, keys: SAVE_KEYS[game] || [], endpoint: reportCfg.endpoint || '', turnstile: reportCfg.turnstileSiteKey || '' })};</script>\n` +
   ['known-issues.js', 'report.js', 'update.js'].map(f => `<script src="${prefix}${f}?v=${built.replace(/\D/g, '')}"></script>\n`).join('');
 
 // fit: the virtual screen a game lays its table out on when played on a desktop; it's scaled up

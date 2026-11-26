@@ -6,8 +6,15 @@
 //   GITHUB_TOKEN    (Secret)  fine-grained token: game-night repo only, Issues: Read and write
 //   REPO            (Text)    BigHoss96/game-night
 //   ALLOWED_ORIGINS (Text)    https://bighoss96.github.io   (comma-separate to add more)
+//   HOURLY_CAP      (Text)    optional: most reports filed per hour, site-wide (default 20)
+//   TURNSTILE_SECRET (Secret) optional: Cloudflare Turnstile secret key. When set, every report
+//                             must pass the bot check (also put the site key in report.config.json)
 
-const GAME_NAMES = { flip7: 'Flip 7', tap4: 'Tap 4', mahj: 'Mahj', tally: 'Tally', site: 'Home page' };
+// Only these ids are accepted as a game (and become a game:<id> label); anything else is filed as 'site'.
+export const GAME_NAMES = {
+  flip7: 'Flip 7', tap4: 'Tap 4', mahj: 'Mahj', tally: 'Tally', doomlings: 'Doomlings', yahtzee: 'Yahtzee',
+  farkle: 'Farkle', uno: 'Uno', phase10: 'Phase 10', skipbo: 'Skip-Bo', paydirt: 'Paydirt', site: 'Home page',
+};
 const LIMIT = { perWindow: 10, windowMs: 10 * 60 * 1000 }; // per visitor, best effort
 const hits = new Map();
 
@@ -49,6 +56,21 @@ export default {
     const issue = buildIssue(b);
     if (!issue) return reply({ error: 'Please describe what went wrong' }, 400);
 
+    // Bot check (only when a Turnstile secret is configured). The Origin header above can be
+    // faked by any script, so this is what actually proves a real visitor sent the report.
+    if (env.TURNSTILE_SECRET) {
+      const form = new FormData();
+      form.append('secret', env.TURNSTILE_SECRET);
+      form.append('response', String(b.turnstile || ''));
+      if (ip !== 'unknown') form.append('remoteip', ip);
+      let pass = false;
+      try {
+        const v = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', { method: 'POST', body: form });
+        pass = !!(await v.json()).success;
+      } catch (e) { pass = false; }
+      if (!pass) return reply({ error: 'The robot check didn\u2019t go through — please try again' }, 403);
+    }
+
     const api = `https://api.github.com/repos/${env.REPO}/issues`;
     const headers = {
       'Authorization': `Bearer ${env.GITHUB_TOKEN}`,
@@ -57,8 +79,24 @@ export default {
       'User-Agent': 'game-night-bug-reports',
       'Content-Type': 'application/json',
     };
+
+    // Site-wide cap. The per-visitor limit above lives in one Cloudflare server's memory and is easy
+    // to dodge, so also count the reports GitHub already has from the last hour. Works with no setup.
+    const cap = Math.max(1, parseInt(env.HOURLY_CAP, 10) || 20);
+    try {
+      const since = new Date(now - 60 * 60 * 1000).toISOString();
+      const q = await fetch(`${api}?labels=bug-report&state=all&since=${encodeURIComponent(since)}&per_page=100`, { headers });
+      if (q.ok) {
+        const recentIssues = (await q.json()).filter(i => !i.pull_request && i.created_at >= since);
+        if (recentIssues.length >= cap) return reply({ error: 'Lots of reports are coming in right now — please try again in an hour' }, 429);
+      }
+    } catch (e) { /* if GitHub can't be asked, don't block real reports */ }
+
     let res = await fetch(api, { method: 'POST', headers, body: JSON.stringify(issue) });
-    if (res.status === 422) { // labels can be refused; file it without them
+    if (res.status === 422) { // the game label can be refused; keep bug-report so the hourly cap still counts it
+      res = await fetch(api, { method: 'POST', headers, body: JSON.stringify({ ...issue, labels: ['bug-report'] }) });
+    }
+    if (res.status === 422) { // labels refused entirely; file it without them
       const { labels, ...plain } = issue;
       res = await fetch(api, { method: 'POST', headers, body: JSON.stringify(plain) });
     }
@@ -77,8 +115,8 @@ const oneLine = s => String(s ?? '').replace(/[\r\n\t]+/g, ' ').replace(/[`<>@|]
 export function buildIssue(b) {
   const what = clip(String(b.what || '').trim(), 4000);
   if (what.length < 3) return null;
-  const game = /^[a-z0-9-]{1,20}$/.test(b.game || '') ? b.game : 'site';
-  const gname = GAME_NAMES[game] || game;
+  const game = Object.prototype.hasOwnProperty.call(GAME_NAMES, b.game) ? b.game : 'site';
+  const gname = GAME_NAMES[game];
   const who = clip(oneLine(b.name), 40);
   const first = clip(oneLine(what.split('\n')[0]), 70) || 'Bug report';
 
@@ -93,7 +131,9 @@ export function buildIssue(b) {
     ['Time', clip(oneLine(b.time), 40)],
   ].filter(r => r[1]);
 
-  let body = `### What happened\n~~~text\n${fenceSafe(what)}\n~~~\n\n### Details\n| | |\n|---|---|\n${rows.map(r => `| ${r[0]} | ${r[1]} |`).join('\n')}\n`;
+  // Details go in a text fence too: in a markdown table, a "name" like [Download fix](https://…)
+  // would render as a real link on the public issue.
+  let body = `### What happened\n~~~text\n${fenceSafe(what)}\n~~~\n\n### Details\n~~~text\n${fenceSafe(rows.map(r => `${r[0]}: ${r[1]}`).join('\n'))}\n~~~\n`;
 
   const events = Array.isArray(b.events) ? b.events.slice(-25).map(e => clip(oneLine(e), 160)).filter(Boolean) : [];
   if (events.length) body += `\n### Last things that happened on screen\n~~~text\n${fenceSafe(events.join('\n'))}\n~~~\n`;

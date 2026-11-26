@@ -28,7 +28,23 @@ The worker holds a GitHub token so the public website never has to.
 Put that address in `report.config.json` as `"endpoint"` and push.
 The ⚑ Report a bug buttons appear once the site republishes.
 
+## Updating the worker
+The worker doesn't update itself when you push. After `worker/bug-report-worker.js` changes:
+Cloudflare → your worker → **Edit code** → delete everything → paste the new file → **Deploy**.
+
+## Spam protection
+- **Built in, no setup:** at most 20 reports an hour site-wide (it counts what GitHub already has).
+  To change it, add a Text variable `HOURLY_CAP`, e.g. `40`.
+- **Optional bot check (recommended): Cloudflare Turnstile**, free.
+  1. dash.cloudflare.com → **Turnstile → Add widget**. Hostname: `bighoss96.github.io`. Mode: Managed.
+  2. Copy the **Site key** into `report.config.json` as `"turnstileSiteKey"` and push.
+  3. Copy the **Secret key** into the worker as a **Secret** named `TURNSTILE_SECRET`, then **Deploy**.
+  Do step 2 before (or together with) step 3. Once the secret is set, the worker refuses any report
+  without a passing check, so a site without the site key couldn't send reports.
+
 ## If something goes wrong
 - `"configured":false`: a variable is missing or misspelled; redeploy after adding.
 - Reports fail with "GitHub refused (401/403)": the token expired or lacks Issues access.
 - Reports fail with 403 "not allowed": `ALLOWED_ORIGINS` doesn't match the site address exactly.
+- Reports fail with "robot check didn't go through": `TURNSTILE_SECRET` is set but the site key is
+  missing from `report.config.json`, or the Turnstile widget's hostname doesn't match the site.
