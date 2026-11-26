@@ -464,6 +464,12 @@ const Tap4 = (() => {
       (s.kind === 'bot' ? 'Bot ' + (i + 1) : i === first && humans === 1 ? 'You' : 'Player ' + (i + 1)));
   }
 
-  return { Game, Bot, BotAgents, Say, buildDeck, leftovers, seatNames, available, cardsLeft, scoreOf, pileTop, flipOdds, idsOfValue, POINTS, NUM, IN, OUT };
+  // Seats for a Rematch: the same table plays again, so every player keeps their name, kind and bot level.
+  // (Bots only get fresh names for a brand-new game from the setup screen.)
+  function rematchSeats(players) {
+    return players.map(p => ({ name: p.name, kind: p.kind, level: p.level }));
+  }
+
+  return { Game, Bot, BotAgents, Say, buildDeck, leftovers, seatNames, rematchSeats, available, cardsLeft, scoreOf, pileTop, flipOdds, idsOfValue, POINTS, NUM, IN, OUT };
 })();
 if (typeof module !== 'undefined') module.exports = Tap4;

@@ -104,3 +104,15 @@ const stats = { turns: 0, games: 0, rounds: 0, taps4: 0, tapIns: 0, outsOther: 0
   assert.deepStrictEqual(n([{ name: 'You', kind: 'human' }, { name: 'Gus', kind: 'bot' }]), ['You', 'Gus']);
   console.log('Tap 4 seat names OK');
 }
+
+// #39: Rematch keeps the same table: bot names, kinds and levels don't change
+{
+  const seats = [{ name: 'Rob', kind: 'human' }, { name: 'Iris', kind: 'bot', level: 'normal' }, { name: 'Mabel', kind: 'bot', level: 'hard' }];
+  const g = new T.Game(seats, { target: 50 });
+  const again = T.rematchSeats(g.players);
+  assert.deepStrictEqual(again, [{ name: 'Rob', kind: 'human', level: 'normal' }, { name: 'Iris', kind: 'bot', level: 'normal' }, { name: 'Mabel', kind: 'bot', level: 'hard' }]);
+  assert.deepStrictEqual(new T.Game(again, { target: 50 }).players.map(p => [p.name, p.kind, p.level]), [['Rob', 'human', 'normal'], ['Iris', 'bot', 'normal'], ['Mabel', 'bot', 'hard']]);
+  const app = require('fs').readFileSync(require('path').join(__dirname, 'app.js'), 'utf8');
+  assert(/#againB'\)\.onclick = \(\) => \{[^\n]*Tap4\.rematchSeats\(G\.players\)/.test(app) && !/#againB[^\n]*freshBots/.test(app), 'tap4 rematch keeps names');
+  console.log('Tap 4 rematch keeps names OK');
+}

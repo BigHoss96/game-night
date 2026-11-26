@@ -570,7 +570,7 @@ function gameOver(ws) {
       <div class="rows">${sorted.map((p, i) => `<div class="row ${ws.includes(p) ? 'lead' : ''}"><div class="pn">${i + 1}. ${esc(p.name)}</div><span></span><div class="tot">${p.total}</div></div>`).join('')}</div>
       <button class="big" id="againB" style="background:linear-gradient(180deg,#5aa0ff,#2f6cf0)">Rematch</button>
       <div class="btnrow"><button class="ghost" id="setupB">Change players</button></div>`, false);
-    $('#againB').onclick = () => { closeSheet(); done(); startGame(freshBots(G.players.map(p => ({ name: p.name, kind: p.kind, level: p.level })))); };
+    $('#againB').onclick = () => { closeSheet(); done(); startGame(Tap4.rematchSeats(G.players)); };
     $('#setupB').onclick = () => { done(); quitToSetup(); };
   });
 }
