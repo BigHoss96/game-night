@@ -30,5 +30,6 @@
   {"date": "2026-11-25T03:17:26Z", "game": "skipbo", "issue": 36, "text": "Skip-Bo: the table now fits smaller phone screens without scrolling, so your hand is always in view."},
   {"date": "2026-11-25T03:18:12Z", "game": "flip7", "issue": 37, "text": "Flip 7: Rematch keeps the same bot opponents instead of giving them new names. (Play again in Yahtzee, Farkle, Uno, Phase 10 and Skip-Bo works the same way now.)"},
   {"date": "2026-11-26T03:15:18Z", "game": "tap4", "issue": 39, "text": "Tap 4: Rematch keeps the same bot opponents instead of giving them new names."},
-  {"date": "2026-11-26T03:16:37Z", "game": "doomlings", "issue": 41, "text": "Doomlings no longer asks if you want to react to your own cards; reaction cards only pop up when someone else plays."}
+  {"date": "2026-11-26T03:16:37Z", "game": "doomlings", "issue": 41, "text": "Doomlings no longer asks if you want to react to your own cards; reaction cards only pop up when someone else plays."},
+  {"date": "2026-11-26T03:17:35Z", "game": "doomlings", "issue": 40, "text": "When Doomlings asks if you want to react, you can now see the full card the other player played (tap it to see it full size), not just its name."}
 ]

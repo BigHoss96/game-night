@@ -207,13 +207,15 @@ const reactRun = (...a) => JSON.parse(reactCheck(...a));
   assert.strictEqual(opp.reactions.length, 1, 'control: B should be offered a reaction to A\'s action');
   assert.strictEqual(opp.reactions[0].to, 1);
   assert.deepStrictEqual(opp.reactions[0].opts.sort(), ['AUTOMIMICRY', 'SELF-AWARENESS']);
+  // #40: the prompt carries the played card's uid so the sheet can show the whole card
+  assert.strictEqual(opp.reactions[0].cardUid, opp.playedUid, 'reaction prompt should name the played card by uid');
   // Leaves still answers your own green trait (pick one with no on-play effect)
   const green = cards.find((c) => c.card_type === 'Trait' && /green/i.test(c.color || '') && c.name !== 'LEAVES' &&
     !/play when|action/i.test(c.subtype || '') && !vm.runInContext(`(EFFECTS[norm(${JSON.stringify(c.name)})] || {}).onPlay`, ctx));
   const leaves = reactRun(cards, green.name, ['LEAVES', 'AUTOMIMICRY'], []);
   assert.deepStrictEqual(leaves.reactions.map((q) => [q.to, q.opts]), [[0, ['LEAVES']]], `Leaves should still be offered on your own green trait (${green.name})`);
 }
-console.log('Doomlings: no reaction prompts on your own plays (Leaves still works)');
+console.log('Doomlings: no reaction prompts on your own plays (Leaves still works); prompt carries the played card');
 
 // ---------------------------------------------------------------------------
 // Regression (#7): Venomous is "Play 1 more trait. THEN move Venomous". It

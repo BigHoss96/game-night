@@ -295,6 +295,13 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 /* reaction banner inside a prompt */
 .react-ev{padding:11px 12px;border-radius:10px;background:var(--panel-2);
   border-left:2px solid var(--yellow);margin-top:12px;font-size:13px;color:var(--dust)}
+/* the card that was played, shown in full so you can decide (#40) */
+.react-ev.has-card{display:flex;gap:12px;align-items:flex-start}
+.react-card{flex:0 0 108px;width:108px;cursor:zoom-in}
+.react-txt{flex:1;min-width:0;line-height:1.4}
+.react-txt b{display:block;color:var(--bone);font-size:14px;margin-bottom:4px}
+.react-eff{margin-top:6px;font-size:12px}
+.react-hint{margin-top:6px;font-size:11px;color:var(--dim)}
 
 /* ==========================================================================
    HAND-OFF — pass-and-play privacy gate
@@ -1836,6 +1843,8 @@ function* offerReactions(g, windowName, event, registry) {
         event: {
           type: event.type,
           cardName: event.card ? event.card.name : null,
+          // uid so the prompt can show the whole card, not just its name (#40)
+          cardUid: event.card ? event.card.uid : null,
           actorName: event.actor ? event.actor.name : null,
           isAction: Boolean(event.isAction),
         },
@@ -3723,6 +3732,8 @@ function promptGateReason(req) {
 
 /** The card that caused a request, for the hand-off splash. */
 function triggerCard(req) {
+  const uid = req.event && req.event.cardUid;
+  if (uid) { const hit = lookupCards([uid])[0]; if (hit) return hit; }
   const name = req.event && req.event.cardName;
   if (!name) return null;
   const all = [...S.g.players.flatMap((p) => [...p.hand, ...p.traitPile]),
@@ -4039,10 +4050,28 @@ function promptReaction(req) {
     header(body, req.prompt || "Respond?");
     const ev = req.event || {};
     if (ev.cardName) {
-      const box = el("div", "react-ev");
-      box.textContent = ev.isAction
+      const line = ev.isAction
         ? `${ev.actorName} played ${ev.cardName} — its action has not resolved yet.`
         : `${ev.actorName} played ${ev.cardName}.`;
+      const played = ev.cardUid ? lookupCards([ev.cardUid])[0] : triggerCard(req);
+      const box = el("div", "react-ev");
+      if (played) {
+        // Show the whole card you're reacting to: art, name and text (#40).
+        box.classList.add("has-card");
+        const tile = el("button", "pick react-card");
+        tile.setAttribute("aria-label", `Read ${played.name}`);
+        artInto(tile, played, "pick-fb");
+        tile.addEventListener("click", (e) => { e.preventDefault(); peek(played); });
+        box.appendChild(tile);
+        const txt = el("div", "react-txt");
+        txt.appendChild(el("b", null, played.name));
+        txt.appendChild(el("div", null, line));
+        if (played.effect) txt.appendChild(el("div", "react-eff", played.effect));
+        txt.appendChild(el("div", "react-hint", "Tap the card to see it full size."));
+        box.appendChild(txt);
+      } else {
+        box.textContent = line;
+      }
       body.appendChild(box);
     }
     const grid = el("div", "pick-grid");
