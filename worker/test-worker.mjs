@@ -1,6 +1,6 @@
 // Tests the relay with GitHub's API faked out. Run: node worker/test-worker.mjs
 import assert from 'node:assert';
-import worker, { buildIssue } from './bug-report-worker.js';
+import worker, { buildIssue, buildRequest } from './bug-report-worker.js';
 
 const ORIGIN = 'https://bighoss96.github.io';
 const env = { GITHUB_TOKEN: 'test-token', REPO: 'BigHoss96/game-night', ALLOWED_ORIGINS: ORIGIN };
@@ -75,13 +75,29 @@ const report = { game: 'flip7', what: 'Bot froze after Flip Three\n@everyone loo
 
   // site-wide hourly cap (counts what GitHub already has), no matter how many IPs it comes from
   const fresh = new Date().toISOString();
-  recent = Array.from({ length: 20 }, (_, i) => ({ number: i, created_at: fresh }));
+  recent = Array.from({ length: 20 }, (_, i) => ({ number: i, created_at: fresh, labels: [{ name: i % 2 ? 'bug-report' : 'game-request' }] }));
   calls = [];
   r = await post({ game: 'tap4', what: 'flood' }, ORIGIN, '8.8.8.8');
   assert.strictEqual(r.status, 429); assert.strictEqual(calls.length, 0);
   r = await worker.fetch(new Request('https://w.example/', { method: 'POST', headers: { Origin: ORIGIN, 'CF-Connecting-IP': '8.8.8.9' }, body: JSON.stringify({ game: 'tap4', what: 'flood' }) }), { ...env, HOURLY_CAP: '50' });
   assert.strictEqual(r.status, 200, 'cap is configurable');
+  recent = [{ number: 1, created_at: fresh, labels: [{ name: 'enhancement' }] }]; // Austin's own issues don't count
+  r = await post({ game: 'tap4', what: 'not capped' }, ORIGIN, '8.8.8.10'); assert.strictEqual(r.status, 200);
   recent = [];
+
+  // game requests
+  calls = [];
+  r = await post({ kind: 'request', request: 'Ticket to Ride', what: 'Usually 4 players\n[rules](https://x.example)', name: 'Mom @dad' }, ORIGIN, '10.0.0.1');
+  assert.strictEqual(r.status, 200); assert.strictEqual(calls.length, 1);
+  assert.strictEqual(calls[0].body.title, '[Game request] Ticket to Ride');
+  assert.deepStrictEqual(calls[0].body.labels, ['game-request', 'enhancement']);
+  assert(calls[0].body.body.includes('~~~text\nUsually 4 players\n[rules](https://x.example)\n~~~'), 'notes fenced');
+  assert(calls[0].body.body.includes('Requested by: Mom dad'));
+  r = await post({ kind: 'request', request: ' ' }, ORIGIN, '10.0.0.1'); assert.strictEqual(r.status, 400);
+  assert.strictEqual(buildRequest({ request: '<b>`Euchre`</b> @x' }).title, '[Game request] bEuchre/b x');
+  calls = []; status = n => (n === 1 ? 422 : 201);
+  r = await post({ kind: 'request', request: 'Sushi Go' }, ORIGIN, '10.0.0.2');
+  assert.deepStrictEqual(calls[1].body.labels, ['game-request']); status = 201;
 
   // Turnstile, when configured: missing/failed token is refused, a good one goes through
   const tsEnv = { ...env, TURNSTILE_SECRET: 'ts-secret' };

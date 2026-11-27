@@ -53,8 +53,9 @@ export default {
 
     if (b.website) return reply({ ok: true, number: 0 }); // honeypot field: bots fill it, people never see it
 
-    const issue = buildIssue(b);
-    if (!issue) return reply({ error: 'Please describe what went wrong' }, 400);
+    const isRequest = b.kind === 'request';
+    const issue = isRequest ? buildRequest(b) : buildIssue(b);
+    if (!issue) return reply({ error: isRequest ? 'Please name the game you\u2019d like' : 'Please describe what went wrong' }, 400);
 
     // Bot check (only when a Turnstile secret is configured). The Origin header above can be
     // faked by any script, so this is what actually proves a real visitor sent the report.
@@ -85,16 +86,17 @@ export default {
     const cap = Math.max(1, parseInt(env.HOURLY_CAP, 10) || 20);
     try {
       const since = new Date(now - 60 * 60 * 1000).toISOString();
-      const q = await fetch(`${api}?labels=bug-report&state=all&since=${encodeURIComponent(since)}&per_page=100`, { headers });
+      const q = await fetch(`${api}?state=all&since=${encodeURIComponent(since)}&per_page=100`, { headers });
       if (q.ok) {
-        const recentIssues = (await q.json()).filter(i => !i.pull_request && i.created_at >= since);
+        const fromSite = i => (i.labels || []).some(l => ['bug-report', 'game-request'].includes(l.name || l));
+        const recentIssues = (await q.json()).filter(i => !i.pull_request && i.created_at >= since && fromSite(i));
         if (recentIssues.length >= cap) return reply({ error: 'Lots of reports are coming in right now — please try again in an hour' }, 429);
       }
     } catch (e) { /* if GitHub can't be asked, don't block real reports */ }
 
     let res = await fetch(api, { method: 'POST', headers, body: JSON.stringify(issue) });
-    if (res.status === 422) { // the game label can be refused; keep bug-report so the hourly cap still counts it
-      res = await fetch(api, { method: 'POST', headers, body: JSON.stringify({ ...issue, labels: ['bug-report'] }) });
+    if (res.status === 422) { // a label can be refused; keep the main one so the hourly cap still counts it
+      res = await fetch(api, { method: 'POST', headers, body: JSON.stringify({ ...issue, labels: issue.labels.slice(0, 1) }) });
     }
     if (res.status === 422) { // labels refused entirely; file it without them
       const { labels, ...plain } = issue;
@@ -153,4 +155,21 @@ export function buildIssue(b) {
     body,
     labels: ['bug-report', `game:${game}`],
   };
+}
+
+// A "Request a game" submission from the home page → a feature request issue.
+export function buildRequest(b) {
+  const wanted = clip(oneLine(b.request), 80);
+  if (wanted.length < 2) return null;
+  const notes = clip(String(b.what || '').trim(), 4000);
+  const rows = [
+    ['Requested by', clip(oneLine(b.name), 40) || 'anonymous'],
+    ['Site version', clip(oneLine(b.version), 40)],
+    ['Time', clip(oneLine(b.time), 40)],
+  ].filter(r => r[1]);
+  let body = `### Game requested\n~~~text\n${fenceSafe(wanted)}\n~~~\n`;
+  if (notes) body += `\n### Notes from the requester\n~~~text\n${fenceSafe(notes)}\n~~~\n`;
+  body += `\n### Details\n~~~text\n${fenceSafe(rows.map(r => `${r[0]}: ${r[1]}`).join('\n'))}\n~~~\n`;
+  body += `\n### To figure out\n- [ ] Rules source and any publisher/IP concerns\n- [ ] Player count, bots needed?\n- [ ] Fits an existing engine (tablekit, dice3d) or needs a new one\n`;
+  return { title: `[Game request] ${wanted}`, body: clip(body, 64000), labels: ['game-request', 'enhancement'] };
 }

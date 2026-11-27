@@ -28,6 +28,10 @@ The worker holds a GitHub token so the public website never has to.
 Put that address in `report.config.json` as `"endpoint"` and push.
 The ⚑ Report a bug buttons appear once the site republishes.
 
+## Game requests
+The home page's "Want a game?" note files a `game-request` issue (also labeled `enhancement`)
+through this same worker. Requests count toward the same hourly cap.
+
 ## Updating the worker
 The worker doesn't update itself when you push. After `worker/bug-report-worker.js` changes:
 Cloudflare → your worker → **Edit code** → delete everything → paste the new file → **Deploy**.

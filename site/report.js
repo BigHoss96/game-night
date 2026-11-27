@@ -72,7 +72,7 @@
   .gnr textarea:focus,.gnr input[type=text]:focus{border-color:#2f6cf0}
   .gnr .chk{display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-size:14px;color:#3d362e;line-height:1.35}
   .gnr .chk input{width:20px;height:20px;margin:0;flex:none;accent-color:#2f6cf0}
-  .gnr .note{font-size:12px;color:#8a7f72;margin-top:12px;line-height:1.4}
+  .gnr .gnr-note{font-size:12px;color:#8a7f72;margin-top:12px;line-height:1.4}
   .gnr .row{display:flex;gap:8px;margin-top:16px}
   .gnr button{font:inherit;border:0;border-radius:14px;padding:14px;font-size:16px;font-weight:700;cursor:pointer}
   .gnr .go{flex:2;background:linear-gradient(180deg,#5aa0ff,#2f6cf0);color:#fff}
@@ -96,38 +96,46 @@
   let scrim = null;
   function close() { if (scrim) { scrim.remove(); scrim = null; } }
 
-  function open() {
+  function open(opts) {
     if (scrim) return;
+    const req = !!(opts && opts.kind === 'request');
     if (!document.getElementById('gnr-css')) { const s = document.createElement('style'); s.id = 'gnr-css'; s.textContent = css; document.head.appendChild(s); }
-    const hasGame = !!snapshot();
+    const hasGame = !req && !!snapshot();
     let name = ''; try { name = localStorage.getItem('gn.reporter') || ''; } catch (_) {}
     scrim = document.createElement('div');
     scrim.className = 'gnr-scrim';
     scrim.innerHTML = `
       <form class="gnr" novalidate>
+        ${req ? `
+        <h2>Request a game</h2>
+        <p>What should go on the shelf next? Austin will look into it.</p>
+        <label for="gnr-game">Which game?</label>
+        <input type="text" id="gnr-game" maxlength="80" placeholder="e.g. Ticket to Ride, Euchre, Sushi Go">
+        <label for="gnr-what">Anything that would help? <span style="text-transform:none;letter-spacing:0;font-weight:500">(optional)</span></label>
+        <textarea id="gnr-what" maxlength="4000" placeholder="How it's played, a link to the rules, house rules you use, how many players…"></textarea>` : `
         <h2>Report a bug</h2>
         <p>Something broken, confusing, or against the rules? Tell us what happened.</p>
         <div class="known" hidden></div>
         <div class="match known hit" hidden></div>
         <label for="gnr-what">What happened?</label>
-        <textarea id="gnr-what" maxlength="4000" placeholder="e.g. I played a Tap In and the stack didn't clear. I expected it to…"></textarea>
+        <textarea id="gnr-what" maxlength="4000" placeholder="e.g. I played a Tap In and the stack didn't clear. I expected it to…"></textarea>`}
         <label for="gnr-name">Your name <span style="text-transform:none;letter-spacing:0;font-weight:500">(optional)</span></label>
         <input type="text" id="gnr-name" maxlength="40" autocomplete="nickname" placeholder="So we know who to thank">
         <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
         ${GN.turnstile ? '<div class="gnr-ts" style="margin-top:14px;min-height:65px"></div>' : ''}
         ${hasGame ? `<div class="chk"><input type="checkbox" id="gnr-snap" checked><label for="gnr-snap" style="all:unset">Include my current game so it can be replayed (player names included)</label></div>` : ''}
-        <div class="note">Reports are posted on this site's public GitHub page, so please don't include private info. Your device and browser type are included automatically.</div>
+        <div class="gnr-note">${req ? 'Requests are posted' : 'Reports are posted'} on this site's public GitHub page, so please don't include private info.${req ? '' : ' Your device and browser type are included automatically.'}</div>
         <div class="msg" hidden></div>
-        <div class="row"><button type="button" class="no">Cancel</button><button type="submit" class="go">Send report</button></div>
+        <div class="row"><button type="button" class="no">Cancel</button><button type="submit" class="go">${req ? 'Send request' : 'Send report'}</button></div>
       </form>`;
     document.body.appendChild(scrim);
-    const f = scrim.querySelector('form'), what = f.querySelector('#gnr-what'), nm = f.querySelector('#gnr-name');
+    const f = scrim.querySelector('form'), what = f.querySelector('#gnr-what'), nm = f.querySelector('#gnr-name'), gameIn = f.querySelector('#gnr-game');
     const msg = f.querySelector('.msg'), go = f.querySelector('.go');
     nm.value = name;
     scrim.addEventListener('click', e => { if (e.target === scrim) close(); });
     f.querySelector('.no').onclick = close;
-    setTimeout(() => what.focus(), 250);
-    showKnown(f, what);
+    setTimeout(() => (gameIn || what).focus(), 250);
+    if (!req) showKnown(f, what);
     // Optional Cloudflare Turnstile bot check (report.config.json → turnstileSiteKey)
     let tsToken = '', tsId = null;
     if (GN.turnstile) loadTurnstile().then(ts => {
@@ -139,10 +147,14 @@
     f.onsubmit = async e => {
       e.preventDefault();
       const text = what.value.trim();
-      if (text.length < 3) { show('bad', 'Add a few words about what went wrong.'); what.focus(); return; }
+      const wanted = gameIn ? gameIn.value.trim() : '';
+      if (req && wanted.length < 2) { show('bad', 'Which game would you like? Type its name.'); gameIn.focus(); return; }
+      if (!req && text.length < 3) { show('bad', 'Add a few words about what went wrong.'); what.focus(); return; }
       try { localStorage.setItem('gn.reporter', nm.value.trim()); } catch (_) {}
       const snapBox = f.querySelector('#gnr-snap');
-      const payload = { ...details(snapBox ? snapBox.checked : false), what: text, name: nm.value.trim(), website: f.website.value };
+      const payload = req
+        ? { kind: 'request', request: wanted, what: text, name: nm.value.trim(), website: f.website.value, game: 'site', version: GN.version || '', page: location.pathname, time: new Date().toISOString() }
+        : { ...details(snapBox ? snapBox.checked : false), what: text, name: nm.value.trim(), website: f.website.value };
       if (GN.turnstile) {
         if (!tsToken) { show('bad', 'One moment — finishing the quick robot check above, then tap Send again.'); return; }
         payload.turnstile = tsToken;
@@ -153,8 +165,8 @@
         const res = await fetch(GN.endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         const j = await res.json().catch(() => ({}));
         if (!res.ok || !j.ok) throw new Error(j.error || `Error ${res.status}`);
-        f.innerHTML = `<div class="big"><div>🙌</div><h2>Thanks — got it!</h2><p>Your report ${j.number ? `is #${j.number}` : 'was sent'}. We'll take a look.</p></div>
-          <div class="row"><button type="button" class="go">Back to the game</button></div>`;
+        f.innerHTML = `<div class="big"><div>🙌</div><h2>Thanks — got it!</h2><p>Your ${req ? 'request' : 'report'} ${j.number ? `is #${j.number}` : 'was sent'}. ${req ? 'Austin will look into it.' : "We'll take a look."}</p></div>
+          <div class="row"><button type="button" class="go">${req ? 'Done' : 'Back to the game'}</button></div>`;
         f.querySelector('.go').onclick = close;
       } catch (err) {
         go.disabled = false; go.textContent = 'Try again';

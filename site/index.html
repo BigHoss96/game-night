@@ -89,6 +89,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .note .g{display:block;font-size:11px;color:#7a6a58;margin-top:6px;font-weight:700}
 .note .s{display:inline-block;font-size:10px;font-weight:800;color:#fff;border-radius:999px;padding:2px 7px;margin-top:5px}
 .note.add{background:#fff3a6;background-image:none;font-family:'Permanent Marker',cursive;font-size:19px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;color:#5a3a10;cursor:pointer}
+.note.add.req{background:#cfe9ff;color:#0f3a66}
 .note.add small{font-family:"Bricolage Grotesque",sans-serif;font-size:12px;font-weight:700;margin-top:4px}
 .note.msg{background:#eef4ff;background-image:none;--pin:#2c6ed1;--pin2:#8fb6ff}
 .cork .all{display:block;text-align:center;margin-top:14px;color:#3a220f;font-weight:800;font-size:14px;text-decoration:none}
@@ -145,7 +146,7 @@ footer a{color:#ffe6a6;font-weight:700;text-decoration:none}
   <section aria-label="Game shelf"><div class="case" id="case"></div></section>
   <section class="cork" aria-label="Bug board"><h2>Bug board</h2><div class="pins" id="pins"></div><a class="all" href="issues.html">All known issues &amp; recent fixes ›</a></section>
   <footer><b>Play offline like an app:</b> open a game, then use your browser's menu → <b>Add to Home Screen</b>.<br>
-    Fan-made versions for friends and family. Not affiliated with the publishers of the original games.<br>Your games and scores are saved only in your browser.<br><a href="testing.html">Testing area</a> · <a href="issues.html">Known issues</a> · <a href="classic.html">Classic home page</a></footer>
+    Fan-made versions for friends and family. Not affiliated with the publishers of the original games.<br>Your games and scores are saved only in your browser.<br><a href="#" id="reqLink">Request a game</a> · <a href="testing.html">Testing area</a> · <a href="issues.html">Known issues</a> · <a href="classic.html">Classic home page</a></footer>
 </div>
 <script>
 'use strict';
@@ -286,7 +287,8 @@ function closeCarton() { if (!carton || open) return; const c = carton; carton =
 const PINS = [['#c62d1f', '#ff8a7a'], ['#2c6ed1', '#8fb6ff'], ['#2f9a5a', '#8fe3b0'], ['#d99a1c', '#ffd77a'], ['#7a3fc6', '#c9a3ff']];
 function pinStyle(i) { const p = PINS[i % PINS.length]; return `--pin:${p[0]};--pin2:${p[1]};--r:${((rnd(i + 11) - 0.5) * 6).toFixed(1)}deg`; }
 function renderBoard(list, msg) {
-  const add = `<button class="note add" id="addBug" style="${pinStyle(0)}">Found a bug?<small>Pin a note for Austin</small></button>`;
+  const add = `<button class="note add" id="addBug" style="${pinStyle(0)}">Found a bug?<small>Pin a note for Austin</small></button>` +
+    `<button class="note add req" id="addGame" style="${pinStyle(3)}">Want a game?<small>Request one for the shelf</small></button>`;
   let notes = '';
   if (msg) notes = `<div class="note msg" style="--r:1.5deg"><b>${esc(msg)}</b></div>`;
   else if (list) {
@@ -295,8 +297,11 @@ function renderBoard(list, msg) {
   }
   $('#pins').innerHTML = add + notes;
   $('#addBug').onclick = () => window.GNReport ? GNReport.open() : alert('Bug reports aren\'t available on this copy of the site.');
+  $('#addGame').onclick = requestGame;
 }
 
+function requestGame(e) { if (e) e.preventDefault(); window.GNReport ? GNReport.open({ kind: 'request' }) : alert('Game requests aren\'t available on this copy of the site.'); }
+$('#reqLink').onclick = requestGame;
 renderShelf();
 renderBoard(null, 'Checking the board…');
 if (window.GNIssues) GNIssues.load().then(l => renderBoard(l)).catch(() => renderBoard(null, "Couldn't reach the board right now."));
