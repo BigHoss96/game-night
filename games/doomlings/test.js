@@ -10,9 +10,15 @@ const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
 
 const m = html.match(/window\.__DOOMLINGS_CARDS__ = (\[.*\]);/);
 assert(m, 'inlined card data not found');
-const cards = JSON.parse(m[1]);
+const allCards = JSON.parse(m[1]);
+// The base game is what most of these tests (and the original rules suite) are
+// about; Overlush gets its own fuzzing further down.
+const cards = allCards.filter((c) => c.set === 'base');
+const overlush = allCards.filter((c) => c.set === 'overlush');
 const count = (t) => cards.filter((c) => c.card_type === t).length;
 assert.strictEqual(count('Trait'), 113, 'base game has 113 traits');
+assert.strictEqual(overlush.filter((c) => c.card_type === 'Trait').length, 135, 'Overlush has 135 traits');
+assert.strictEqual(overlush.filter((c) => /catastrophe/i.test(c.subtype)).length, 15, 'Overlush has 15 catastrophes');
 assert(count('Age') > 0, 'age deck is empty');
 assert(cards.some((c) => /catastrophe/i.test(c.subtype)), 'no catastrophes (subtype column lost?)');
 
@@ -20,7 +26,7 @@ const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((x) => x
 assert(scripts.length >= 2, 'expected the card-data and game script blocks');
 scripts.forEach((src, i) => new vm.Script(src, { filename: `doomlings/index.html#script${i}` }));
 
-console.log(`Doomlings: ${cards.length} cards, ${scripts.length} script blocks compile`);
+console.log(`Doomlings: ${cards.length} base + ${overlush.length} Overlush cards, ${scripts.length} script blocks compile`);
 
 // ---------------------------------------------------------------------------
 // Rules engine: run the engine part of the bundle in a sandbox and play games
@@ -443,4 +449,150 @@ var __botRun = function (cards, seed, levels) {
   }
   console.log(`Doomlings bots: ${N} games, wins by level ${JSON.stringify(wins)}`);
   assert(wins.normal + wins.hard > wins.easy, 'smarter bots should win more');
+}
+
+// ---------------------------------------------------------------------------
+// Overlush: every card scripted, then base + Overlush games played to scoring,
+// first with random answers (to shake out every prompt path) and then by bots.
+// ---------------------------------------------------------------------------
+{
+  const pool = cards.concat(overlush);
+  const coverage = vm.runInContext('coverage', ctx);
+  const ageHandler = vm.runInContext('ageHandler', ctx);
+  const cov = coverage(pool);
+  assert.deepStrictEqual([...cov.missing], [], 'traits with text but no script: ' + cov.missing.join(', '));
+  const ageless = pool.filter((c) => c.card_type === 'Age' && !ageHandler(c)).map((c) => c.name);
+  assert.deepStrictEqual(ageless, [], 'ages/catastrophes with no handler: ' + ageless.join(', '));
+
+  const traitTotal = pool.filter((c) => c.card_type === 'Trait').length;
+  const N = +(process.env.DOOM_OVERLUSH_GAMES || 300);
+  for (let seed = 1; seed <= N; seed++) {
+    const players = 2 + (seed % 5);
+    let res;
+    try { res = run(pool, 1000 + seed, players); } catch (e) { e.message = `Overlush seed ${1000 + seed} (${players}p): ${e.message}`; throw e; }
+    const { g, traitCount } = res;
+    assert.strictEqual(g.phase, 'over', `Overlush seed ${seed}: game did not reach scoring`);
+    assert.strictEqual(traitCount, traitTotal, `Overlush seed ${seed}: traits were lost or duplicated`);
+    for (const p of g.players) {
+      assert(p.genePool >= 1 && p.genePool <= 8, `Overlush seed ${seed}: gene pool out of range`);
+      const doms = p.traitPile.filter((c) => /dominant/i.test(c.subtype));
+      // Birth of a Hero lets Heroic in as a third (rulebook p.6).
+      const limit = doms.some((c) => c.name === 'HEROIC') ? 3 : 2;
+      assert(doms.length <= limit, `Overlush seed ${seed}: ${p.name} has ${doms.length} dominants`);
+    }
+    for (const sc of g.scores) {
+      const b = breakdown(g, sc);
+      assert.strictEqual(b.face + b.bonus + b.adjust, sc.total, `Overlush seed ${seed}: ${sc.name} sum check`);
+      assert(Number.isFinite(sc.total), `Overlush seed ${seed}: score is not a number`);
+    }
+  }
+  console.log(`Doomlings + Overlush: all ${cov.total} traits scripted; ${N} fuzzed games played to scoring`);
+
+  const botRun = vm.runInContext('__botRun', ctx);
+  const BN = +(process.env.DOOM_OVERLUSH_BOT_GAMES || 30);
+  for (let seed = 1; seed <= BN; seed++) {
+    const n = 2 + (seed % 4);
+    const levels = Array.from({ length: n }, (_, i) => ['easy', 'normal', 'hard'][(i + seed) % 3]);
+    const g = botRun(pool, 2000 + seed, levels);
+    assert.strictEqual(g.phase, 'over', `Overlush bot seed ${seed}: no score`);
+  }
+  console.log(`Doomlings + Overlush bots: ${BN} games played to scoring`);
+}
+
+// ---------------------------------------------------------------------------
+// Overlush rule hooks, one scripted situation each.
+// ---------------------------------------------------------------------------
+{
+  const pool = cards.concat(overlush);
+  vm.runInContext(`var __scene = function (cards, spec) {
+    resetUids();
+    const g = dealGame(cards, { names: spec.names || ['A', 'B'], seed: 3 });
+    const take = (name) => {
+      for (const pile of [g.traitDeck, g.discard, ...g.players.flatMap((p) => [p.hand, p.traitPile])]) {
+        const i = pile.findIndex((c) => c.name === name);
+        if (i >= 0) return pile.splice(i, 1)[0];
+      }
+      const proto = cards.find((c) => c.name === name);
+      if (!proto) throw new Error('card not found: ' + name);
+      return tag(proto);
+    };
+    g.eras[0].push({ ...cards.find((c) => c.name.toLowerCase() === (spec.age || 'flourish')), uid: 'forced-age' });
+    g.phase = 'turn'; g.activeSeat = 0; g.firstSeat = 0; g.playsLeft = 1; g.ageApplied = g.players.map((p) => p.id);
+    g.players.forEach((p, i) => {
+      p.hand = (spec.hands[i] || []).map(take);
+      p.traitPile = (spec.piles[i] || []).map(take);
+      p.dominants = p.traitPile.filter(isDominant).length;
+    });
+    const asked = [];
+    const answerWith = spec.answer || ((req) => req.kind === 'reaction' ? req.options[0] : req.kind === 'trait' ? (req.options.find((o) => !o.disabled) || null) : req.kind === 'cards' ? req.options.slice(0, req.count || 0) : req.kind === 'player' ? req.options[0] : true);
+    const drive = (r) => { let k = 0; while (r && !r.done) { if (k++ > 200) throw new Error('runaway'); asked.push(r.request); r = answer(g, answerWith(r.request, g)); } return r; };
+    const play = (name) => drive(playTrait(g, g.players[g.activeSeat].hand.find((c) => c.name === name).uid, EFFECTS));
+    const names = (list) => list.map((c) => c.name).join(',');
+    return { g, play, drive, asked, names, A: g.players[0], B: g.players[1] };
+  };`, ctx);
+  const scene = (spec) => vm.runInContext('__scene', ctx)(pool, spec);
+
+  // Patches: a stolen trait comes straight back.
+  {
+    const s = scene({ hands: [['SELFISH'], ['PATCHES']], piles: [[], ['FIRE SKIN']] });
+    s.play('SELFISH');
+    assert.strictEqual(s.names(s.B.traitPile.slice().sort((x, y) => x.name.localeCompare(y.name))), 'FIRE SKIN,PATCHES', 'Patches should return the stolen trait: ' + s.names(s.B.traitPile));
+    assert.strictEqual(s.names(s.A.traitPile), 'SELFISH', 'Patches: thief kept the trait');
+  }
+  // Quills: played into the remover's pile.
+  {
+    const s = scene({ hands: [['SELFISH'], ['QUILLS']], piles: [[], ['FIRE SKIN']] });
+    s.play('SELFISH');
+    assert(s.A.traitPile.some((c) => c.name === 'QUILLS'), 'Quills should land in the remover\'s pile');
+  }
+  // Ironwood: a small green pile can't be stolen from.
+  {
+    const s = scene({ hands: [['TINY LITTLE MELONS'], []], piles: [[], ['IRONWOOD', 'BARK']] });
+    s.play('TINY LITTLE MELONS');
+    assert(s.B.traitPile.some((c) => c.name === 'BARK'), 'Ironwood should keep Bark in place');
+  }
+  // Muse: discarded from hand, it lands in the pile instead.
+  {
+    const s = scene({ hands: [[], ['MUSE']], piles: [[], []] });
+    vm.runInContext('discardFromHand', ctx)(s.g, s.B, s.B.hand[0].uid);
+    assert.strictEqual(s.names(s.B.traitPile), 'MUSE', 'Muse should be played when discarded from hand');
+    assert.strictEqual(s.B.dominants, 1, 'Muse counts as a dominant');
+  }
+  // Fabled: pays 4 colours from hand, and Fabled itself ends up in the pile, once.
+  {
+    const s = scene({ hands: [['FABLED', 'BARK', 'BLUBBER', 'BRAVE', 'DREAMER'], []], piles: [[], []] });
+    s.play('FABLED');
+    assert.strictEqual(s.names(s.A.traitPile), 'FABLED', 'Fabled should be played');
+    assert.strictEqual(s.A.hand.length, 0, 'Fabled should discard 4 cards of different colours: ' + s.names(s.A.hand));
+  }
+  // Epic fills both dominant slots.
+  {
+    const s = scene({ hands: [['EPIC', 'HEROIC'], []], piles: [[], []] });
+    s.play('EPIC');
+    const canPlay = vm.runInContext('canPlayCard', ctx);
+    assert.strictEqual(s.A.dominants, 2, 'Epic should count as two dominants');
+    assert(!canPlay(s.g, s.A, s.A.hand[0], vm.runInContext('EFFECTS', ctx)), 'no third dominant after Epic');
+  }
+  // Cheek Pouches: draw 2, end the turn without stabilizing.
+  {
+    const s = scene({ hands: [['CHEEK POUCHES'], []], piles: [[], []] });
+    s.A.genePool = 8;
+    s.play('CHEEK POUCHES');
+    const before = s.A.hand.length;
+    s.drive(vm.runInContext('beginEndTurn', ctx)(s.g, vm.runInContext('EFFECTS', ctx)));
+    assert.strictEqual(before, 2, 'Cheek Pouches draws 2');
+    assert.strictEqual(s.A.hand.length, 2, 'Cheek Pouches: the hand was stabilized anyway');
+    assert.strictEqual(s.g.activeSeat, 1, 'Cheek Pouches: the turn should end');
+  }
+  // Procrastination: the last player's turn ends, the holder takes another turn.
+  {
+    const s = scene({ hands: [['BARK'], ['PROCRASTINATION', 'BLUBBER']], piles: [[], []] });
+    s.g.activeSeat = 1; s.B.genePool = 1;
+    s.drive(vm.runInContext('playTrait', ctx)(s.g, s.B.hand.find((c) => c.name === 'BLUBBER').uid, vm.runInContext('EFFECTS', ctx)));
+    s.drive(vm.runInContext('beginEndTurn', ctx)(s.g, vm.runInContext('EFFECTS', ctx)));
+    assert.strictEqual(s.g.phase, 'turn', 'Procrastination: the round should not end yet');
+    assert.strictEqual(s.g.activeSeat, 1, 'Procrastination: the holder takes another turn');
+    assert(s.B.traitPile.some((c) => c.name === 'PROCRASTINATION'), 'Procrastination should be in the pile');
+  }
+  console.log('Doomlings + Overlush: Patches, Quills, Ironwood, Muse, Fabled, Epic, Cheek Pouches and Procrastination behave');
 }
