@@ -197,6 +197,22 @@ for col, vals in enumerate([[1, 2, 3], [5, 6, 7, 8], [9, 10, 'SB', 12], [2, 3, 4
         b += scard(30 + col * 88, 90 + k * 26, (k - 1) * 3, v)
 covers['skipbo'] = svg(b, '<radialGradient id="bg" cx="50%" cy="30%" r="85%"><stop offset="0" stop-color="#16808a"/><stop offset="1" stop-color="#08363c"/></radialGradient>')
 
+# ---- Monopoly: a row of colored lots in perspective, little houses and a hotel, two dice up front
+b = '<rect width="400" height="320" fill="url(#bg)"/>' + burst(200, 90, 20, 420, '#ffffff', .06)
+lots = ['#8a4b2a', '#9fd7f5', '#d6409f', '#f39324', '#e2272c', '#f2d82b', '#1f9e4a', '#1f4fa8']
+for k, c in enumerate(lots):
+    x = 6 + k * 49
+    b += f'<rect x="{x}" y="168" width="46" height="74" rx="3" fill="#f6f3e7"/><rect x="{x}" y="168" width="46" height="18" rx="3" fill="{c}"/>'
+def house(x, y, s, wall, roof):
+    return (f'<g transform="translate({x},{y}) scale({s})"><rect x="-13" y="-4" width="26" height="22" fill="#000" opacity=".25" transform="translate(3,3)"/>'
+            f'<rect x="-13" y="-4" width="26" height="22" fill="{wall}"/><path d="M-17,-2 L0,-18 L17,-2 Z" fill="{roof}"/><rect x="-4" y="6" width="8" height="12" fill="#00000055"/></g>')
+for k, x in enumerate([60, 108, 157, 206]): b += house(x, 150, 1.05, '#2fae5b', '#1b7a3b')
+b += ('<g transform="translate(300,128)"><rect x="-36" y="-20" width="72" height="44" fill="#000" opacity=".25" transform="translate(4,4)"/>'
+      '<rect x="-36" y="-20" width="72" height="44" fill="#e2463b"/><path d="M-42,-18 L0,-46 L42,-18 Z" fill="#9c1f18"/>'
+      + ''.join(f'<rect x="{-28 + j * 15}" y="-10" width="9" height="10" fill="#ffe9a6"/>' for j in range(4)) + '</g>')
+b += die(150, 262, 34, 6, 3, 5) + die(250, 268, 34, 5, 2, 4)
+covers['monopoly'] = svg(b, '<radialGradient id="bg" cx="50%" cy="25%" r="85%"><stop offset="0" stop-color="#2f8a5e"/><stop offset="1" stop-color="#0c2a1d"/></radialGradient>')
+
 for k, v in covers.items():
     with open(os.path.join(OUT, f'cover-{k}.svg'), 'w') as f: f.write(v)
 print('wrote', ', '.join(covers))

@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#123d2a">
+<title>Monopoly</title>
+<style>
+:root{--tk-bg:#123d2a;--tk-panel:#fbf8ef;--tk-ink:#1d2a22;--tk-mute:#6b7a6f;--tk-line:#e2ddcc;--tk-accent:#d8402f;--tk-accent-ink:#fff;
+  --felt:#cfe6d2;--c:30px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{background:#0c2a1d}
+html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#fff;background:radial-gradient(ellipse at 50% 20%,#1f6b47,#0c2a1d 75%) fixed}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+#setup{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.tk-logo{color:#fff;text-shadow:0 4px 0 #d8402f,0 10px 20px rgba(0,0,0,.4);font-size:44px!important;letter-spacing:.02em!important}
+.tk-tag{color:#cfe6d2!important}
+#game{max-width:640px;margin:0 auto;padding:calc(6px + env(safe-area-inset-top)) 6px calc(10px + env(safe-area-inset-bottom))}
+#game[hidden],#setup[hidden]{display:none}
+.top{display:flex;justify-content:space-between;align-items:center;font-weight:800;padding:0 4px 6px}.top .r{color:#cfe6d2;font-size:13px}
+.top button{font-size:24px;padding:0 8px;font-weight:900}
+.main{display:flex;flex-direction:column;gap:8px}
+
+/* ---------- board ---------- */
+#board{position:relative;width:calc(var(--c) * 12);height:calc(var(--c) * 12);margin:0 auto;background:var(--felt);border:2px solid #0c2a1d;
+  display:grid;grid-template-columns:1.5fr repeat(9,1fr) 1.5fr;grid-template-rows:1.5fr repeat(9,1fr) 1.5fr;box-shadow:0 8px 24px rgba(0,0,0,.45);border-radius:4px;color:#1d2a22}
+.t{position:relative;border:.5px solid #6f8c76;background:#f6f3e7;display:flex;overflow:hidden;cursor:pointer;min-width:0;min-height:0}
+.t .bd{flex:none;position:relative;display:flex;gap:1px;align-items:center;justify-content:center}
+.t .tx{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:1px;text-align:center;min-width:0}
+.t .nm{font-size:calc(var(--c) * .19);font-weight:700;line-height:1.05;overflow-wrap:normal;word-break:normal;letter-spacing:-.03em;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:clip}
+.t.W .nm,.t.E .nm{white-space:normal}
+.t.W .ic,.t.E .ic{font-size:calc(var(--c) * .28)}.t.W .tx,.t.E .tx{gap:0!important}
+.t .pr{font-size:calc(var(--c) * .19);color:#556}
+.t .ic{font-size:calc(var(--c) * .42);line-height:1}
+.t.S .bd{height:calc(var(--c) * .3);width:100%}.t.S{flex-direction:column}
+.t.N{flex-direction:column-reverse}.t.N .bd{height:calc(var(--c) * .3);width:100%}
+.t.W{flex-direction:row-reverse}.t.W .bd{width:calc(var(--c) * .3);height:100%;flex-direction:column}
+.t.E{flex-direction:row}.t.E .bd{width:calc(var(--c) * .3);height:100%;flex-direction:column}
+.t.W .tx,.t.E .tx{justify-content:center;gap:2px}
+.t .own{position:absolute;background:var(--oc)}
+.t.S .own{left:0;right:0;bottom:0;height:calc(var(--c) * .13)}.t.N .own{left:0;right:0;top:0;height:calc(var(--c) * .13)}
+.t.W .own{top:0;bottom:0;left:0;width:calc(var(--c) * .13)}.t.E .own{top:0;bottom:0;right:0;width:calc(var(--c) * .13)}
+.t.mort .tx{opacity:.45}.t.mort:after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(45deg,rgba(0,0,0,.14) 0 3px,transparent 3px 7px);pointer-events:none}
+.hs{width:calc(var(--c) * .17);height:calc(var(--c) * .17);background:#1f9e4a;border:1px solid #0c4f24;border-radius:1px}
+.ht{width:calc(var(--c) * .44);height:calc(var(--c) * .2);background:#d8402f;border:1px solid #7a160d;border-radius:2px}
+.t.W .ht,.t.E .ht{width:calc(var(--c) * .2);height:calc(var(--c) * .44)}
+.t.corner{align-items:center;justify-content:center;flex-direction:column;font-weight:900;text-align:center;font-size:calc(var(--c) * .24);line-height:1.1;padding:2px}
+.t.corner .big{font-size:calc(var(--c) * .5)}
+.t.go .big{color:#d8402f}.t.hot{box-shadow:inset 0 0 0 2px #ffd23a}
+.center{grid-area:2/2/11/11;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--c) * .2);padding:calc(var(--c) * .3);color:#1d2a22;text-align:center;position:relative}
+.brand{font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:700;font-size:calc(var(--c) * .62);color:#1f5a3d;letter-spacing:.01em;line-height:1}
+.brand small{display:block;font-family:system-ui,sans-serif;font-style:normal;font-size:calc(var(--c) * .24);letter-spacing:.2em;color:#6b8a74;text-transform:uppercase;margin-top:3px}
+.dice{display:flex;gap:calc(var(--c) * .3)}
+.die{width:calc(var(--c) * 1.05);height:calc(var(--c) * 1.05);border-radius:20%;background:#fff;box-shadow:0 3px 0 #b7b09c,0 4px 10px rgba(0,0,0,.25);display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:14%}
+.die i{width:70%;height:70%;margin:auto;border-radius:50%;background:#1d2a22}
+.die.roll{animation:shake .45s ease}
+@keyframes shake{0%{transform:rotate(0) translateY(0)}25%{transform:rotate(-25deg) translateY(-8px)}50%{transform:rotate(20deg) translateY(2px)}75%{transform:rotate(-10deg) translateY(-3px)}100%{transform:none}}
+.say{font-weight:800;font-size:calc(var(--c) * .38);min-height:1.2em;max-width:100%}
+.mini{font-size:calc(var(--c) * .28);color:#3f5245;line-height:1.3;max-height:calc(var(--c) * 1.9);overflow:hidden}
+.mini div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(var(--c) * 8.4)}
+.pot{font-size:calc(var(--c) * .3);font-weight:800;color:#7a5a10}
+.tokens{position:absolute;inset:0;pointer-events:none}
+.tok{position:absolute;width:calc(var(--c) * .46);height:calc(var(--c) * .46);margin:calc(var(--c) * -.23) 0 0 calc(var(--c) * -.23);border-radius:50%;background:var(--pc);border:2px solid #fff;
+  box-shadow:0 2px 4px rgba(0,0,0,.5);transition:left .13s ease,top .13s ease;display:flex;align-items:center;justify-content:center;font-size:calc(var(--c) * .24);font-weight:900;color:#fff;z-index:5}
+.tok.jailed{box-shadow:0 0 0 2px #333,0 2px 4px rgba(0,0,0,.5)}.tok.jailed:after{content:'';position:absolute;inset:-3px;border-radius:50%;background:repeating-linear-gradient(90deg,#222 0 2px,transparent 2px 5px)}
+.tok.me{z-index:6}
+.cardpop{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.6);opacity:0;width:calc(var(--c) * 6.6);border-radius:10px;padding:calc(var(--c) * .35);color:#1d2a22;
+  box-shadow:0 10px 30px rgba(0,0,0,.45);transition:transform .25s cubic-bezier(.3,1.4,.5,1),opacity .2s;z-index:20;text-align:center;pointer-events:auto}
+.cardpop.on{transform:translate(-50%,-50%);opacity:1}
+.cardpop.chance{background:#ffb347;border:3px solid #c46a00}.cardpop.chest{background:#bfe3f7;border:3px solid #2f7db3}
+.cardpop h4{margin:0 0 8px;font-size:calc(var(--c) * .42);font-weight:900;text-transform:uppercase;letter-spacing:.05em}
+.cardpop p{margin:0;font-size:calc(var(--c) * .36);font-weight:700;line-height:1.3}
+.cardpop button{margin-top:10px;padding:6px 18px;border-radius:8px;background:#1d2a22;color:#fff;font-weight:900}
+
+/* ---------- players + actions ---------- */
+.players{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
+.pl{flex:1 1 30%;min-width:96px;max-width:200px;background:rgba(0,0,0,.28);border-radius:10px;padding:5px 7px;border:2px solid transparent;cursor:pointer;text-align:left}
+.pl.on{border-color:#ffd23a;background:rgba(0,0,0,.4)}.pl.out{opacity:.35}
+.pl .n{display:flex;align-items:center;gap:5px;font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden}
+.pl .n i{width:12px;height:12px;border-radius:50%;background:var(--pc);border:2px solid #fff;flex:none}
+.pl .m{font-size:15px;font-weight:900;color:#ffe9a6}.pl .m small{font-size:11px;color:#cfe6d2;font-weight:700}
+.pl .m.flash{animation:fl .8s}@keyframes fl{0%{color:#fff;transform:scale(1.2)}100%{transform:none}}
+.acts{background:rgba(0,0,0,.28);border-radius:14px;padding:10px;min-height:64px}
+.acts .msg{font-weight:800;text-align:center;margin-bottom:8px;color:#f2f7f3}
+.acts .msg small{display:block;color:#cfe6d2;font-weight:600;font-size:13px;margin-top:2px}
+.row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.btn{padding:11px 14px;border-radius:12px;font-weight:900;background:#fff;color:#123d2a;box-shadow:0 3px 0 rgba(0,0,0,.35);flex:1 1 auto;min-width:90px}
+.btn.go{background:#d8402f;color:#fff}.btn.alt{background:rgba(255,255,255,.14);color:#fff;box-shadow:none}
+.btn:disabled{opacity:.4}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.35)}
+.bidder{display:flex;align-items:center;justify-content:center;gap:6px;margin:6px 0}
+.bidder b{font-size:22px;min-width:84px;text-align:center}
+.bidder button{width:46px;padding:8px 0;border-radius:10px;background:rgba(255,255,255,.14);font-weight:900}
+.deed{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:8px}
+.deed .sw{width:18px;height:40px;border-radius:4px;background:var(--gc);border:2px solid #fff}
+/* sheets */
+.dcard{border:2px solid #1d2a22;border-radius:8px;overflow:hidden;max-width:320px;margin:0 auto 10px;background:#fff}
+.dcard .hd{background:var(--gc);color:#fff;text-align:center;padding:10px;font-weight:900;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.dcard .hd small{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;opacity:.9}
+.dcard table{width:100%;border-collapse:collapse;font-size:14px}.dcard td{padding:4px 12px}.dcard td:last-child{text-align:right;font-weight:800}
+.dcard tr.cur td{background:#fff4c2}
+.dcard .ft{padding:6px 12px 10px;font-size:13px;color:#6b7a6f;text-align:center}
+.mg h4{margin:14px 0 6px;display:flex;align-items:center;gap:8px;font-size:14px}.mg h4 i{width:14px;height:14px;border-radius:3px;background:var(--gc)}
+.mg .ln{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--tk-line);font-size:14px}
+.mg .ln .nm{flex:1;min-width:0}.mg .ln .nm small{display:block;color:var(--tk-mute);font-size:12px}
+.mg .ln button{padding:7px 9px;border-radius:8px;background:#123d2a;color:#fff;font-weight:800;font-size:12px}
+.mg .ln button:disabled{opacity:.25}
+.mg .ln button.soft{background:#e9e4d4;color:#1d2a22}
+.mg .cash{position:sticky;top:-16px;background:var(--tk-panel);padding:6px 0;font-weight:900;font-size:17px;z-index:2;border-bottom:1px solid var(--tk-line)}
+.tr .cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tr .col h4{margin:8px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--tk-mute)}
+.chip{display:flex;align-items:center;gap:6px;width:100%;text-align:left;padding:7px 8px;border-radius:8px;background:#efeadb;color:#1d2a22;margin-bottom:5px;font-size:13px;font-weight:700}
+.chip i{width:10px;height:22px;border-radius:2px;background:var(--gc);flex:none}
+.chip.on{background:#123d2a;color:#fff}.chip:disabled{opacity:.35}
+.chip small{font-weight:600;opacity:.7;margin-left:auto}
+.tr input{width:100%;font:inherit;font-size:16px;padding:8px;border:1px solid var(--tk-line);border-radius:8px}
+.tr .err{color:#b3261e;font-weight:800;min-height:20px;margin-top:8px;font-size:14px}
+.logl{font-size:13px;line-height:1.45;max-height:60vh;overflow:auto}.logl div{padding:3px 0;border-bottom:1px solid var(--tk-line)}
+.side .log{display:none}
+@media (max-width:360px){.pl{min-width:84px}.btn{min-width:78px;padding:10px 8px}}
+</style>
+</head>
+<body>
+<div id="setup"></div>
+<div id="game" hidden></div>
+<script>
+/*TABLEKIT*/
+</script>
+<script>
+/*ENGINE*/
+</script>
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const { esc, sleep, store } = TK;
+const M = MONO, S = M.SPACES, money = M.money;
+const SAVE = 'monopoly.save.v1', PREFS = 'monopoly.prefs.v1';
+let lastDice = [5, 2];
+let G = null, busy = false, speed = 1, bidAmt = 0, shownOffer = null, sheetOpen = null;
+const shown = {};    // where each token is drawn right now (lags the real position while it hops)
+
+// ---------- setup ----------
+function setup() {
+  G = null; $('#game').hidden = true; $('#setup').hidden = false;
+  const saved = store.get(SAVE, null);
+  TK.setup({
+    el: $('#setup'), title: 'Monopoly', tagline: 'Buy the streets, build the houses, bankrupt your friends.',
+    prefsKey: PREFS, minP: 2, maxP: 6, defaults: { auction: true, parking: false, goDouble: false, rounds: 0, speed: 'normal' },
+    options: [
+      { key: 'rounds', group: 'Game length', label: 'Ends', type: 'seg', choices: [[0, 'Last one standing'], [20, '20 rounds'], [40, '40 rounds']], desc: 'With a round limit, the richest player wins when time runs out.' },
+      { key: 'auction', group: 'House rules', label: 'Auctions', desc: 'Lots nobody buys go to the highest bidder', type: 'toggle' },
+      { key: 'parking', group: 'House rules', label: 'Free Parking jackpot', desc: 'Taxes and fees pile up on Free Parking', type: 'toggle' },
+      { key: 'goDouble', group: 'House rules', label: '$400 on GO', desc: 'Land exactly on GO to collect double', type: 'toggle' },
+      { key: 'speed', group: 'Bots', label: 'Bot speed', type: 'seg', choices: [['slow', 'Slow'], ['normal', 'Normal'], ['fast', 'Fast']] },
+    ],
+    resume: saved && !saved.over ? { text: `Round ${saved.round} · ` + saved.players.filter(p => !p.out).map(p => `${p.name} ${money(p.cash)}`).join(' · '), onResume: () => { G = saved; start(); } } : null,
+    onStart: (ps, prefs) => { G = M.newGame(ps, { auction: prefs.auction, parking: prefs.parking, goDouble: prefs.goDouble, rounds: +prefs.rounds }); G.speed = prefs.speed; start(); },
+    rules,
+  });
+}
+const humans = () => G.players.map((p, i) => p.bot ? -1 : i).filter(i => i >= 0);
+const pnp = () => humans().length > 1;
+const nameOf = i => G.players[i].bot || pnp() ? G.players[i].name : 'You';
+function save() { if (G && !G.over) store.set(SAVE, G); else store.del(SAVE); }
+function start() {
+  $('#setup').hidden = true; $('#game').hidden = false;
+  speed = { slow: 1.6, normal: 1, fast: 0.45 }[G.speed || 'normal'];
+  G.players.forEach((p, i) => shown[i] = p.pos);
+  shownOffer = null;
+  layout(); render(); step();
+}
+
+// ---------- board geometry ----------
+// 11×11 grid: corners are 1.5 units, the 9 lots on each side 1 unit → the board is 12 units across
+function cell(pos) {
+  const side = Math.floor(pos / 10), k = pos % 10;
+  if (side === 0) return { row: 11, col: 11 - k, dir: 'S' };
+  if (side === 1) return { row: 11 - k, col: 1, dir: 'W' };
+  if (side === 2) return { row: 1, col: 1 + k, dir: 'N' };
+  return { row: 1 + k, col: 11, dir: 'E' };
+}
+function centerOf(pos) {   // in board units
+  const side = Math.floor(pos / 10), k = pos % 10, along = k === 0 ? 0.75 : k + 1;
+  if (side === 0) return [12 - along, 11.25];
+  if (side === 1) return [0.75, 12 - along];
+  if (side === 2) return [along, 0.75];
+  return [11.25, along];
+}
+let unit = 30;
+function layout() {
+  const desk = document.documentElement.classList.contains('gn-desktop');
+  const w = desk ? Math.min(innerHeight - 70, innerWidth - 400) : Math.min(innerWidth - 16, 628);
+  unit = Math.max(24, Math.floor(w / 12 * 4) / 4);
+  document.documentElement.style.setProperty('--c', unit + 'px');
+}
+addEventListener('resize', () => { if (G) { layout(); placeTokens(); } });
+
+const ICON = { chance: '?', chest: '🎁', tax: '💸', rr: '🚂' };
+function tileHtml(pos) {
+  const s = S[pos], c = cell(pos), g = G;
+  const st = `grid-row:${c.row};grid-column:${c.col}`;
+  if (pos % 10 === 0) {
+    const inner = { go: '<span class="big">GO</span>collect $200 ←', jail: '<span class="big">▥</span>JAIL<br><small style="font-size:.7em;font-weight:700">just visiting</small>',
+      parking: `<span class="big">🅿</span>FREE<br>PARKING${g.opts.parking ? `<br><span style="color:#7a5a10">${money(g.pot)}</span>` : ''}`, gotojail: '<span class="big">👮</span>GO TO<br>JAIL' }[s.type];
+    return `<div class="t corner ${s.type}" data-pos="${pos}" style="${st}">${inner}</div>`;
+  }
+  const o = g.owner[pos], h = g.houses[pos];
+  let band = '';
+  if (s.type === 'prop') band = `<div class="bd" style="background:${M.GROUPS[s.group].color}">${h === 5 ? '<span class="ht"></span>' : '<span class="hs"></span>'.repeat(h)}</div>`;
+  const icon = s.type === 'util' ? (pos === 12 ? '💡' : '🚰') : ICON[s.type] || '';
+  const label = s.type === 'chest' ? 'Chest' : s.type === 'chance' ? 'Chance' : s.short;
+  const price = s.price ? money(s.price) : s.type === 'tax' ? 'pay ' + money(s.amount) : '';
+  return `<div class="t ${c.dir} ${g.mortgaged[pos] ? 'mort' : ''}" data-pos="${pos}" style="${st}">${band}
+    <div class="tx"><span class="nm">${esc(label)}</span>${icon ? `<span class="ic" ${s.type === 'chance' ? 'style="color:#e07b00;font-weight:900"' : ''}>${icon}</span>` : ''}<span class="pr">${price}</span></div>
+    ${o != null ? `<span class="own" style="--oc:${g.players[o].color}"></span>` : ''}</div>`;
+}
+function dieHtml(v, roll) {
+  const P = { 1: [5], 2: [1, 9], 3: [1, 5, 9], 4: [1, 3, 7, 9], 5: [1, 3, 5, 7, 9], 6: [1, 3, 4, 6, 7, 9] }[v || 1];
+  return `<div class="die ${roll ? 'roll' : ''}">${Array.from({ length: 9 }, (_, k) => P.includes(k + 1) ? '<i></i>' : '<span></span>').join('')}</div>`;
+}
+
+// ---------- render ----------
+// The engine writes "<name> rolls…"; when the human kept the default name "You", fix the verbs.
+const VERB = { is: 'are', has: 'have', "doesn't": "don't", goes: 'go', passes: 'pass' };
+function you(t) {
+  return String(t).replace(/\bYou's\b/g, 'Your').replace(/\bYou (is|has|doesn't|goes|passes|rolls|buys|pays|collects|owes|draws|stays|uses|builds|sells|mortgages|wins|bids|drops|offers|accepts|turns|takes|can't)\b/g,
+    (m, v) => 'You ' + (VERB[v] || (v.endsWith('s') ? v.slice(0, -1) : v))).replace(/^(You rolled doubles and) walks/, '$1 walk');
+}
+let lastSay = '';
+function render(sayText) {
+  const g = G;
+  if (sayText != null) lastSay = sayText;
+  const a = M.actor(g);
+  $('#game').innerHTML = `
+    <div class="top"><span>Monopoly</span><span class="r">Round ${g.round}${g.opts.rounds ? ' of ' + g.opts.rounds : ''} · ${g.bank.houses}🏠 ${g.bank.hotels}🏨 left</span><button id="menu" aria-label="Menu">⋯</button></div>
+    <div class="main">
+      <div id="board">${S.map((_, i) => tileHtml(i)).join('')}
+        <div class="center">
+          <div class="brand">Game Night<small>property trading</small></div>
+          <div class="dice" id="dice">${dieHtml(lastDice[0]) + dieHtml(lastDice[1])}</div>
+          <div class="say" id="say">${esc(you(lastSay))}</div>
+          ${g.opts.parking ? `<div class="pot">Free Parking jackpot: ${money(g.pot)}</div>` : ''}
+          <div class="mini" id="mini">${g.log.slice(-4).map(l => `<div>${esc(you(l))}</div>`).join('')}</div>
+        </div>
+        <div class="tokens" id="tokens"></div>
+      </div>
+      <div class="side">
+        <div class="players">${g.players.map((p, i) => `<button class="pl ${i === g.turn && !g.over ? 'on' : ''} ${p.out ? 'out' : ''}" data-pl="${i}" style="--pc:${p.color}">
+          <div class="n"><i></i>${esc(p.name)}${p.jail ? ' 🔒' : ''}${p.cards.length ? ' 🎟'.repeat(p.cards.length) : ''}</div>
+          <div class="m" id="cash${i}">${p.out ? 'bankrupt' : money(p.cash)} <small>${p.out ? '' : M.owned(g, i).length + ' lots'}</small></div></button>`).join('')}</div>
+        <div class="acts" id="acts">${actsHtml(a)}</div>
+        <div class="log logl" id="log">${g.log.slice(-30).reverse().map(l => `<div>${esc(you(l))}</div>`).join('')}</div>
+      </div>
+    </div>`;
+  placeTokens();
+  $('#menu').onclick = menu;
+  document.querySelectorAll('.t[data-pos]').forEach(el => el.onclick = () => deedSheet(+el.dataset.pos));
+  document.querySelectorAll('[data-pl]').forEach(el => el.onclick = () => playerSheet(+el.dataset.pl));
+  wireActs(a);
+}
+function placeTokens() {
+  const box = $('#tokens'); if (!box || !G) return;
+  const at = {};
+  G.players.forEach((p, i) => { if (p.out) return; const k = shown[i] != null ? shown[i] : p.pos; (at[k] = at[k] || []).push(i); });
+  let html = '';
+  for (const [pos, list] of Object.entries(at)) {
+    const [x, y] = centerOf(+pos);
+    list.forEach((i, j) => {
+      const n = list.length, cols = n > 3 ? 3 : n, r = Math.floor(j / cols), cI = j % cols, rows = Math.ceil(n / cols);
+      const dx = (cI - (cols - 1) / 2) * 0.36, dy = (r - (rows - 1) / 2) * 0.38;
+      const p = G.players[i];
+      html += `<div class="tok ${p.jail && +pos === M.JAIL ? 'jailed' : ''} ${i === G.turn ? 'me' : ''}" id="tok${i}" style="--pc:${p.color};left:${(x + dx) * unit}px;top:${(y + dy) * unit}px">${esc(p.name[0].toUpperCase())}</div>`;
+    });
+  }
+  // keep existing elements so moves slide instead of jumping
+  const old = {}; box.querySelectorAll('.tok').forEach(t => old[t.id] = t);
+  const tmp = document.createElement('div'); tmp.innerHTML = html;
+  const keep = new Set();
+  tmp.querySelectorAll('.tok').forEach(t => {
+    const o = old[t.id];
+    if (o) { o.className = t.className; o.style.cssText = t.style.cssText; o.textContent = t.textContent; keep.add(t.id); }
+    else box.appendChild(t);
+  });
+  Object.entries(old).forEach(([id, el]) => { if (!keep.has(id)) el.remove(); });
+}
+function flashCash(i) { const el = $('#cash' + i); if (el) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); } }
+
+// ---------- what the human can do right now ----------
+function actsHtml(a) {
+  const g = G;
+  if (g.over) return `<div class="msg">${esc(g.players[g.winner].name)} wins!</div><div class="row"><button class="btn go" id="again">Play again</button><button class="btn alt" id="home">Menu</button></div>`;
+  if (a == null) return '';
+  const p = g.players[a], who = pnp() ? esc(p.name) + ': ' : '';
+  if (p.bot || busy) {
+    if (g.phase === 'auction' && g.auction) return auctionInfo() + `<div class="msg"><small>${esc(p.name)} is bidding…</small></div>`;
+    return `<div class="msg">${esc(g.players[g.turn].name)}'s turn<small>${p.bot ? esc(p.name) + ' is thinking…' : ''}</small></div>`;
+  }
+  if (g.offer) return `<div class="msg">${who}a trade offer is waiting</div><div class="row"><button class="btn go" id="seeOffer">See the offer</button></div>`;
+  const mg = `<button class="btn alt" id="manage">Manage</button>`, tr = `<button class="btn alt" id="trade">Trade</button>`;
+  switch (g.phase) {
+    case 'roll':
+      if (p.jail && !g.dice) return `<div class="msg">${who}you're in Jail<small>Roll doubles to get out (try ${p.jail} of 3), or pay ${money(M.JAIL_FINE)}</small></div>
+        <div class="row"><button class="btn go" id="roll">Roll</button><button class="btn" id="payJail" ${p.cash < M.JAIL_FINE ? 'disabled' : ''}>Pay ${money(M.JAIL_FINE)}</button>${p.cards.length ? '<button class="btn" id="jailCard">Use card</button>' : ''}</div><div class="row" style="margin-top:6px">${mg}${tr}</div>`;
+      return `<div class="msg">${who}${g.dice ? 'doubles — roll again!' : 'your turn'}</div><div class="row"><button class="btn go" id="roll">Roll the dice</button>${mg}${tr}</div>`;
+    case 'buy': {
+      const pos = g.pending.pos, s = S[pos];
+      return `<div class="deed"><span class="sw" style="--gc:${M.GROUPS[s.group].color}"></span><div><b>${esc(s.name)}</b><br><small>${s.type === 'prop' ? 'rent ' + money(s.rent[0]) : s.type === 'rr' ? 'railroad' : 'utility'} · you have ${money(p.cash)}</small></div></div>
+        <div class="row"><button class="btn go" id="buy" ${p.cash < s.price ? 'disabled' : ''}>Buy for ${money(s.price)}</button><button class="btn" id="decline">${g.opts.auction ? 'Auction it' : 'Pass'}</button></div>
+        <div class="row" style="margin-top:6px"><button class="btn alt" id="deed">Details</button>${mg}</div>`;
+    }
+    case 'auction': {
+      const A = g.auction; bidAmt = Math.max(bidAmt, A.high + 10); bidAmt = Math.min(bidAmt, p.cash);
+      return auctionInfo() + `<div class="msg"><small>${who}you have ${money(p.cash)}</small></div>
+        <div class="bidder"><button data-bd="-10">−10</button><b id="bidv">${money(bidAmt)}</b><button data-bd="10">+10</button><button data-bd="50">+50</button><button data-bd="100">+100</button></div>
+        <div class="row"><button class="btn go" id="bid" ${bidAmt <= A.high ? 'disabled' : ''}>Bid</button><button class="btn" id="drop">Drop out</button></div>`;
+    }
+    case 'debt': {
+      const d = g.debts[0], short = d.amt - p.cash;
+      return `<div class="msg">${who}you owe ${money(d.amt)}${typeof d.to === 'number' ? ' to ' + esc(g.players[d.to].name) : ''}<small>${esc(d.why)} · ${short > 0 ? 'raise ' + money(short) + ' more by selling or mortgaging' : 'you can pay it now'}</small></div>
+        <div class="row"><button class="btn go" id="payDebt" ${short > 0 ? 'disabled' : ''}>Pay ${money(d.amt)}</button>${mg}${short > 0 ? '<button class="btn" id="autoRaise">Raise it for me</button>' : ''}</div>
+        <div class="row" style="margin-top:6px"><button class="btn alt" id="bankrupt">Declare bankruptcy</button></div>`;
+    }
+    case 'done':
+      return `<div class="msg">${who}${esc(you(lastSay)) || 'anything else?'}</div><div class="row"><button class="btn go" id="end">End turn</button>${mg}${tr}</div>`;
+  }
+  return '';
+}
+function auctionInfo() {
+  const A = G.auction, s = S[A.pos];
+  return `<div class="deed"><span class="sw" style="--gc:${M.GROUPS[s.group].color}"></span><div><b>Auction: ${esc(s.name)}</b><br><small>printed price ${money(s.price)} · high bid ${A.bidder == null ? 'none yet' : money(A.high) + ' (' + esc(G.players[A.bidder].name) + ')'}</small></div></div>`;
+}
+function wireActs(a) {
+  const on = (id, f) => { const el = $('#' + id); if (el) el.onclick = f; };
+  on('again', () => rematch()); on('home', () => setup());
+  on('roll', () => doAct({ a: 'roll' }));
+  on('payJail', () => doAct({ a: 'payJail' })); on('jailCard', () => doAct({ a: 'jailCard' }));
+  on('buy', () => doAct({ a: 'buy' })); on('decline', () => doAct({ a: 'decline' }));
+  on('deed', () => deedSheet(G.pending.pos));
+  on('bid', () => { const amt = bidAmt; bidAmt = 0; doAct({ a: 'bid', amt }); });
+  on('drop', () => { bidAmt = 0; doAct({ a: 'pass' }); });
+  document.querySelectorAll('[data-bd]').forEach(b => b.onclick = () => {
+    const A = G.auction, cash = G.players[a].cash;
+    bidAmt = Math.max(A.high + 1, Math.min(cash, bidAmt + +b.dataset.bd)); $('#bidv').textContent = money(bidAmt);
+    $('#bid').disabled = bidAmt <= A.high;
+  });
+  on('payDebt', () => doAct({ a: 'payDebt' }));
+  on('autoRaise', async () => {
+    const pi = a, need = () => G.debts[0] && G.debts[0].pi === pi && G.players[pi].cash < G.debts[0].amt;
+    for (let k = 0; k < 60 && need(); k++) { const m = M.autoRaise(G, pi); if (!m) break; M.act(G, Object.assign({ pi }, m)); }
+    save(); render(need() ? 'Not enough — even after selling everything' : 'Raised enough — now pay up');
+  });
+  on('bankrupt', () => confirmSheet('Declare bankruptcy?', 'You\'re out of the game. Everything you own goes to whoever you owe.', 'Go bankrupt', () => doAct({ a: 'bankrupt' })));
+  on('end', () => doAct({ a: 'end' }));
+  on('manage', () => manageSheet(a));
+  on('trade', () => tradeSheet(a));
+  on('seeOffer', () => offerSheet());
+}
+
+// ---------- doing things ----------
+async function doAct(a) {
+  if (busy) return;
+  const ev = M.act(G, a);
+  if (ev[0] && ev[0].t === 'err') { TK.toast(ev[0].text); return; }
+  busy = true; render();
+  try { await play(ev); } finally { busy = false; }
+  after();
+}
+function after() { save(); render(); setTimeout(step, 80); }
+// Animate a list of engine events
+async function play(ev) {
+  for (const e of ev) {
+    if (e.t === 'roll') {
+      const d = $('#dice');
+      if (d) { d.innerHTML = dieHtml(1 + (Math.random() * 6 | 0), true) + dieHtml(1 + (Math.random() * 6 | 0), true); await sleep(220 * speed); d.innerHTML = dieHtml(e.d[0], true) + dieHtml(e.d[1], true); }
+      lastDice = e.d; setSay(e.text); await sleep(420 * speed);
+    } else if (e.t === 'move') {
+      if (e.jail || e.steps === 0) { shown[e.pi] = e.to; placeTokens(); await sleep(400 * speed); continue; }
+      const n = Math.abs(e.steps), dir = e.steps > 0 ? 1 : -1, hop = Math.max(45, Math.min(130, 1300 / n)) * Math.min(1, speed);
+      for (let k = 1; k <= n; k++) { shown[e.pi] = (e.from + dir * k + 40) % 40; placeTokens(); await sleep(hop); }
+      highlight(e.to); await sleep(160 * speed);
+    } else if (e.t === 'card') {
+      await showCard(e);
+    } else if (e.text) {
+      setSay(e.text); refreshNumbers(e);
+      await sleep(({ pay: 650, gain: 550, buy: 600, owe: 900, bankrupt: 1400, jail: 700, auction: 500, bid: 260, drop: 220, build: 300, sell: 260, mortgage: 300, unmortgage: 300, trade: 900, decline: 700, offer: 400 }[e.t] || 500) * speed);
+      if (e.t === 'bankrupt') TK.banner('BANKRUPT');
+    }
+  }
+  G.players.forEach((p, i) => shown[i] = p.pos);
+}
+function setSay(t) { lastSay = t; const el = $('#say'); if (el) el.textContent = you(t); const mini = $('#mini'); if (mini) mini.innerHTML = G.log.slice(-4).map(l => `<div>${esc(you(l))}</div>`).join(''); }
+function refreshNumbers(e) {
+  G.players.forEach((p, i) => { const el = $('#cash' + i); if (el) el.innerHTML = `${p.out ? 'bankrupt' : money(p.cash)} <small>${p.out ? '' : M.owned(G, i).length + ' lots'}</small>`; });
+  [e.pi, e.to].forEach(i => typeof i === 'number' && flashCash(i));
+  if (['buy', 'build', 'sell', 'mortgage', 'unmortgage', 'trade', 'bankrupt'].includes(e.t)) {
+    const b = $('#board'); if (!b) return;
+    b.querySelectorAll('.t[data-pos]').forEach(el => { const pos = +el.dataset.pos; if (pos % 10) { const t = document.createElement('div'); t.innerHTML = tileHtml(pos); const n = t.firstElementChild; n.onclick = el.onclick; el.replaceWith(n); } });
+  }
+}
+function highlight(pos) { const el = document.querySelector(`.t[data-pos="${pos}"]`); if (el) { el.classList.add('hot'); setTimeout(() => el.classList.remove('hot'), 900); } }
+function showCard(e) {
+  return new Promise(res => {
+    const b = $('#board'); if (!b) return res();
+    const c = document.createElement('div'); c.className = 'cardpop ' + e.deck;
+    const human = !G.players[e.pi].bot;
+    c.innerHTML = `<h4>${e.deck === 'chance' ? 'Chance' : 'Community Chest'}</h4><p>${esc(e.text)}</p>${human ? '<button>OK</button>' : ''}`;
+    b.appendChild(c); requestAnimationFrame(() => c.classList.add('on'));
+    G.log.length && setSay(`${G.players[e.pi].name}: ${e.text}`);
+    const done = () => { c.classList.remove('on'); setTimeout(() => { c.remove(); res(); }, 200); };
+    if (human) { c.querySelector('button').onclick = done; c.onclick = done; } else setTimeout(done, 1900 * speed);
+  });
+}
+
+// ---------- the loop ----------
+let stepping = false, again = false;
+async function step() { if (stepping) { again = true; return; } stepping = true; try { await stepOnce(); } finally { stepping = false; if (again) { again = false; setTimeout(step, 50); } } }
+async function stepOnce() {
+  if (busy || !G) return;
+  const g = G;
+  if (g.over) return gameOver();
+  const a = M.actor(g), p = g.players[a];
+  if (!p.bot) {
+    if (g.offer && shownOffer !== g.offer) { shownOffer = g.offer; offerSheet(); }
+    return;
+  }
+  busy = true; render();
+  try {
+    const m = M.botAction(g);
+    const quick = ['bid', 'pass', 'build', 'sell', 'mortgage', 'unmortgage'].includes(m.a);
+    await sleep((quick ? 320 : m.a === 'roll' ? 550 : 450) * speed);
+    const ev = M.act(g, m);
+    if (ev[0] && ev[0].t === 'err') { console.warn('bot move refused', m, ev[0].text); if (g.phase === 'done') M.act(g, { a: 'end' }); }
+    else await play(ev);
+    if (m.a === 'answer' && !G.players[g.turn].bot) TK.toast(m.yes ? `${p.name} accepted your trade!` : `${p.name} turned down your trade`, 2400);
+  } finally { busy = false; }
+  after();
+}
+function rematch() {
+  const g = G, ps = g.players.map(p => ({ name: p.name, bot: p.bot, level: p.level }));
+  G = M.newGame(ps, g.opts); G.speed = g.speed; start();
+}
+function gameOver() {
+  const g = G, w = g.winner;
+  store.del(SAVE);
+  if (gameOver.done === g) return; gameOver.done = g;
+  render();
+  TK.banner(g.players[w].bot || pnp() ? `${g.players[w].name.toUpperCase()} WINS` : 'YOU WIN!');
+  const rank = g.players.map((p, i) => ({ p, i, v: p.out ? -1 : M.worth(g, i) })).sort((a, b) => b.v - a.v);
+  setTimeout(() => TK.sheet(`<h2>${esc(g.players[w].name)} ${g.players[w].bot || pnp() ? 'wins' : '— you win'}!</h2>
+    ${rank.map(r => `<div class="tk-rank"><span>${esc(r.p.name)}</span><span>${r.p.out ? 'bankrupt' : money(r.v)}</span></div>`).join('')}
+    <p style="color:var(--tk-mute);font-size:13px">Worth = cash + lots at printed price (half if mortgaged) + buildings.</p>
+    <button class="tk-big" id="nx">Play again</button><button class="tk-ghost" id="hm">Main menu</button>`, s => {
+    s.querySelector('#nx').onclick = () => { s.remove(); rematch(); };
+    s.querySelector('#hm').onclick = () => { s.remove(); setup(); };
+  }), 1400);
+}
+
+// ---------- sheets ----------
+function deedHtml(pos) {
+  const s = S[pos], g = G, o = g.owner[pos];
+  const gc = s.group ? M.GROUPS[s.group].color : '#555';
+  const owner = o == null ? 'For sale' : `Owned by ${esc(g.players[o].name)}${g.mortgaged[pos] ? ' · mortgaged' : ''}`;
+  if (s.type === 'prop') {
+    const h = g.houses[pos], full = o != null && M.ownsGroup(g, o, s.group);
+    const rows = [['Rent', s.rent[0]], ['With the whole color group', s.rent[0] * 2], ['With 1 house', s.rent[1]], ['With 2 houses', s.rent[2]], ['With 3 houses', s.rent[3]], ['With 4 houses', s.rent[4]], ['With a hotel', s.rent[5]]];
+    const cur = o == null || g.mortgaged[pos] ? -1 : h ? h + 1 : full ? 1 : 0;
+    return `<div class="dcard" style="--gc:${gc}"><div class="hd"><small>${M.GROUPS[s.group].name}</small>${esc(s.name)}</div><table>
+      ${rows.map((r, k) => `<tr class="${k === cur ? 'cur' : ''}"><td>${r[0]}</td><td>${money(r[1])}</td></tr>`).join('')}
+      <tr><td>Houses cost</td><td>${money(s.house)} each</td></tr><tr><td>Hotel</td><td>4 houses + ${money(s.house)}</td></tr><tr><td>Mortgage value</td><td>${money(s.price / 2)}</td></tr></table>
+      <div class="ft">Price ${money(s.price)} · ${owner}</div></div>`;
+  }
+  if (s.type === 'rr') return `<div class="dcard" style="--gc:#333"><div class="hd"><small>Railroad</small>${esc(s.name)}</div><table>
+    ${[1, 2, 3, 4].map(n => `<tr class="${o != null && !g.mortgaged[pos] && M.GROUP_OF.rr.filter(i => g.owner[i] === o).length === n ? 'cur' : ''}"><td>Owner has ${n} railroad${n > 1 ? 's' : ''}</td><td>${money(M.RR_RENT[n])}</td></tr>`).join('')}
+    <tr><td>Mortgage value</td><td>$100</td></tr></table><div class="ft">Price $200 · ${owner}</div></div>`;
+  if (s.type === 'util') return `<div class="dcard" style="--gc:#777"><div class="hd"><small>Utility</small>${esc(s.name)}</div><table>
+    <tr><td>Owner has 1 utility</td><td>4 × dice</td></tr><tr><td>Owner has both</td><td>10 × dice</td></tr><tr><td>Mortgage value</td><td>$75</td></tr></table><div class="ft">Price $150 · ${owner}</div></div>`;
+  const what = { go: 'Collect $200 each time you pass.' + (g.opts.goDouble ? ' Land right on it for $400.' : ''), jail: 'Just visiting unless you were sent here. In Jail: roll doubles, pay $50, or use a card. After three tries you pay and move.',
+    parking: g.opts.parking ? `Taxes and fees collect here. Land on it to take the jackpot (now ${money(g.pot)}).` : 'A free rest. Nothing happens.', gotojail: 'Go straight to Jail. You don\'t pass GO.',
+    chance: 'Draw a Chance card.', chest: 'Draw a Community Chest card.', tax: `Pay ${money(s.amount || 0)} to the bank${g.opts.parking ? ' (into the Free Parking jackpot)' : ''}.` }[s.type];
+  return `<div class="dcard" style="--gc:#123d2a"><div class="hd">${esc(s.name)}</div><div class="ft" style="color:#1d2a22;font-size:15px;padding:14px">${what}</div></div>`;
+}
+function deedSheet(pos) { TK.sheet(deedHtml(pos)); }
+function playerSheet(pi) {
+  const g = G, p = g.players[pi], mine = M.owned(g, pi);
+  TK.sheet(`<h2 style="display:flex;align-items:center;gap:8px"><span style="width:18px;height:18px;border-radius:50%;background:${p.color};border:2px solid #333"></span>${esc(p.name)}</h2>
+    <p><b>${p.out ? 'Bankrupt' : money(p.cash)}</b> cash · worth ${money(M.worth(g, pi))}${p.jail ? ' · in Jail' : ''}${p.cards.length ? ` · ${p.cards.length} Get Out of Jail Free card${p.cards.length > 1 ? 's' : ''}` : ''}</p>
+    <div class="mg">${groupsHtml(mine, i => `<span class="nm">${esc(S[i].name)}<small>${lotNote(i)}</small></span>`)}</div>${mine.length ? '' : '<p style="color:var(--tk-mute)">No lots yet.</p>'}`, s => {
+    s.querySelectorAll('[data-deed]').forEach(b => b.onclick = () => deedSheet(+b.dataset.deed));
+  });
+}
+function lotNote(i) {
+  const g = G, h = g.houses[i];
+  return [g.mortgaged[i] ? 'mortgaged' : '', h === 5 ? 'hotel' : h ? h + ' house' + (h > 1 ? 's' : '') : '', !g.mortgaged[i] ? 'rent ' + (S[i].type === 'util' ? M.rentNow(g, i) + '× dice' : money(M.rentNow(g, i))) : ''].filter(Boolean).join(' · ');
+}
+function groupsHtml(list, row) {
+  const by = {}; list.forEach(i => (by[S[i].group] = by[S[i].group] || []).push(i));
+  return Object.keys(M.GROUPS).filter(k => by[k]).map(k => `<h4><i style="--gc:${M.GROUPS[k].color}"></i>${M.GROUPS[k].name}${k !== 'rr' && k !== 'util' && by[k].length === M.GROUP_OF[k].length ? ' — full set' : ''}</h4>
+    ${by[k].map(i => `<div class="ln">${row(i)}</div>`).join('')}`).join('');
+}
+function manageSheet(pi) {
+  let el;
+  const fill = () => {
+    const g = G, p = g.players[pi], mine = M.owned(g, pi);
+    const debt = g.phase === 'debt' && g.debts[0] && g.debts[0].pi === pi ? g.debts[0] : null;
+    el.innerHTML = `<h2>Your lots</h2><div class="mg"><div class="cash">${money(p.cash)} cash${debt ? ` · owe ${money(debt.amt)}` : ''}</div>
+      ${mine.length ? groupsHtml(mine, i => {
+        const s = S[i], prop = s.type === 'prop';
+        return `<span class="nm">${esc(s.name)}<small>${lotNote(i)}</small></span>
+          ${prop && !debt ? `<button data-m="build" data-p="${i}" ${M.canBuild(g, pi, i) ? '' : 'disabled'}>+🏠 ${money(s.house)}</button>` : ''}
+          ${prop ? `<button class="soft" data-m="sell" data-p="${i}" ${M.canSell(g, pi, i) ? '' : 'disabled'}>Sell</button>` : ''}
+          ${g.mortgaged[i] ? (debt ? '' : `<button class="soft" data-m="unmortgage" data-p="${i}" ${M.canUnmortgage(g, pi, i) ? '' : 'disabled'}>Pay off ${money(M.unmortgageCost(i))}</button>`)
+            : `<button class="soft" data-m="mortgage" data-p="${i}" ${M.canMortgage(g, pi, i) ? '' : 'disabled'}>Mortgage +${money(M.mortgageValue(i))}</button>`}`;
+      }) : '<p style="color:var(--tk-mute)">You don\'t own any lots yet.</p>'}
+      <p style="color:var(--tk-mute);font-size:12px">Build evenly across a full color set. Sell buildings before mortgaging. Houses and hotels sell back for half.</p></div>`;
+    el.querySelectorAll('[data-m]').forEach(b => b.onclick = () => {
+      const ev = M.act(G, { a: b.dataset.m, pos: +b.dataset.p, pi });
+      if (ev[0] && ev[0].t === 'err') return TK.toast(ev[0].text);
+      save(); render(ev[ev.length - 1].text); fill();
+    });
+  };
+  TK.sheet('<div id="mgw"></div>', s => { el = s.querySelector('#mgw'); fill(); });
+}
+function tradeSheet(pi) {
+  const g = G, others = M.alive(g).filter(i => i !== pi);
+  if (!others.length) return;
+  const t = { from: pi, to: others[0], give: { cash: 0, props: [], cards: 0 }, get: { cash: 0, props: [], cards: 0 } };
+  let el;
+  const tradable = who => M.owned(g, who).filter(i => !(S[i].type === 'prop' && M.groupBuilt(g, S[i].group)));
+  const col = (who, side, title) => `<div class="col"><h4>${title}</h4>
+    ${tradable(who).map(i => `<button class="chip ${side.props.includes(i) ? 'on' : ''}" data-tp="${i}" data-side="${side === t.give ? 'give' : 'get'}"><i style="--gc:${M.GROUPS[S[i].group].color}"></i>${esc(S[i].short)}<small>${g.mortgaged[i] ? 'mtg' : money(S[i].price)}</small></button>`).join('') || '<p style="color:var(--tk-mute);font-size:13px">No lots to trade</p>'}
+    ${g.players[who].cards.length ? `<button class="chip ${side.cards ? 'on' : ''}" data-card="${side === t.give ? 'give' : 'get'}">🎟 Jail card</button>` : ''}
+    <label class="tk-f">Cash (has ${money(g.players[who].cash)})</label><input type="number" inputmode="numeric" min="0" step="10" data-cash="${side === t.give ? 'give' : 'get'}" value="${side.cash || ''}" placeholder="0"></div>`;
+  const fill = () => {
+    el.innerHTML = `<h2>Trade</h2><div class="tr"><label class="tk-f">With</label><div class="tk-seg" id="trWho">${others.map(i => `<button data-v="${i}" class="${t.to === i ? 'on' : ''}">${esc(g.players[i].name)}</button>`).join('')}</div>
+      <div class="cols">${col(pi, t.give, 'You give')}${col(t.to, t.get, 'You get')}</div><div class="err" id="trErr"></div>
+      <button class="tk-big" id="trGo">Offer trade</button></div>`;
+    el.querySelector('#trWho').onclick = e => { const b = e.target.closest('button'); if (!b) return; t.to = +b.dataset.v; t.get = { cash: 0, props: [], cards: 0 }; fill(); };
+    el.querySelectorAll('[data-tp]').forEach(b => b.onclick = () => { const side = t[b.dataset.side], i = +b.dataset.tp; side.props = side.props.includes(i) ? side.props.filter(x => x !== i) : side.props.concat(i); b.classList.toggle('on'); check(); });
+    el.querySelectorAll('[data-card]').forEach(b => b.onclick = () => { const side = t[b.dataset.card]; side.cards = side.cards ? 0 : 1; b.classList.toggle('on'); check(); });
+    el.querySelectorAll('[data-cash]').forEach(inp => inp.oninput = () => { t[inp.dataset.cash].cash = Math.max(0, Math.floor(+inp.value || 0)); check(); });
+    el.querySelector('#trGo').onclick = () => {
+      const e = M.tradeError(G, JSON.parse(JSON.stringify(t))); if (e) return check(true);
+      el.closest('.tk-scrim').remove();
+      doAct({ a: 'offer', trade: JSON.parse(JSON.stringify(t)) });
+    };
+    check();
+  };
+  const check = loud => { const e = M.tradeError(G, JSON.parse(JSON.stringify(t))); const box = el.querySelector('#trErr'); box.textContent = loud || (e && e !== 'Put something in the deal') ? e : ''; el.querySelector('#trGo').disabled = !!e; };
+  TK.sheet('<div id="trw"></div>', s => { el = s.querySelector('#trw'); fill(); });
+}
+function offerSheet() {
+  const g = G, t = g.offer; if (!t) return;
+  const to = g.players[t.to], from = g.players[t.from];
+  const s = TK.sheet(`<h2>${esc(from.name)} offers ${pnp() ? esc(to.name) : 'you'} a trade</h2>
+    <div class="tr"><div class="cols"><div class="col"><h4>${pnp() ? esc(to.name) + ' gets' : 'You get'}</h4>${sideList(t.give)}</div><div class="col"><h4>${pnp() ? esc(to.name) + ' gives' : 'You give'}</h4>${sideList(t.get)}</div></div></div>
+    <button class="tk-big" id="ofYes">Accept</button><button class="tk-ghost" id="ofNo">Decline</button>`, sh => {
+    sh.querySelector('.tk-x').remove(); sh.onclick = null;
+    const ans = yes => { sh.remove(); doAct({ a: 'answer', pi: t.to, yes }); };
+    sh.querySelector('#ofYes').onclick = () => ans(true); sh.querySelector('#ofNo').onclick = () => ans(false);
+  });
+  return s;
+}
+function sideList(side) {
+  const g = G;
+  const rows = side.props.map(i => `<div class="chip" style="cursor:default"><i style="--gc:${M.GROUPS[S[i].group].color}"></i>${esc(S[i].name)}<small>${g.mortgaged[i] ? 'mortgaged' : money(S[i].price)}</small></div>`);
+  if (side.cash) rows.push(`<div class="chip" style="cursor:default">💵 ${money(side.cash)}</div>`);
+  if (side.cards) rows.push('<div class="chip" style="cursor:default">🎟 Get Out of Jail Free</div>');
+  return rows.join('') || '<p style="color:var(--tk-mute)">Nothing</p>';
+}
+function confirmSheet(title, text, yes, f) {
+  TK.sheet(`<h2>${esc(title)}</h2><p>${esc(text)}</p><button class="tk-big" id="cy">${esc(yes)}</button><button class="tk-ghost" id="cn">Never mind</button>`, s => {
+    s.querySelector('#cy').onclick = () => { s.remove(); f(); }; s.querySelector('#cn').onclick = () => s.remove();
+  });
+}
+function menu() {
+  TK.sheet(`<h2>Menu</h2><button class="tk-ghost" id="mLog">Game log</button><button class="tk-ghost" id="mRules">How to play</button>${window.GNReport ? '<button class="tk-ghost" id="mBug">⚑ Report a bug</button>' : ''}<button class="tk-ghost" id="mQuit">Save &amp; quit to menu</button>`, s => {
+    s.querySelector('#mLog').onclick = () => { s.remove(); TK.sheet(`<h2>Game log</h2><div class="logl">${G.log.slice().reverse().map(l => `<div>${esc(you(l))}</div>`).join('')}</div>`); };
+    s.querySelector('#mRules').onclick = () => { s.remove(); rules(); };
+    if (s.querySelector('#mBug')) s.querySelector('#mBug').onclick = () => { s.remove(); GNReport.open(); };
+    s.querySelector('#mQuit').onclick = () => { s.remove(); if (busy) return TK.toast('One moment…'); save(); setup(); };
+  });
+}
+function rules() {
+  TK.sheet(`<h2>How to play</h2>
+    <p>Everyone starts with $1,500. Roll two dice and move around the board. The last player who isn't bankrupt wins${G && G.opts.rounds ? ` — or, with a round limit, the richest player when time runs out` : ''}.</p>
+    <ul><li><b>Land on an unowned lot</b> and you may buy it at the printed price. Pass, and it goes to auction (if auctions are on).</li>
+    <li><b>Land on someone's lot</b> and you pay them rent. Rent doubles on bare lots when one player owns the whole color set.</li>
+    <li><b>Railroads</b> pay more the more of them one player owns. <b>Utilities</b> charge 4× the dice, or 10× with both.</li>
+    <li><b>Houses:</b> with a full color set, build evenly — no lot can get two ahead of the others. Four houses become a hotel. The bank has only 32 houses and 12 hotels.</li>
+    <li><b>Mortgage</b> a lot for half its price when you need cash (sell its color set's buildings first). Paying it off costs the mortgage plus 10%.</li>
+    <li><b>Doubles</b> roll again. Three doubles in a row sends you to Jail. In Jail: roll doubles, pay $50, or use a Get Out of Jail Free card; after three tries you must pay.</li>
+    <li><b>Trade</b> lots, cash and jail cards with anyone on your turn. Lots with buildings in their set can't be traded.</li>
+    <li><b>Can't pay?</b> Sell buildings and mortgage lots to raise the money. If it's still not enough, you're bankrupt and everything goes to the player you owe.</li></ul>
+    <p>Tap any space on the board to see its card. Tap a player to see what they own.</p>`);
+}
+addEventListener('beforeunload', () => { if (!busy) save(); });
+setup();
+</script>
+</body>
+</html>

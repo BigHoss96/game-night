@@ -1,6 +1,6 @@
 // Offline support: serve from cache instantly, refresh the cache in the background.
 const CACHE = 'gamenight-v6';
-const CORE = ['./', './index.html', './flip7/', './tap4/', './mahj/', './yahtzee/', './farkle/', './uno/', './phase10/', './skipbo/', './doomlings/', './tally/', './report.js', './known-issues.js', './update.js', './issues.html', './icons/cover-flip7.svg', './icons/cover-tap4.svg', './icons/cover-yahtzee.svg', './icons/cover-farkle.svg', './icons/cover-mahj.svg', './icons/cover-doomlings.svg', './icons/cover-paydirt.svg', './icons/cover-tally.svg', './icons/cover-uno.svg', './icons/cover-phase10.svg', './icons/cover-skipbo.svg'];
+const CORE = ['./', './index.html', './flip7/', './tap4/', './mahj/', './yahtzee/', './farkle/', './uno/', './phase10/', './skipbo/', './doomlings/', './tally/', './report.js', './known-issues.js', './update.js', './issues.html', './icons/cover-flip7.svg', './icons/cover-tap4.svg', './icons/cover-yahtzee.svg', './icons/cover-farkle.svg', './icons/cover-mahj.svg', './icons/cover-doomlings.svg', './icons/cover-paydirt.svg', './icons/cover-monopoly.svg', './icons/cover-tally.svg', './icons/cover-uno.svg', './icons/cover-phase10.svg', './icons/cover-skipbo.svg'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting()).catch(() => {}));

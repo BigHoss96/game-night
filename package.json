@@ -3,7 +3,7 @@
   "private": true,
   "description": "Free browser card and tile games: Flip 7, Tap 4, Mahj, plus the Tally scorekeeper",
   "scripts": {
-    "test": "node scripts/test-site.js && node games/flip7/test.js && node games/tap4/test.js && node games/doomlings/test.js && node games/paydirt/test.js && node games/yahtzee/test.js && node games/farkle/test.js && node games/uno/test.js && node games/phase10/test.js && node games/skipbo/test.js && node worker/test-worker.mjs",
+    "test": "node scripts/test-site.js && node games/flip7/test.js && node games/tap4/test.js && node games/doomlings/test.js && node games/paydirt/test.js && node games/yahtzee/test.js && node games/farkle/test.js && node games/uno/test.js && node games/phase10/test.js && node games/skipbo/test.js && node games/monopoly/test.js && node worker/test-worker.mjs",
     "build": "node scripts/build-site.js"
   }
 }

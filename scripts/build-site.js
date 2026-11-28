@@ -26,6 +26,7 @@ const SAVE_KEYS = {
   skipbo: ['skipbo.save.v1', 'skipbo.prefs.v1'],
   yahtzee: ['yahtzee.save.v1', 'yahtzee.prefs.v1', 'yahtzee.best.v1'],
   farkle: ['farkle.save.v1', 'farkle.prefs.v1'],
+  monopoly: ['monopoly.save.v1', 'monopoly.prefs.v1'],
   site: [],
 };
 const reportTags = (game, prefix) =>
@@ -47,6 +48,7 @@ const GAMES = [
   { id: 'uno', name: 'Uno', color: '#7a1010', bg: '#7a1010', build: () => read('games/uno/src.html').replace('/*TABLEKIT*/', () => read('shared/tablekit.js')).replace('/*ENGINE*/', () => read('games/uno/engine.js')) },
   { id: 'phase10', name: 'Phase 10', color: '#13275e', bg: '#13275e', build: () => read('games/phase10/src.html').replace('/*TABLEKIT*/', () => read('shared/tablekit.js')).replace('/*ENGINE*/', () => read('games/phase10/engine.js')) },
   { id: 'skipbo', name: 'Skip-Bo', color: '#0b4a52', bg: '#0b4a52', build: () => read('games/skipbo/src.html').replace('/*TABLEKIT*/', () => read('shared/tablekit.js')).replace('/*ENGINE*/', () => read('games/skipbo/engine.js')) },
+  { id: 'monopoly', name: 'Monopoly', testing: true, color: '#123d2a', bg: '#123d2a', build: () => read('games/monopoly/src.html').replace('/*TABLEKIT*/', () => read('shared/tablekit.js')).replace('/*ENGINE*/', () => read('games/monopoly/engine.js')) },
   { id: 'paydirt', name: 'Paydirt', testing: true, color: '#1f3d24', bg: '#1f3d24', build: () => read('games/paydirt/src.html').replace('/*TEAMS*/', () => read('games/paydirt/teams.js')).replace('/*ENGINE*/', () => read('games/paydirt/engine.js')) },
 ];
 const GAME_NAMES = Object.fromEntries(GAMES.map(g => [g.id, g.name]).concat([['site', 'Home page']]));

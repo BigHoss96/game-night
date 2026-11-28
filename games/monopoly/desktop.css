@@ -1,0 +1,10 @@
+/* Desktop: board on the left, players / actions / log on the right */
+html.gn-desktop #game{max-width:none;padding:14px 20px}
+html.gn-desktop .main{flex-direction:row;align-items:flex-start;justify-content:center;gap:20px}
+html.gn-desktop #board{margin:0}
+html.gn-desktop .side{width:360px;flex:none;display:flex;flex-direction:column;gap:10px}
+html.gn-desktop .pl{flex:1 1 45%}
+html.gn-desktop .side .log{display:block;background:rgba(0,0,0,.22);border-radius:12px;padding:8px 12px;color:#e4efe6;max-height:calc(var(--c) * 5);overflow:auto}
+html.gn-desktop .side .log div{border-bottom:1px solid rgba(255,255,255,.08)}
+html.gn-desktop .top{max-width:calc(var(--c) * 12 + 380px);margin:0 auto}
+html.gn-desktop .tk-sheet{max-width:620px}
